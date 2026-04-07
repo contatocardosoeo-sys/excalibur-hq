@@ -24,6 +24,7 @@ const sections = [
       { href: '/clientes', icon: '👥', label: 'Clientes' },
       { href: '/planos', icon: '💳', label: 'Planos & Cobrança' },
       { href: '/alertas', icon: '🚨', label: 'Alertas' },
+      { href: '/automacoes', icon: '⚡', label: 'Automações' },
     ],
   },
   {
