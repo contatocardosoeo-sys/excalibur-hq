@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from('alertas_sistema')
       .select('*')
-      .order('created_at', { ascending: false })
+      .order('criado_em', { ascending: false })
 
     if (prioridade) query = query.eq('prioridade', prioridade)
     if (status) query = query.eq('status', status)
@@ -30,7 +30,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ alertas: alertas || [], total: (alertas || []).length })
+    // Map criado_em to created_at for frontend compatibility
+    const mapped = (alertas || []).map(a => ({ ...a, created_at: a.criado_em }))
+    return NextResponse.json({ alertas: mapped, total: mapped.length })
   } catch (err) {
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
