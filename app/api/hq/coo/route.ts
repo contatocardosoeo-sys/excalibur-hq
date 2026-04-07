@@ -91,7 +91,8 @@ export async function GET() {
     const alertas: AlertaSistema[] = alertasRes.data || []
 
     // === KPIs ===
-    const total_clientes = clientes.filter(c => c.status === 'ativo').length
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const total_clientes = clientes.filter(c => { const x = c as any; return x.status_cliente === 'ativo' || x.status_execucao === 'ativo'; }).length
     const em_onboarding = clientes.filter(c => c.fase === 'onboarding').length
     const em_adocao = clientes.filter(c => c.fase === 'adocao').length
     const em_escala = clientes.filter(c => c.fase === 'escala').length

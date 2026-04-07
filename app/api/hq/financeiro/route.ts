@@ -36,7 +36,7 @@ export async function GET() {
     const historicoList = historicoRaw || []
 
     // --- KPIs ---
-    const activeClients = clientesList.filter((c) => c.status === 'ativo')
+    const activeClients = clientesList.filter((c) => c.status_cliente === 'ativo')
     const mrr = activeClients.reduce((sum, c) => sum + (Number(c.mrr) || 0), 0)
 
     // Previous month MRR for variation
@@ -51,7 +51,7 @@ export async function GET() {
     const receitaMes = currentMonth ? Number(currentMonth.receita_total) || mrr * 1.1 : mrr * 1.1
 
     // Churn
-    const churnedClients = clientesList.filter((c) => c.status === 'churned' || c.status === 'cancelado')
+    const churnedClients = clientesList.filter((c) => c.status_cliente === 'churn')
     const totalClientsEver = clientesList.length || 1
     const churnRate = totalClientsEver > 0 ? (churnedClients.length / totalClientsEver) * 100 : 0
 
