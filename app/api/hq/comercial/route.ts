@@ -122,10 +122,10 @@ export async function GET() {
       .filter((d) => d.etapa !== 'fechado' && d.etapa !== 'perdido')
       .map((d) => ({
         id: d.id,
-        nome: d.nome || d.lead_nome || d.paciente_nome || 'Sem nome',
+        nome: d.nome_lead || d.nome || 'Sem nome',
         etapa: d.etapa,
         valor: d.valor || 0,
-        vendedor: d.vendedor || d.responsavel || 'Sem vendedor',
+        vendedor: d.vendedor || 'Sem vendedor',
         created_at: d.created_at,
         procedimento: d.procedimento || '',
       }))

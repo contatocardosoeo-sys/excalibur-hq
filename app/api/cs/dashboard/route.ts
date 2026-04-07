@@ -75,6 +75,25 @@ export async function GET() {
     acao_sugerida: c.proxima_acao || proximaAcao(c),
   }))
 
+  // P1: Gerar alertas automaticos para clientes com problemas criticos/altos
+  const alertasParaInserir = lista
+    .filter(c => c.problema.nivel === 'critico' || c.problema.nivel === 'alto')
+    .map(c => ({
+      cliente_id: c.id,
+      tipo_alerta: c.problema.texto,
+      prioridade: c.problema.nivel === 'critico' ? 'critica' as const : 'alta' as const,
+      descricao: `${c.nome}: ${c.problema.texto}`,
+      acao_sugerida: c.acao_sugerida,
+      status: 'aberto' as const,
+      responsavel: c.cs_responsavel,
+    }))
+
+  if (alertasParaInserir.length > 0) {
+    // Limpar alertas antigos abertos e inserir novos
+    await supabase.from('alertas_sistema').delete().eq('status', 'aberto')
+    await supabase.from('alertas_sistema').insert(alertasParaInserir)
+  }
+
   const criticos = lista.filter(c => c.problema.nivel === 'critico').length
   const totalMRR = lista.reduce((sum, c) => sum + Number(c.mrr), 0)
   const avgScore = lista.length > 0 ? Math.round(lista.reduce((sum, c) => sum + c.score_total, 0) / lista.length) : 0
