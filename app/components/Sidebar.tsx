@@ -31,6 +31,7 @@ const sections = [
     label: 'Sistema',
     items: [
       { href: '/dashboard', icon: '📊', label: 'Visao Geral' },
+      { href: '/observabilidade', icon: '🔭', label: 'Observabilidade' },
     ],
   },
 ]
