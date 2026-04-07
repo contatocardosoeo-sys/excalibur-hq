@@ -28,6 +28,12 @@ const sections = [
     ],
   },
   {
+    label: 'IA',
+    items: [
+      { href: '/ia/supervisor', icon: '🧠', label: 'Supervisor IA' },
+    ],
+  },
+  {
     label: 'Sistema',
     items: [
       { href: '/dashboard', icon: '📊', label: 'Visao Geral' },
