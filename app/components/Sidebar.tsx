@@ -19,8 +19,10 @@ const sections = [
   {
     label: 'Operacao',
     items: [
+      { href: '/onboarding', icon: '🚀', label: 'Novo Cliente' },
       { href: '/pipeline', icon: '🔁', label: 'Pipeline D0-D90' },
       { href: '/clientes', icon: '👥', label: 'Clientes' },
+      { href: '/planos', icon: '💳', label: 'Planos & Cobrança' },
       { href: '/alertas', icon: '🚨', label: 'Alertas' },
     ],
   },
