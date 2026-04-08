@@ -1,11 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { supabase } from './lib/supabase'
 
 export default function LoginHQ() {
-  const router = useRouter()
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
   const [erro, setErro] = useState('')
@@ -33,10 +31,11 @@ export default function LoginHQ() {
 
     const role = interno?.role || 'cs'
 
+    // window.location.href força full reload → middleware lê cookies corretamente
     if (role === 'cs') {
-      router.push('/cs')
+      window.location.href = '/cs'
     } else {
-      router.push('/dashboard')
+      window.location.href = '/dashboard'
     }
   }
 
