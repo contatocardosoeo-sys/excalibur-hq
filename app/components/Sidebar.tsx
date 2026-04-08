@@ -63,18 +63,31 @@ export default function Sidebar() {
 
   useEffect(() => {
     ;(async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        const { data: interno } = await supabase
-          .from('usuarios_internos')
-          .select('role, roles, nome')
-          .eq('email', user.email)
-          .single()
-        if (interno) {
-          const roles = (interno.roles && interno.roles.length > 0) ? interno.roles : [interno.role]
-          setUserRoles(roles)
-          setNome(interno.nome)
+      try {
+        // Tentar getUser primeiro, fallback para getSession
+        let email: string | undefined
+        const { data: { user } } = await supabase.auth.getUser()
+        email = user?.email ?? undefined
+
+        if (!email) {
+          const { data: { session } } = await supabase.auth.getSession()
+          email = session?.user?.email ?? undefined
         }
+
+        if (email) {
+          const { data: interno } = await supabase
+            .from('usuarios_internos')
+            .select('role, roles, nome')
+            .eq('email', email)
+            .single()
+          if (interno) {
+            const roles = (interno.roles && interno.roles.length > 0) ? interno.roles : [interno.role]
+            setUserRoles(roles)
+            setNome(interno.nome)
+          }
+        }
+      } catch {
+        // Silently handle auth errors
       }
       setLoaded(true)
     })()

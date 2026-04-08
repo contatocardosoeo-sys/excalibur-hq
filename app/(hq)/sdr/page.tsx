@@ -32,8 +32,12 @@ export default function SDRPage() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const d = await (await fetch('/api/sdr/leads')).json()
-    setLeads(d.leads || []); setKpis(d.kpis || kpis); setMetas(d.metas || null); setLoading(false)
+    try {
+      const res = await fetch('/api/sdr/leads')
+      const d = await res.json()
+      setLeads(d.leads || []); setKpis(d.kpis || { totalLeads: 0, contatosHoje: 0, agendamentos: 0, taxaConversao: 0 }); setMetas(d.metas || null)
+    } catch { /* network error */ }
+    setLoading(false)
   }, [])
   useEffect(() => { load() }, [load])
 

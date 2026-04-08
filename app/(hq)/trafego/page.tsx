@@ -21,8 +21,11 @@ export default function TrafegoPage() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const d = await (await fetch('/api/trafego')).json()
-    setCampanhas(d.campanhas || []); setKpis(d.kpis || kpis); setLoading(false)
+    try {
+      const d = await (await fetch('/api/trafego')).json()
+      setCampanhas(d.campanhas || []); setKpis(d.kpis || { totalLeads: 0, cplMedio: 0, totalInvest: 0, ativas: 0 })
+    } catch { /* network error */ }
+    setLoading(false)
   }, [])
   useEffect(() => { load() }, [load])
 

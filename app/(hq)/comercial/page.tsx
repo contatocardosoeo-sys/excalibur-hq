@@ -37,8 +37,11 @@ export default function ComercialPage() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const d = await (await fetch('/api/comercial/pipeline')).json()
-    setPipeline(d.pipeline || []); setKpis(d.kpis || kpis); setMetas(d.metas || null); setLoading(false)
+    try {
+      const d = await (await fetch('/api/comercial/pipeline')).json()
+      setPipeline(d.pipeline || []); setKpis(d.kpis || { reunioesSemana: 0, propostasEnviadas: 0, fechamentos: 0, mrrMes: 0 }); setMetas(d.metas || null)
+    } catch { /* network error */ }
+    setLoading(false)
   }, [])
   useEffect(() => { load() }, [load])
 
