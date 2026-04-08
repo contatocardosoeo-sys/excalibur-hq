@@ -1,127 +1,185 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import {
+  detectarGargalos,
+  calcularImpactoFinanceiro,
+  gerarResumoExecutivo,
+  classificarMetrica,
+  type DadosFunil,
+  type Baseline,
+} from '@/app/lib/funil'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://hluhlsnodndpskrkbjuw.supabase.co',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 )
 
 export async function GET() {
   try {
-    // Fetch campanhas_trafego
-    const { data: campanhas, error: campanhasError } = await supabase
-      .from('campanhas_trafego')
-      .select('*')
-      .order('created_at', { ascending: false })
+    const [
+      { data: analiseRows },
+      { data: baselineRows },
+      { data: metasRows },
+      { data: sdrRows },
+      { data: tarefasRows },
+      { data: testesRows },
+    ] = await Promise.all([
+      supabase.from('funil_analise').select('*').order('created_at', { ascending: false }).limit(1),
+      supabase.from('funil_baseline').select('*').limit(1),
+      supabase.from('metas_operacionais').select('*').eq('ativo', true).order('faturamento_meta', { ascending: true }),
+      supabase.from('sdr_performance').select('*').eq('ativo', true).order('receita_gerada', { ascending: false }),
+      supabase.from('tarefas').select('*').in('status', ['pendente', 'em_andamento']).order('created_at', { ascending: false }).limit(20),
+      supabase.from('testes_marketing').select('*').order('created_at', { ascending: false }).limit(20),
+    ])
 
-    if (campanhasError) {
-      console.error('Erro campanhas_trafego:', campanhasError)
+    const analise = (analiseRows?.[0] || {}) as Record<string, unknown>
+    const baselineRaw = (baselineRows?.[0] || {}) as Record<string, unknown>
+
+    const dados: DadosFunil = {
+      leads: Number(analise.leads || 0),
+      agendamentos: Number(analise.agendamentos || 0),
+      reunioes_realizadas: Number(analise.reunioes_realizadas || 0),
+      reunioes_qualificadas: Number(analise.reunioes_qualificadas || 0),
+      fechamentos: Number(analise.fechamentos || 0),
+      taxa_agendamento: Number(analise.taxa_agendamento || 0),
+      taxa_comparecimento: Number(analise.taxa_comparecimento || 0),
+      taxa_qualificacao: Number(analise.taxa_qualificacao || 0),
+      taxa_conversao_final: Number(analise.taxa_conversao_final || 0),
+      cpl: Number(analise.cpl || 0),
+      cac: Number(analise.cac || 0),
+      custo_agendamento: Number(analise.custo_agendamento || 0),
+      custo_reuniao: Number(analise.custo_reuniao || 0),
+      faturamento: Number(analise.faturamento || 0),
+      investimento: Number(analise.investimento || 0),
     }
 
-    // Fetch last 14 days from performance_diaria
-    const dataInicio = new Date()
-    dataInicio.setDate(dataInicio.getDate() - 14)
-
-    const { data: performanceDiaria, error: perfError } = await supabase
-      .from('performance_diaria')
-      .select('*')
-      .gte('data', dataInicio.toISOString().split('T')[0])
-      .order('data', { ascending: true })
-
-    if (perfError) {
-      console.error('Erro performance_diaria:', perfError)
+    const baseline: Baseline = {
+      cpl_meta: Number(baselineRaw.cpl_meta || 10.68),
+      taxa_agendamento_meta: Number(baselineRaw.taxa_agendamento_meta || 35.25),
+      taxa_comparecimento_meta: Number(baselineRaw.taxa_comparecimento_meta || 71.30),
+      taxa_qualificacao_meta: Number(baselineRaw.taxa_qualificacao_meta || 82.56),
+      taxa_conversao_meta: Number(baselineRaw.taxa_conversao_meta || 24.09),
+      cac_meta: Number(baselineRaw.cac_meta || 188.94),
+      ticket_medio: Number(baselineRaw.ticket_medio || 2000),
+      reunioes_dia_meta: Number(baselineRaw.reunioes_dia_meta || 10),
+      closers: Number(baselineRaw.closers || 2),
     }
 
-    // Calculate KPIs
-    const hoje = new Date().toISOString().split('T')[0]
-    const perfHoje = performanceDiaria?.find((p: Record<string, unknown>) => p.data === hoje)
+    const gargalos = detectarGargalos(dados)
+    const impacto = calcularImpactoFinanceiro(dados, baseline)
+    const resumo = gerarResumoExecutivo(dados, gargalos)
 
-    const leadsHoje = perfHoje?.leads || 41
-    const investimentoTotal = campanhas?.reduce((acc: number, c: Record<string, unknown>) => acc + (Number(c.investimento) || 0), 0) || 0
-    const totalLeads = campanhas?.reduce((acc: number, c: Record<string, unknown>) => acc + (Number(c.leads) || 0), 0) || 1
-    const cplAtual = totalLeads > 0 ? investimentoTotal / totalLeads : 38.40
-    const metaCpl = 35
-    const roas = 4.2
-    const totalAgendamentos = campanhas?.reduce((acc: number, c: Record<string, unknown>) => acc + (Number(c.agendamentos) || 0), 0) || 1
-    const custoAgendamento = totalAgendamentos > 0 ? investimentoTotal / totalAgendamentos : 0
-
-    const kpis = {
-      leads_hoje: leadsHoje,
-      cpl_atual: Math.round(cplAtual * 100) / 100 || 38.40,
-      meta_cpl: metaCpl,
-      investimento_total: investimentoTotal || 15400,
-      roas: roas,
-      custo_agendamento: Math.round(custoAgendamento * 100) / 100 || 72.50,
+    const cores = {
+      cpl: classificarMetrica('cpl', dados.cpl),
+      agendamento: classificarMetrica('agendamento', dados.taxa_agendamento),
+      comparecimento: classificarMetrica('comparecimento', dados.taxa_comparecimento),
+      qualificacao: classificarMetrica('qualificacao', dados.taxa_qualificacao),
+      conversao: classificarMetrica('conversao', dados.taxa_conversao_final),
+      cac: classificarMetrica('cac', dados.cac),
     }
 
-    // Last 7 days for chart
-    const last7 = (performanceDiaria || []).slice(-7).map((p: Record<string, unknown>) => ({
-      data: p.data,
-      leads: p.leads || 0,
-    }))
+    // Projecao
+    const diasUteisMes = 22
+    const diasDecorridos = 8
+    const diasRestantes = diasUteisMes - diasDecorridos
+    const faturamentoProjetado = Math.round((dados.faturamento / diasDecorridos) * diasUteisMes)
+    const vendasProjetadas = Math.round((dados.fechamentos / diasDecorridos) * diasUteisMes)
+    const metaNormal = (metasRows || []).find((m: Record<string, unknown>) => m.tipo === 'normal')
+    const metaNormalFat = Number((metaNormal as Record<string, unknown>)?.faturamento_meta || 90000)
 
-    // If no data, generate mock
-    const leads14d = last7.length > 0 ? last7 : [
-      { data: '2026-03-31', leads: 32 },
-      { data: '2026-04-01', leads: 38 },
-      { data: '2026-04-02', leads: 29 },
-      { data: '2026-04-03', leads: 45 },
-      { data: '2026-04-04', leads: 41 },
-      { data: '2026-04-05', leads: 36 },
-      { data: '2026-04-06', leads: 41 },
+    // Prioridade do dia
+    const prioridadeDoDia = gargalos.length > 0
+      ? {
+          titulo: `Corrigir ${gargalos[0].etapa} — ${gargalos[0].atual}${gargalos[0].etapa === 'cac' ? '' : '%'} vs meta ${gargalos[0].meta}${gargalos[0].etapa === 'cac' ? '' : '%'}`,
+          impacto: impacto.faturamento_perdido,
+          severidade: gargalos[0].severidade,
+          acoes: gerarAcoesPrioridade(gargalos[0].etapa),
+        }
+      : { titulo: 'Funil saudavel — focar em escala', impacto: 0, severidade: 'ok', acoes: ['Manter ritmo atual', 'Testar novos canais'] }
+
+    // Simulacao: "Se aumentar agendamento para X% -> +R$Y"
+    const simulacoes = [
+      calcularSimulacao(dados, baseline, 'agendamento', 30),
+      calcularSimulacao(dados, baseline, 'agendamento', 35.25),
+      calcularSimulacao(dados, baseline, 'comparecimento', 71.30),
     ]
 
-    // Generate alertas
-    const alertas: Array<{ tipo: string; mensagem: string; severidade: string }> = []
-
-    if (kpis.cpl_atual > kpis.meta_cpl) {
-      alertas.push({
-        tipo: 'cpl_alto',
-        mensagem: `CPL atual (R$${kpis.cpl_atual.toFixed(2)}) está acima da meta (R$${kpis.meta_cpl.toFixed(2)})`,
-        severidade: 'warning',
-      })
-    }
-
-    const campanhasSemLeads = (campanhas || []).filter((c: Record<string, unknown>) => (Number(c.leads) || 0) === 0)
-    if (campanhasSemLeads.length > 0) {
-      alertas.push({
-        tipo: 'campanha_sem_leads',
-        mensagem: `${campanhasSemLeads.length} campanha(s) sem leads gerados`,
-        severidade: 'danger',
-      })
-    }
-
-    const campanhasPausadas = (campanhas || []).filter((c: Record<string, unknown>) => c.status === 'pausada')
-    if (campanhasPausadas.length > 0) {
-      alertas.push({
-        tipo: 'campanha_pausada',
-        mensagem: `${campanhasPausadas.length} campanha(s) pausada(s)`,
-        severidade: 'info',
-      })
-    }
-
-    if (kpis.roas < 3) {
-      alertas.push({
-        tipo: 'roas_baixo',
-        mensagem: `ROAS (${kpis.roas}x) abaixo do mínimo recomendado (3x)`,
-        severidade: 'danger',
-      })
-    }
+    // Comparativo
+    const comparativo = [
+      { metrica: 'CPL', atual: `R$${dados.cpl}`, baseline_val: `R$${baseline.cpl_meta}`, diferenca: `${dados.cpl > baseline.cpl_meta ? '+' : ''}R$${(dados.cpl - baseline.cpl_meta).toFixed(2)}`, cor: cores.cpl },
+      { metrica: 'Agendamento', atual: `${dados.taxa_agendamento}%`, baseline_val: `${baseline.taxa_agendamento_meta}%`, diferenca: `${(dados.taxa_agendamento - baseline.taxa_agendamento_meta).toFixed(2)}pp`, cor: cores.agendamento },
+      { metrica: 'Comparecimento', atual: `${dados.taxa_comparecimento}%`, baseline_val: `${baseline.taxa_comparecimento_meta}%`, diferenca: `${(dados.taxa_comparecimento - baseline.taxa_comparecimento_meta).toFixed(2)}pp`, cor: cores.comparecimento },
+      { metrica: 'Qualificacao', atual: `${dados.taxa_qualificacao}%`, baseline_val: `${baseline.taxa_qualificacao_meta}%`, diferenca: `+${(dados.taxa_qualificacao - baseline.taxa_qualificacao_meta).toFixed(2)}pp`, cor: cores.qualificacao },
+      { metrica: 'Conversao', atual: `${dados.taxa_conversao_final}%`, baseline_val: `${baseline.taxa_conversao_meta}%`, diferenca: `${(dados.taxa_conversao_final - baseline.taxa_conversao_meta).toFixed(2)}pp`, cor: cores.conversao },
+      { metrica: 'CAC', atual: `R$${dados.cac}`, baseline_val: `R$${baseline.cac_meta}`, diferenca: `+R$${(dados.cac - baseline.cac_meta).toFixed(2)}`, cor: cores.cac },
+    ]
 
     return NextResponse.json({
-      kpis,
-      leads_14d: leads14d,
-      campanhas: campanhas || [
-        { id: 1, nome: 'Implantes SP - Abril', canal: 'Meta', leads: 128, cpl: 35.20, investimento: 4500, status: 'ativa' },
-        { id: 2, nome: 'Protocolo Google - SP', canal: 'Google', leads: 95, cpl: 42.10, investimento: 4000, status: 'ativa' },
-        { id: 3, nome: 'Estética Orgânico', canal: 'Organico', leads: 45, cpl: 0, investimento: 0, status: 'ativa' },
-        { id: 4, nome: 'Indicação Pacientes', canal: 'Indicacao', leads: 32, cpl: 0, investimento: 0, status: 'ativa' },
-        { id: 5, nome: 'Reativação Lista Fria', canal: 'Lista Fria', leads: 18, cpl: 28.50, investimento: 513, status: 'pausada' },
-      ],
-      alertas,
+      success: true,
+      dados,
+      baseline,
+      cores,
+      gargalos,
+      impacto,
+      resumo,
+      comparativo,
+      metas: metasRows || [],
+      sdr_performance: sdrRows || [],
+      tarefas: tarefasRows || [],
+      testes_marketing: testesRows || [],
+      prioridade_do_dia: prioridadeDoDia,
+      simulacoes,
+      projecao_mes: {
+        faturamento_projetado: faturamentoProjetado,
+        vendas_projetadas: vendasProjetadas,
+        meta_atingida: faturamentoProjetado >= 106000 ? 'super' : faturamentoProjetado >= 90000 ? 'normal' : faturamentoProjetado >= 74000 ? 'minima' : 'abaixo',
+        dias_restantes: diasRestantes,
+        falta_para_meta_normal: Math.max(0, metaNormalFat - dados.faturamento),
+        vendas_necessarias: Math.max(0, Math.ceil((metaNormalFat - dados.faturamento) / baseline.ticket_medio)),
+        vendas_por_dia: Number((Math.ceil((metaNormalFat - dados.faturamento) / baseline.ticket_medio) / Math.max(1, diasRestantes)).toFixed(1)),
+      },
     })
-  } catch (error) {
-    console.error('Erro API tráfego:', error)
-    return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e)
+    return NextResponse.json({ success: false, error: msg }, { status: 500 })
+  }
+}
+
+function gerarAcoesPrioridade(etapa: string): string[] {
+  const map: Record<string, string[]> = {
+    agendamento: ['Auditar tempo de resposta dos SDRs', 'Ativar auto-resposta <5min', 'Implementar follow-up 1h+24h+48h', 'Revisar script de agendamento'],
+    comparecimento: ['Ativar confirmacao 48h+24h+2h', 'Reduzir janela para max 3 dias', 'Ligar para confirmar 1 dia antes'],
+    cac: ['Pausar campanhas com CPL >2x meta', 'Focar orcamento nos canais baratos', 'Otimizar conversao de cada etapa'],
+    conversao: ['Revisar script de vendas', 'Treinar closers em objecoes', 'Oferecer condicao especial'],
+  }
+  return map[etapa] || ['Analisar dados e definir plano de acao']
+}
+
+function calcularSimulacao(dados: DadosFunil, baseline: Baseline, etapa: string, novoValor: number) {
+  let agend = dados.agendamentos
+  let reun = dados.reunioes_realizadas
+  let fech = dados.fechamentos
+
+  if (etapa === 'agendamento') {
+    agend = Math.round(dados.leads * (novoValor / 100))
+    reun = Math.round(agend * (dados.taxa_comparecimento / 100))
+    fech = Math.round(reun * (dados.taxa_conversao_final / 100))
+  } else if (etapa === 'comparecimento') {
+    reun = Math.round(dados.agendamentos * (novoValor / 100))
+    fech = Math.round(reun * (dados.taxa_conversao_final / 100))
+  }
+
+  const novoFaturamento = fech * baseline.ticket_medio
+  const ganho = novoFaturamento - dados.faturamento
+  const novoCac = dados.investimento > 0 && fech > 0 ? Number((dados.investimento / fech).toFixed(2)) : 0
+
+  return {
+    cenario: `${etapa} em ${novoValor}%`,
+    agendamentos: agend,
+    reunioes: reun,
+    fechamentos: fech,
+    faturamento: novoFaturamento,
+    ganho,
+    cac: novoCac,
   }
 }

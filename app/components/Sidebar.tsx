@@ -13,6 +13,7 @@ const sections = [
       { href: '/comercial', icon: '⚙️', label: 'Comercial' },
       { href: '/trafego', icon: '📣', label: 'Trafego' },
       { href: '/sdr', icon: '📞', label: 'SDR' },
+      { href: '/crm-whatsapp', icon: '💬', label: 'CRM WhatsApp' },
       { href: '/cs', icon: '🎯', label: 'CS' },
     ],
   },
@@ -31,6 +32,7 @@ const sections = [
     label: 'IA',
     items: [
       { href: '/ia/supervisor', icon: '🧠', label: 'Supervisor IA' },
+      { href: '/ia/reactions', icon: '⚡', label: 'Event Reactions' },
     ],
   },
   {
@@ -38,6 +40,7 @@ const sections = [
     items: [
       { href: '/dashboard', icon: '📊', label: 'Visao Geral' },
       { href: '/observabilidade', icon: '🔭', label: 'Observabilidade' },
+      { href: '/base', icon: '📋', label: 'Base do Projeto' },
     ],
   },
 ]
