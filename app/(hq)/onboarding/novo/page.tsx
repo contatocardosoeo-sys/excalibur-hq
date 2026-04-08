@@ -17,7 +17,8 @@ export default function NovoOnboarding() {
   const [whatsapp, setWhatsapp] = useState('')
   const [cidade, setCidade] = useState('')
   const [estado, setEstado] = useState('')
-  const [foco, setFoco] = useState('Prótese / Implantes / Protocolo')
+  const [focos, setFocos] = useState<string[]>(['Prótese / Implantes / Protocolo'])
+  const [focosOutros, setFocosOutros] = useState('')
   const [plano, setPlano] = useState('Pacote Completo')
   const [valorContrato, setValorContrato] = useState('')
   const [dataInicio, setDataInicio] = useState(new Date().toISOString().split('T')[0])
@@ -48,7 +49,9 @@ export default function NovoOnboarding() {
       const res = await fetch('/api/onboarding/criar', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          nome, cnpj, responsavel, email, whatsapp, cidade, estado, foco, plano,
+          nome, cnpj, responsavel, email, whatsapp, cidade, estado,
+          foco: focos.includes('Outros') && focosOutros ? [...focos.filter(f => f !== 'Outros'), focosOutros].join(', ') : focos.join(', '),
+          plano,
           valor_contrato: Number(valorContrato) || 0, data_inicio: dataInicio,
           num_crc: temCrc ? Number(numCrc) : 0, num_recepcao: temRec ? Number(numRec) : 0,
           num_avaliador: temAval ? Number(numAval) : 0, num_orcamentista: temOrc ? Number(numOrc) : 0,
@@ -155,20 +158,38 @@ export default function NovoOnboarding() {
                   <div><label style={S.label}>Estado</label><select value={estado} onChange={e => setEstado(e.target.value)} style={S.input}><option value="">-</option>{ESTADOS.map(u => <option key={u}>{u}</option>)}</select></div>
                 </div>
               </div>
-              <div style={S.g3}>
-                <div>
-                  <label style={S.label}>Foco principal</label>
-                  <select value={foco} onChange={e => setFoco(e.target.value)} style={S.input}>
-                    <option>Prótese / Implantes / Protocolo</option>
-                    <option>Lentes de contato</option>
-                    <option>Estética</option>
-                  </select>
+              {/* Foco principal — multi-seleção */}
+              <div>
+                <label style={{ display: 'block', fontSize: 11, color: '#6b7280', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Foco principal * <span style={{ color: '#4b5563', fontWeight: 400, textTransform: 'none' }}>(pode marcar mais de um)</span>
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+                  {['Prótese / Implantes / Protocolo', 'Lentes de contato', 'Estética', 'Outros'].map(opcao => {
+                    const marcado = focos.includes(opcao)
+                    return (
+                      <button key={opcao} type="button" onClick={() => setFocos(prev => prev.includes(opcao) ? prev.filter(f => f !== opcao) : [...prev, opcao])}
+                        style={{ background: marcado ? '#f59e0b10' : '#13131f', border: `1px solid ${marcado ? '#f59e0b' : '#252535'}`, borderRadius: 8, padding: '10px 14px', color: marcado ? '#f59e0b' : '#9ca3af', fontSize: 13, fontWeight: marcado ? 600 : 400, cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8, transition: 'all 0.15s' }}>
+                        <span style={{ width: 16, height: 16, borderRadius: 4, border: `2px solid ${marcado ? '#f59e0b' : '#374151'}`, background: marcado ? '#f59e0b' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 10, color: '#000' }}>
+                          {marcado && '✓'}
+                        </span>
+                        {opcao}
+                      </button>
+                    )
+                  })}
                 </div>
+                {focos.includes('Outros') && (
+                  <input type="text" placeholder="Descreva o foco..." value={focosOutros} onChange={e => setFocosOutros(e.target.value)}
+                    style={{ marginTop: 8, width: '100%', background: '#09090f', border: '1px solid #f59e0b', color: '#fff', borderRadius: 8, padding: '8px 12px', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
+                )}
+              </div>
+
+              <div style={S.g2}>
                 <div>
                   <label style={S.label}>Plano contratado</label>
                   <select value={plano} onChange={e => setPlano(e.target.value)} style={S.input}>
                     <option>Pacote Completo</option>
                     <option>Somente Financeira</option>
+                    <option>Marketing</option>
                   </select>
                 </div>
                 <div><label style={S.label}>Valor contrato (R$)</label><input type="number" value={valorContrato} onChange={e => setValorContrato(e.target.value)} style={S.input} placeholder="1500" /></div>
