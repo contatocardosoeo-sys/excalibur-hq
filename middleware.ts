@@ -2,14 +2,15 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-const ROTAS_CS = ['/dashboard', '/cs', '/clientes', '/jornada', '/adocao', '/alertas', '/onboarding', '/crm-whatsapp']
+const ROTAS_CS = ['/cs', '/clientes', '/jornada', '/adocao', '/alertas', '/onboarding', '/crm-whatsapp', '/dashboard']
 const ROTAS_PUBLICAS = ['/', '/login']
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  if (ROTAS_PUBLICAS.some(r => pathname === r)) return NextResponse.next()
-  if (pathname.startsWith('/api/')) return NextResponse.next()
+  // API e rotas públicas passam direto
+  if (pathname.startsWith('/api')) return NextResponse.next()
+  if (ROTAS_PUBLICAS.includes(pathname)) return NextResponse.next()
 
   let response = NextResponse.next({ request: { headers: request.headers } })
 
@@ -22,9 +23,11 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
+          cookiesToSet.forEach(({ name, value }) => {
             request.cookies.set(name, value)
-            response = NextResponse.next({ request: { headers: request.headers } })
+          })
+          response = NextResponse.next({ request: { headers: request.headers } })
+          cookiesToSet.forEach(({ name, value, options }) => {
             response.cookies.set(name, value, options)
           })
         },
@@ -34,10 +37,12 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
+  // Sem sessão → login
   if (!user) {
     return NextResponse.redirect(new URL('/', request.url))
   }
 
+  // Buscar role
   const { data: interno } = await supabase
     .from('usuarios_internos')
     .select('role, ativo')
@@ -48,12 +53,14 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/', request.url))
   }
 
+  // Admin passa em tudo
   if (interno.role === 'admin') return response
 
+  // CS — só rotas permitidas
   if (interno.role === 'cs') {
-    const permitida = ROTAS_CS.some(r => pathname.startsWith(r))
+    const permitida = ROTAS_CS.some(r => pathname === r || pathname.startsWith(r + '/'))
     if (!permitida) {
-      return NextResponse.redirect(new URL('/dashboard', request.url))
+      return NextResponse.redirect(new URL('/cs', request.url))
     }
   }
 
@@ -61,5 +68,7 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|.*\\..*|api).*)',
+  ],
 }

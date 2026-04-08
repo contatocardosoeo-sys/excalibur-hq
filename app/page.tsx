@@ -1,9 +1,11 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { supabase } from './lib/supabase'
 
 export default function LoginHQ() {
+  const router = useRouter()
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
   const [erro, setErro] = useState('')
@@ -13,13 +15,29 @@ export default function LoginHQ() {
     e.preventDefault()
     setLoading(true)
     setErro('')
-    const { error } = await supabase.auth.signInWithPassword({ email, password: senha })
+
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password: senha })
+
     if (error) {
-      setErro(error.message)
+      setErro('Email ou senha incorretos')
       setLoading(false)
       return
     }
-    window.location.href = '/dashboard'
+
+    // Buscar role do usuário
+    const { data: interno } = await supabase
+      .from('usuarios_internos')
+      .select('role')
+      .eq('email', data.user.email)
+      .single()
+
+    const role = interno?.role || 'cs'
+
+    if (role === 'cs') {
+      router.push('/cs')
+    } else {
+      router.push('/dashboard')
+    }
   }
 
   return (
