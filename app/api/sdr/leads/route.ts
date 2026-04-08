@@ -3,25 +3,42 @@ import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
-export async function GET() {
-  const { data: leads } = await supabase.from('leads_sdr').select('*').order('created_at', { ascending: false })
+export async function GET(req: NextRequest) {
+  const email = req.nextUrl.searchParams.get('email') || 'trindade.excalibur@gmail.com'
+  const now = new Date()
+  const mes = now.getMonth() + 1
+  const ano = now.getFullYear()
 
-  const hoje = new Date().toISOString().split('T')[0]
-  const leadsHoje = (leads || []).filter(l => l.created_at?.startsWith(hoje)).length
-  const contatosHoje = (leads || []).filter(l => l.status !== 'prospeccao' && l.data_contato === hoje).length
-  const agendamentosHoje = (leads || []).filter(l => l.status === 'agendado' && l.data_reuniao === hoje).length
-  const total = (leads || []).length
-  const convertidos = (leads || []).filter(l => l.status === 'convertido' || l.status === 'reuniao_feita').length
+  const [{ data: leads }, { data: metas }] = await Promise.all([
+    supabase.from('leads_sdr').select('*').order('created_at', { ascending: false }),
+    supabase.from('metas_sdr').select('*').eq('sdr_email', email).eq('mes', mes).eq('ano', ano).single(),
+  ])
+
+  const all = leads || []
+  const hoje = now.toISOString().split('T')[0]
+  const totalLeads = all.length
+  const contatosHoje = all.filter(l => l.status !== 'prospeccao' && l.data_contato === hoje).length
+  const agendamentos = all.filter(l => l.status === 'agendado' || l.status === 'reuniao_feita' || l.status === 'convertido').length
+  const reunioes = all.filter(l => l.status === 'reuniao_feita' || l.status === 'convertido').length
+  const conversoes = all.filter(l => l.status === 'convertido').length
+  const taxaConversao = totalLeads > 0 ? Math.round((conversoes / totalLeads) * 100) : 0
 
   return NextResponse.json({
-    leads: leads || [],
-    kpis: { leadsHoje, contatosHoje, agendamentosHoje, taxaConversao: total > 0 ? Math.round((convertidos / total) * 100) : 0 },
+    leads: all,
+    kpis: { totalLeads, contatosHoje, agendamentos, taxaConversao },
+    metas: metas ? {
+      leads: { atual: totalLeads, meta: metas.meta_leads },
+      reunioes: { atual: reunioes, meta: metas.meta_reunioes },
+      conversoes: { atual: conversoes, meta: metas.meta_conversoes },
+    } : null,
   })
 }
 
 export async function POST(req: NextRequest) {
   const body = await req.json()
-  const { data, error } = await supabase.from('leads_sdr').insert(body).select().single()
+  const { data, error } = await supabase.from('leads_sdr').insert({
+    ...body, data_contato: body.data_contato || new Date().toISOString().split('T')[0],
+  }).select().single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ success: true, data })
 }
