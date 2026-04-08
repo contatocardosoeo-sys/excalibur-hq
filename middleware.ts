@@ -1,15 +1,60 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-const ROTAS_CS = ['/cs', '/clientes', '/jornada', '/adocao', '/alertas', '/onboarding', '/crm-whatsapp', '/dashboard']
+// Mapeamento de rotas por roles permitidos
+const ROUTE_ROLES: Record<string, string[]> = {
+  '/cs': ['admin', 'cs'],
+  '/clientes': ['admin', 'cs'],
+  '/jornada': ['admin', 'cs'],
+  '/alertas': ['admin', 'cs'],
+  '/adocao': ['admin', 'cs'],
+  '/onboarding': ['admin', 'cs'],
+  '/crm-whatsapp': ['admin', 'cs'],
+  '/dashboard': ['admin', 'cs', 'closer', 'cmo', 'sdr'],
+  '/sdr': ['admin', 'sdr'],
+  '/comercial': ['admin', 'closer'],
+  '/trafego': ['admin', 'cmo'],
+  '/planos': ['admin'],
+  '/financeiro': ['admin', 'financeiro'],
+  '/admin': ['admin'],
+  '/ceo': ['admin'],
+  '/coo': ['admin'],
+  '/pipeline': ['admin', 'cs'],
+  '/observabilidade': ['admin'],
+  '/base': ['admin'],
+  '/ia': ['admin'],
+  '/automacoes': ['admin'],
+}
+
+// Rota padrão por role (onde redirecionar se não tem acesso)
+const DEFAULT_ROUTE: Record<string, string> = {
+  admin: '/dashboard',
+  cs: '/cs',
+  sdr: '/sdr',
+  closer: '/comercial',
+  cmo: '/trafego',
+  financeiro: '/financeiro',
+}
+
+function getUserRoles(interno: { role: string; roles?: string[] | null }): string[] {
+  if (interno.roles && interno.roles.length > 0) return interno.roles
+  return [interno.role]
+}
+
+function hasAccess(userRoles: string[], pathname: string): boolean {
+  // Achar a rota mais específica que match
+  const matchedRoute = Object.keys(ROUTE_ROLES)
+    .filter(r => pathname === r || pathname.startsWith(r + '/'))
+    .sort((a, b) => b.length - a.length)[0]
+
+  if (!matchedRoute) return true // Rota não mapeada = livre
+  return ROUTE_ROLES[matchedRoute].some(r => userRoles.includes(r))
+}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Raiz e login passam sempre
-  if (pathname === '/' || pathname === '/login') {
-    return NextResponse.next()
-  }
+  if (pathname === '/' || pathname === '/login') return NextResponse.next()
 
   let supabaseResponse = NextResponse.next({ request })
 
@@ -18,23 +63,16 @@ export async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
+        getAll() { return request.cookies.getAll() },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          )
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           supabaseResponse = NextResponse.next({ request })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
+          cookiesToSet.forEach(({ name, value, options }) => supabaseResponse.cookies.set(name, value, options))
         },
       },
     }
   )
 
-  // IMPORTANTE: getUser() atualiza o cookie de sessão
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
@@ -43,10 +81,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Buscar role
   const { data: interno } = await supabase
     .from('usuarios_internos')
-    .select('role, ativo')
+    .select('role, roles, ativo')
     .eq('email', user.email)
     .single()
 
@@ -56,24 +93,17 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Admin passa em tudo
-  if (interno.role === 'admin') return supabaseResponse
+  const userRoles = getUserRoles(interno)
 
-  // CS — só rotas permitidas
-  if (interno.role === 'cs') {
-    const permitida = ROTAS_CS.some(r => pathname === r || pathname.startsWith(r + '/'))
-    if (!permitida) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/cs'
-      return NextResponse.redirect(url)
-    }
-  }
+  if (hasAccess(userRoles, pathname)) return supabaseResponse
 
-  return supabaseResponse
+  // Sem acesso → redirecionar para rota padrão do primeiro role
+  const defaultRoute = DEFAULT_ROUTE[userRoles[0]] || '/dashboard'
+  const url = request.nextUrl.clone()
+  url.pathname = defaultRoute
+  return NextResponse.redirect(url)
 }
 
 export const config = {
-  matcher: [
-    '/((?!_next/static|_next/image|favicon\\.ico|.*\\..*|api).*)',
-  ],
+  matcher: ['/((?!_next/static|_next/image|favicon\\.ico|.*\\..*|api).*)'],
 }

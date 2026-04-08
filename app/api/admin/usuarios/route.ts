@@ -9,7 +9,7 @@ const supabase = createClient(
 export async function GET() {
   const { data, error } = await supabase
     .from('usuarios_internos')
-    .select('*')
+    .select('id, nome, email, role, roles, ativo, avatar_url, criado_por, created_at, updated_at')
     .order('created_at', { ascending: false })
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ data })

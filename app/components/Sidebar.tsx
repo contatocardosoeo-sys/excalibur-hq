@@ -5,80 +5,59 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 
-interface NavItem {
+interface MenuItem {
   href: string
   icon: string
   label: string
+  roles: string[]
 }
 
-interface NavSection {
+interface MenuSection {
   label: string
-  items: NavItem[]
+  items: MenuItem[]
 }
 
-const allSections: NavSection[] = [
+const allSections: MenuSection[] = [
   {
     label: 'Dashboards',
     items: [
-      { href: '/ceo', icon: '👑', label: 'CEO' },
-      { href: '/coo', icon: '🧠', label: 'COO' },
-      { href: '/financeiro', icon: '💰', label: 'Financeiro' },
-      { href: '/comercial', icon: '⚙️', label: 'Comercial' },
-      { href: '/trafego', icon: '📣', label: 'Trafego' },
-      { href: '/sdr', icon: '📞', label: 'SDR' },
-      { href: '/crm-whatsapp', icon: '💬', label: 'CRM WhatsApp' },
-      { href: '/cs', icon: '🎯', label: 'CS' },
+      { href: '/ceo', icon: '👑', label: 'CEO', roles: ['admin'] },
+      { href: '/coo', icon: '🧠', label: 'COO', roles: ['admin'] },
+      { href: '/financeiro', icon: '💰', label: 'Financeiro', roles: ['admin', 'financeiro'] },
+      { href: '/comercial', icon: '💼', label: 'Comercial', roles: ['admin', 'closer'] },
+      { href: '/trafego', icon: '📣', label: 'Trafego', roles: ['admin', 'cmo'] },
+      { href: '/sdr', icon: '📞', label: 'SDR', roles: ['admin', 'sdr'] },
+      { href: '/crm-whatsapp', icon: '💬', label: 'CRM WhatsApp', roles: ['admin', 'cs'] },
+      { href: '/cs', icon: '🎯', label: 'CS', roles: ['admin', 'cs'] },
     ],
   },
   {
     label: 'Operacao',
     items: [
-      { href: '/onboarding', icon: '🚀', label: 'Novo Cliente' },
-      { href: '/pipeline', icon: '🔁', label: 'Pipeline D0-D90' },
-      { href: '/clientes', icon: '👥', label: 'Clientes' },
-      { href: '/jornada', icon: '📈', label: 'Jornada D0-D90' },
-      { href: '/planos', icon: '💳', label: 'Planos & Cobranca' },
-      { href: '/alertas', icon: '🚨', label: 'Alertas' },
-      { href: '/automacoes', icon: '⚡', label: 'Automacoes' },
-    ],
-  },
-  {
-    label: 'IA',
-    items: [
-      { href: '/ia/supervisor', icon: '🧠', label: 'Supervisor IA' },
-      { href: '/ia/reactions', icon: '⚡', label: 'Event Reactions' },
+      { href: '/onboarding', icon: '🚀', label: 'Novo Cliente', roles: ['admin', 'cs'] },
+      { href: '/clientes', icon: '👥', label: 'Clientes', roles: ['admin', 'cs'] },
+      { href: '/jornada', icon: '📈', label: 'Jornada D0-D90', roles: ['admin', 'cs'] },
+      { href: '/planos', icon: '💳', label: 'Planos & Cobranca', roles: ['admin'] },
+      { href: '/alertas', icon: '🚨', label: 'Alertas', roles: ['admin', 'cs'] },
     ],
   },
   {
     label: 'Sistema',
     items: [
-      { href: '/dashboard', icon: '📊', label: 'Visao Geral' },
-      { href: '/observabilidade', icon: '🔭', label: 'Observabilidade' },
-      { href: '/base', icon: '📋', label: 'Base do Projeto' },
-      { href: '/admin/usuarios', icon: '🔐', label: 'Colaboradores' },
+      { href: '/dashboard', icon: '📊', label: 'Visao Geral', roles: ['admin', 'cs', 'closer', 'cmo', 'sdr'] },
+      { href: '/admin/usuarios', icon: '🔐', label: 'Colaboradores', roles: ['admin'] },
     ],
   },
 ]
 
-const CS_ROUTES = ['/dashboard', '/cs', '/clientes', '/jornada', '/adocao', '/alertas', '/onboarding', '/crm-whatsapp']
-
-function filterSections(role: string): NavSection[] {
-  if (role === 'admin') return allSections
-  if (role === 'cs') {
-    return allSections
-      .map(s => ({
-        ...s,
-        items: s.items.filter(i => CS_ROUTES.some(r => i.href === r || i.href.startsWith(r + '/'))),
-      }))
-      .filter(s => s.items.length > 0)
-  }
-  return allSections
+function hasAnyRole(userRoles: string[], itemRoles: string[]): boolean {
+  return itemRoles.some(r => userRoles.includes(r))
 }
 
 export default function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
-  const [role, setRole] = useState('admin')
+  const [userRoles, setUserRoles] = useState<string[]>(['admin'])
   const [nome, setNome] = useState('')
 
   useEffect(() => {
@@ -87,23 +66,28 @@ export default function Sidebar() {
       if (user) {
         const { data: interno } = await supabase
           .from('usuarios_internos')
-          .select('role, nome')
+          .select('role, roles, nome')
           .eq('email', user.email)
           .single()
         if (interno) {
-          setRole(interno.role)
+          const roles = (interno.roles && interno.roles.length > 0) ? interno.roles : [interno.role]
+          setUserRoles(roles)
           setNome(interno.nome)
         }
       }
     })()
   }, [])
 
-  const sections = filterSections(role)
+  const filteredSections = allSections
+    .map(s => ({ ...s, items: s.items.filter(i => hasAnyRole(userRoles, i.roles)) }))
+    .filter(s => s.items.length > 0)
 
   const logout = async () => {
     await supabase.auth.signOut()
     router.push('/')
   }
+
+  const roleDisplay = userRoles.map(r => r.toUpperCase()).join(' + ')
 
   return (
     <div className="w-56 bg-gray-900 border-r border-gray-800 flex flex-col shrink-0" style={{ minHeight: '100vh' }}>
@@ -112,13 +96,13 @@ export default function Sidebar() {
         <p className="text-gray-500 text-[10px] mt-0.5">Sistema Operacional</p>
       </div>
       <nav className="p-3 flex flex-col gap-0.5 flex-1 overflow-auto">
-        {sections.map((section) => (
+        {filteredSections.map((section) => (
           <div key={section.label} className="mb-3">
             <p className="text-[9px] uppercase tracking-widest text-gray-600 font-semibold px-2 mb-1">{section.label}</p>
             {section.items.map(({ href, icon, label }) => (
               <Link key={href} href={href}
                 className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs transition ${
-                  pathname === href ? 'bg-amber-500 text-gray-950 font-semibold' : 'text-gray-400 hover:bg-gray-800'
+                  pathname === href || pathname.startsWith(href + '/') ? 'bg-amber-500 text-gray-950 font-semibold' : 'text-gray-400 hover:bg-gray-800'
                 }`}>
                 <span className="text-sm">{icon}</span> {label}
               </Link>
@@ -134,14 +118,14 @@ export default function Sidebar() {
             </div>
             <div>
               <p className="text-gray-300 text-[11px] font-medium leading-none">{nome.split(' ')[0]}</p>
-              <p className="text-gray-600 text-[9px]">{role.toUpperCase()}</p>
+              <p className="text-gray-600 text-[9px]">{roleDisplay}</p>
             </div>
           </div>
         )}
         <button onClick={logout} className="text-gray-500 hover:text-red-400 text-[10px] transition w-full text-left">
           Sair
         </button>
-        <p className="text-gray-700 text-[9px] mt-1">Excalibur HQ v1.1</p>
+        <p className="text-gray-700 text-[9px] mt-1">Excalibur HQ v1.2</p>
       </div>
     </div>
   )
