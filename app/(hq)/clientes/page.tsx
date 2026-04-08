@@ -1,50 +1,23 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
+import { supabase } from '../../lib/supabase'
 import Sidebar from '../../components/Sidebar'
 import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
-import React from 'react'
 
-interface Problema {
-  texto: string
-  nivel: 'critica' | 'alta' | 'media' | 'ok'
-}
-
-interface ClienteHQ {
+interface ClienteCompleto {
   id: string
   nome: string
-  fase: string
-  subfase: string
-  score_total: number
-  dias_na_etapa: number
-  sla_estourado: boolean
+  etapa: string
+  dias_na_plataforma: number
+  score: number
+  classificacao: string
+  alertas_ativos: number
+  faturamento_mes: number
   cs_responsavel: string
-  ultimo_contato: string
-  status: string
-  problema: Problema
-  proxima_acao: string
-}
-
-const FASE_BADGE: Record<string, string> = {
-  onboarding: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
-  adocao: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
-  escala: 'bg-green-500/20 text-green-400 border-green-500/30',
-}
-
-const PROBLEMA_COR: Record<string, string> = {
-  critica: 'text-red-400',
-  alta: 'text-orange-400',
-  media: 'text-yellow-400',
-  ok: 'text-green-400',
 }
 
 function getInitials(nome: string): string {
@@ -52,34 +25,98 @@ function getInitials(nome: string): string {
 }
 
 function getScoreColor(score: number): string {
+  if (score >= 80) return 'text-green-400'
+  if (score >= 60) return 'text-amber-400'
+  return 'text-red-400'
+}
+
+function getScoreBg(score: number): string {
   if (score >= 80) return 'bg-green-500'
-  if (score >= 60) return 'bg-yellow-500'
+  if (score >= 60) return 'bg-amber-500'
   return 'bg-red-500'
 }
 
+function fmt(v: number) { return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v) }
+
+function getWeekString(date: Date): string {
+  const d = new Date(date)
+  d.setHours(0, 0, 0, 0)
+  d.setDate(d.getDate() + 3 - (d.getDay() + 6) % 7)
+  const week1 = new Date(d.getFullYear(), 0, 4)
+  const weekNum = 1 + Math.round(((d.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7)
+  return `${d.getFullYear()}-W${weekNum.toString().padStart(2, '0')}`
+}
+
 export default function ClientesPage() {
-  const [clientes, setClientes] = useState<ClienteHQ[]>([])
+  const [clientes, setClientes] = useState<ClienteCompleto[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [faseFilter, setFaseFilter] = useState('')
-  const [csFilter, setCsFilter] = useState('')
+  const [scoreFilter, setScoreFilter] = useState('')
 
-  useEffect(() => {
-    const params = new URLSearchParams()
-    if (faseFilter) params.set('fase', faseFilter)
-    if (csFilter) params.set('cs', csFilter)
+  const load = useCallback(async () => {
+    setLoading(true)
+    const inicioMes = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]
+    const semana = getWeekString(new Date())
 
-    fetch(`/api/hq/clientes?${params.toString()}`)
-      .then(r => r.json())
-      .then(data => { setClientes(data.clientes || []); setLoading(false) })
-      .catch(() => setLoading(false))
-  }, [faseFilter, csFilter])
+    const [clinicasRes, jornadaRes, adocaoRes, alertasRes, funilRes] = await Promise.all([
+      supabase.from('clinicas').select('id, nome'),
+      supabase.from('jornada_clinica').select('clinica_id, etapa, dias_na_plataforma, cs_responsavel'),
+      supabase.from('adocao_clinica').select('clinica_id, score, classificacao').eq('semana', semana),
+      supabase.from('alertas_clinica').select('clinica_id').eq('resolvido', false),
+      supabase.from('funil_diario').select('clinica_id, faturamento').gte('data', inicioMes),
+    ])
 
-  const csOptions = [...new Set(clientes.map(c => c.cs_responsavel).filter(Boolean))]
+    const clinicasList = clinicasRes.data || []
+    const jornadaData = jornadaRes.data || []
+    const adocaoData = adocaoRes.data || []
+    const alertasData = alertasRes.data || []
+    const funilData = funilRes.data || []
 
-  const filtered = clientes.filter(c =>
-    c.nome.toLowerCase().includes(search.toLowerCase())
-  )
+    const result: ClienteCompleto[] = clinicasList.map(c => {
+      const jornada = jornadaData.find(j => j.clinica_id === c.id)
+      const adocao = adocaoData.find(a => a.clinica_id === c.id)
+      const alertasCount = alertasData.filter(a => a.clinica_id === c.id).length
+      const fat = funilData.filter(f => f.clinica_id === c.id).reduce((s, d) => s + Number(d.faturamento || 0), 0)
+
+      return {
+        id: c.id,
+        nome: c.nome,
+        etapa: jornada?.etapa ?? 'N/A',
+        dias_na_plataforma: jornada?.dias_na_plataforma ?? 0,
+        score: adocao?.score ?? 0,
+        classificacao: adocao?.classificacao ?? 'RISCO',
+        alertas_ativos: alertasCount,
+        faturamento_mes: fat,
+        cs_responsavel: jornada?.cs_responsavel ?? '-',
+      }
+    })
+
+    // Ordenar: risco primeiro, depois atencao, depois saudavel
+    result.sort((a, b) => {
+      if (a.score < 60 && b.score >= 60) return -1
+      if (b.score < 60 && a.score >= 60) return 1
+      if (a.alertas_ativos > b.alertas_ativos) return -1
+      if (b.alertas_ativos > a.alertas_ativos) return 1
+      return a.score - b.score
+    })
+
+    setClientes(result)
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  const filtered = clientes.filter(c => {
+    if (search && !c.nome.toLowerCase().includes(search.toLowerCase())) return false
+    if (scoreFilter === 'saudavel' && c.score < 80) return false
+    if (scoreFilter === 'atencao' && (c.score < 60 || c.score >= 80)) return false
+    if (scoreFilter === 'risco' && c.score >= 60) return false
+    return true
+  })
+
+  const totalSaudavel = clientes.filter(c => c.score >= 80).length
+  const totalAtencao = clientes.filter(c => c.score >= 60 && c.score < 80).length
+  const totalRisco = clientes.filter(c => c.score < 60).length
 
   return (
     <div className="min-h-screen bg-gray-950 flex">
@@ -88,11 +125,31 @@ export default function ClientesPage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-white text-2xl font-bold">Clientes</h1>
-            <p className="text-gray-400 text-sm mt-1">{filtered.length} clientes encontrados</p>
+            <p className="text-gray-400 text-sm mt-1">Visao de todas as clinicas com dados reais</p>
           </div>
         </div>
 
-        {/* Filters */}
+        {/* KPIs rapidos */}
+        <div className="grid grid-cols-4 gap-4 mb-6">
+          <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-center">
+            <p className="text-gray-500 text-[10px] uppercase">Total Ativas</p>
+            <p className="text-white text-2xl font-bold">{clientes.length}</p>
+          </div>
+          <div className="bg-gray-900 border border-green-900/30 rounded-xl p-4 text-center cursor-pointer" onClick={() => setScoreFilter(scoreFilter === 'saudavel' ? '' : 'saudavel')}>
+            <p className="text-gray-500 text-[10px] uppercase">Saudaveis (≥80)</p>
+            <p className="text-green-400 text-2xl font-bold">{totalSaudavel}</p>
+          </div>
+          <div className="bg-gray-900 border border-amber-900/30 rounded-xl p-4 text-center cursor-pointer" onClick={() => setScoreFilter(scoreFilter === 'atencao' ? '' : 'atencao')}>
+            <p className="text-gray-500 text-[10px] uppercase">Atencao (60-79)</p>
+            <p className="text-amber-400 text-2xl font-bold">{totalAtencao}</p>
+          </div>
+          <div className="bg-gray-900 border border-red-900/30 rounded-xl p-4 text-center cursor-pointer" onClick={() => setScoreFilter(scoreFilter === 'risco' ? '' : 'risco')}>
+            <p className="text-gray-500 text-[10px] uppercase">Risco (&lt;60)</p>
+            <p className="text-red-400 text-2xl font-bold">{totalRisco}</p>
+          </div>
+        </div>
+
+        {/* Filtros */}
         <div className="flex gap-3 mb-6">
           <input
             type="text"
@@ -101,26 +158,11 @@ export default function ClientesPage() {
             onChange={e => setSearch(e.target.value)}
             className="bg-gray-900 border border-gray-800 rounded-xl px-4 py-2 text-white text-sm placeholder:text-gray-600 focus:outline-none focus:border-amber-500/50 w-64"
           />
-          <select
-            value={faseFilter}
-            onChange={e => setFaseFilter(e.target.value)}
-            className="bg-gray-900 border border-gray-800 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-amber-500/50"
-          >
-            <option value="">Todas as fases</option>
-            <option value="onboarding">Onboarding</option>
-            <option value="adocao">Adocao</option>
-            <option value="escala">Escala</option>
-          </select>
-          <select
-            value={csFilter}
-            onChange={e => setCsFilter(e.target.value)}
-            className="bg-gray-900 border border-gray-800 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-amber-500/50"
-          >
-            <option value="">Todos os CS</option>
-            {csOptions.map(cs => (
-              <option key={cs} value={cs}>{cs}</option>
-            ))}
-          </select>
+          {scoreFilter && (
+            <button onClick={() => setScoreFilter('')} className="text-gray-400 text-xs border border-gray-700 rounded-lg px-3 py-1 hover:border-amber-500/30">
+              Limpar filtro: {scoreFilter}
+            </button>
+          )}
         </div>
 
         {loading ? (
@@ -133,65 +175,60 @@ export default function ClientesPage() {
               <TableHeader>
                 <TableRow className="border-gray-800 hover:bg-transparent">
                   <TableHead className="text-gray-400 text-xs">Nome</TableHead>
-                  <TableHead className="text-gray-400 text-xs">Fase</TableHead>
-                  <TableHead className="text-gray-400 text-xs">Score</TableHead>
+                  <TableHead className="text-gray-400 text-xs">Etapa D0-D90</TableHead>
+                  <TableHead className="text-gray-400 text-xs">Dias</TableHead>
+                  <TableHead className="text-gray-400 text-xs">Health Score</TableHead>
+                  <TableHead className="text-gray-400 text-xs">Alertas</TableHead>
+                  <TableHead className="text-gray-400 text-xs">Faturamento Mes</TableHead>
                   <TableHead className="text-gray-400 text-xs">CS</TableHead>
-                  <TableHead className="text-gray-400 text-xs">Ultimo Contato</TableHead>
-                  <TableHead className="text-gray-400 text-xs">Proxima Acao</TableHead>
-                  <TableHead className="text-gray-400 text-xs">Problema</TableHead>
-                  <TableHead className="text-gray-400 text-xs">Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map(cliente => (
-                  <TableRow key={cliente.id} className="border-gray-800 hover:bg-gray-800/50 transition">
+                {filtered.map(c => (
+                  <TableRow key={c.id} className="border-gray-800 hover:bg-gray-800/50 transition">
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-[10px] font-bold text-amber-400">
-                          {getInitials(cliente.nome)}
+                          {getInitials(c.nome)}
                         </div>
-                        <span className="text-white text-sm font-medium">{cliente.nome}</span>
+                        <span className="text-white text-sm font-medium">{c.nome}</span>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge className={`${FASE_BADGE[cliente.fase] || FASE_BADGE.onboarding} text-[10px] px-2`}>
-                        {cliente.fase}
+                      <Badge className={`text-[10px] px-2 ${
+                        c.etapa.includes('D0') || c.etapa.includes('D1') || c.etapa.includes('D2') || c.etapa.includes('D3') || c.etapa.includes('D5')
+                          ? 'bg-purple-500/20 text-purple-400 border-purple-500/30'
+                          : c.etapa.includes('D7') || c.etapa.includes('D15')
+                          ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                          : c.etapa.includes('D30') || c.etapa.includes('D45') || c.etapa.includes('D60') || c.etapa.includes('D90')
+                          ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                          : c.etapa === 'RISCO' || c.etapa === 'CRITICO' || c.etapa === 'CHURN'
+                          ? 'bg-red-500/20 text-red-400 border-red-500/30'
+                          : 'bg-gray-500/20 text-gray-400 border-gray-500/30'
+                      }`}>
+                        {c.etapa.replace(/_/g, ' ')}
                       </Badge>
                     </TableCell>
+                    <TableCell className="text-gray-400 text-sm font-mono">{c.dias_na_plataforma}d</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <span className="text-white text-sm font-mono w-7">{cliente.score_total}</span>
+                        <span className={`text-sm font-bold font-mono w-7 ${getScoreColor(c.score)}`}>{c.score}</span>
                         <div className="w-16 h-1.5 bg-gray-800 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full ${getScoreColor(cliente.score_total)}`}
-                            style={{ width: `${cliente.score_total}%` }}
-                          />
+                          <div className={`h-full rounded-full ${getScoreBg(c.score)}`} style={{ width: `${c.score}%` }} />
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="text-gray-400 text-sm">{cliente.cs_responsavel}</TableCell>
-                    <TableCell className="text-gray-400 text-sm">
-                      {cliente.ultimo_contato
-                        ? new Date(cliente.ultimo_contato).toLocaleDateString('pt-BR')
-                        : '—'}
-                    </TableCell>
                     <TableCell>
-                      <span className="text-amber-400 text-xs">{cliente.proxima_acao}</span>
-                    </TableCell>
-                    <TableCell>
-                      <span className={`text-xs ${PROBLEMA_COR[cliente.problema.nivel] || 'text-gray-400'}`}>
-                        {cliente.problema.texto}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      {cliente.sla_estourado ? (
-                        <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-[10px]">SLA Estourado</Badge>
-                      ) : cliente.status === 'ativo' ? (
-                        <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-[10px]">Ativo</Badge>
+                      {c.alertas_ativos > 0 ? (
+                        <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-[10px]">
+                          {c.alertas_ativos} alerta{c.alertas_ativos > 1 ? 's' : ''}
+                        </Badge>
                       ) : (
-                        <Badge className="bg-gray-500/20 text-gray-400 border-gray-500/30 text-[10px]">{cliente.status || 'Inativo'}</Badge>
+                        <span className="text-green-400 text-[10px]">OK</span>
                       )}
                     </TableCell>
+                    <TableCell className="text-amber-400 text-sm font-mono">{fmt(c.faturamento_mes)}</TableCell>
+                    <TableCell className="text-gray-400 text-sm">{c.cs_responsavel}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
