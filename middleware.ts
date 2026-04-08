@@ -1,18 +1,17 @@
 import { createServerClient } from '@supabase/ssr'
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
 
 const ROTAS_CS = ['/cs', '/clientes', '/jornada', '/adocao', '/alertas', '/onboarding', '/crm-whatsapp', '/dashboard']
-const ROTAS_PUBLICAS = ['/', '/login']
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // API e rotas públicas passam direto
-  if (pathname.startsWith('/api')) return NextResponse.next()
-  if (ROTAS_PUBLICAS.includes(pathname)) return NextResponse.next()
+  // Raiz e login passam sempre
+  if (pathname === '/' || pathname === '/login') {
+    return NextResponse.next()
+  }
 
-  let response = NextResponse.next({ request: { headers: request.headers } })
+  let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -23,23 +22,25 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => {
+          cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
-          })
-          response = NextResponse.next({ request: { headers: request.headers } })
-          cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options)
-          })
+          )
+          supabaseResponse = NextResponse.next({ request })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          )
         },
       },
     }
   )
 
+  // IMPORTANTE: getUser() atualiza o cookie de sessão
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Sem sessão → login
   if (!user) {
-    return NextResponse.redirect(new URL('/', request.url))
+    const url = request.nextUrl.clone()
+    url.pathname = '/'
+    return NextResponse.redirect(url)
   }
 
   // Buscar role
@@ -50,25 +51,29 @@ export async function middleware(request: NextRequest) {
     .single()
 
   if (!interno || !interno.ativo) {
-    return NextResponse.redirect(new URL('/', request.url))
+    const url = request.nextUrl.clone()
+    url.pathname = '/'
+    return NextResponse.redirect(url)
   }
 
   // Admin passa em tudo
-  if (interno.role === 'admin') return response
+  if (interno.role === 'admin') return supabaseResponse
 
   // CS — só rotas permitidas
   if (interno.role === 'cs') {
     const permitida = ROTAS_CS.some(r => pathname === r || pathname.startsWith(r + '/'))
     if (!permitida) {
-      return NextResponse.redirect(new URL('/cs', request.url))
+      const url = request.nextUrl.clone()
+      url.pathname = '/cs'
+      return NextResponse.redirect(url)
     }
   }
 
-  return response
+  return supabaseResponse
 }
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\..*|api).*)',
+    '/((?!_next/static|_next/image|favicon\\.ico|.*\\..*|api).*)',
   ],
 }
