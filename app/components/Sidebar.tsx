@@ -57,8 +57,9 @@ function hasAnyRole(userRoles: string[], itemRoles: string[]): boolean {
 export default function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
-  const [userRoles, setUserRoles] = useState<string[]>(['admin'])
+  const [userRoles, setUserRoles] = useState<string[]>([])
   const [nome, setNome] = useState('')
+  const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
     ;(async () => {
@@ -75,12 +76,15 @@ export default function Sidebar() {
           setNome(interno.nome)
         }
       }
+      setLoaded(true)
     })()
   }, [])
 
-  const filteredSections = allSections
-    .map(s => ({ ...s, items: s.items.filter(i => hasAnyRole(userRoles, i.roles)) }))
-    .filter(s => s.items.length > 0)
+  const filteredSections = loaded
+    ? allSections
+        .map(s => ({ ...s, items: s.items.filter(i => hasAnyRole(userRoles, i.roles)) }))
+        .filter(s => s.items.length > 0)
+    : []
 
   const logout = async () => {
     await supabase.auth.signOut()

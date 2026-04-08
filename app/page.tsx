@@ -22,21 +22,22 @@ export default function LoginHQ() {
       return
     }
 
-    // Buscar role do usuário
+    // Buscar roles do usuário
     const { data: interno } = await supabase
       .from('usuarios_internos')
-      .select('role')
+      .select('role, roles')
       .eq('email', data.user.email)
       .single()
 
-    const role = interno?.role || 'cs'
+    const roles = (interno?.roles && interno.roles.length > 0) ? interno.roles : [interno?.role || 'cs']
+    const primaryRole = roles[0]
 
-    // window.location.href força full reload → middleware lê cookies corretamente
-    if (role === 'cs') {
-      window.location.href = '/cs'
-    } else {
-      window.location.href = '/dashboard'
+    // Redirecionar para rota padrão do role
+    const destino: Record<string, string> = {
+      admin: '/dashboard', cs: '/cs', sdr: '/sdr',
+      closer: '/comercial', cmo: '/trafego', financeiro: '/financeiro',
     }
+    window.location.href = destino[primaryRole] || '/dashboard'
   }
 
   return (
