@@ -138,26 +138,41 @@ export async function GET(req: NextRequest) {
     dataFim = hoje
   }
 
-  // Buscar dados diários no range
-  const { data: rows } = await supabase.from('funil_trafego_diario')
-    .select('*').gte('data', dataInicio).lte('data', dataFim).order('data')
+  // Buscar dados de TODAS as fontes em paralelo
+  const [{ data: rows }, { data: leadsSDR }, { data: pipeCloser }] = await Promise.all([
+    // Fonte 1: input diário do CMO (investimento + leads do tráfego)
+    supabase.from('funil_trafego_diario').select('*').gte('data', dataInicio).lte('data', dataFim).order('data'),
+    // Fonte 2: kanban SDR (agendamentos, reuniões — dados reais do Trindade/Cardoso/Guilherme)
+    supabase.from('leads_sdr').select('id, status, created_at, updated_at'),
+    // Fonte 3: pipeline Closer (fechamentos, faturamento — dados reais do Guilherme/Cardoso)
+    supabase.from('pipeline_closer').select('id, status, mrr_proposto, created_at, data_fechamento'),
+  ])
 
   const dias = rows || []
   const numDias = dias.length || 1
 
-  // Agregar
-  const totais = dias.reduce((acc, d) => ({
+  // Agregar investimento + leads do input diário do CMO
+  const trafego = dias.reduce((acc, d) => ({
     investimento: acc.investimento + Number(d.investimento || 0),
     leads: acc.leads + (d.leads || 0),
-    agendamentos: acc.agendamentos + (d.agendamentos || 0),
-    reunioes_realizadas: acc.reunioes_realizadas + (d.reunioes_realizadas || 0),
-    reunioes_qualificadas: acc.reunioes_qualificadas + (d.reunioes_qualificadas || 0),
-    fechamentos: acc.fechamentos + (d.fechamentos || 0),
-    faturamento: acc.faturamento + Number(d.faturamento || 0),
-  }), { investimento: 0, leads: 0, agendamentos: 0, reunioes_realizadas: 0, reunioes_qualificadas: 0, fechamentos: 0, faturamento: 0 })
+  }), { investimento: 0, leads: 0 })
 
-  // Se não tem dados diários, tentar funil mensal como fallback
-  if (dias.length === 0) {
+  // Contar dados reais do SDR (leads que passaram por cada etapa)
+  const allLeads = leadsSDR || []
+  const agendados = allLeads.filter(l => ['agendado', 'reuniao_feita', 'convertido'].includes(l.status)).length
+  const reunioes = allLeads.filter(l => ['reuniao_feita', 'convertido'].includes(l.status)).length
+  const qualificadas = reunioes // por enquanto igual
+
+  // Contar dados reais do Closer
+  const allPipe = pipeCloser || []
+  const fechamentos = allPipe.filter(p => p.status === 'fechado').length
+  const faturamento = allPipe.filter(p => p.status === 'fechado').reduce((s, p) => s + Number(p.mrr_proposto || 0), 0)
+
+  // Se tem dados do input diário OU dados dos kanbans, calcular
+  const temDados = dias.length > 0 || allLeads.length > 0 || allPipe.length > 0
+
+  if (!temDados) {
+    // Fallback: funil mensal legado
     const mes = Number(req.nextUrl.searchParams.get('mes')) || new Date().getMonth() + 1
     const ano = Number(req.nextUrl.searchParams.get('ano')) || new Date().getFullYear()
     const { data: funilMes } = await supabase.from('funil_trafego').select('*').eq('mes', mes).eq('ano', ano).single()
@@ -165,7 +180,7 @@ export async function GET(req: NextRequest) {
       const r = calcularFunil(Number(funilMes.investimento_total), funilMes.leads, funilMes.agendamentos, funilMes.reunioes_realizadas, funilMes.reunioes_qualificadas, funilMes.fechamentos, Number(funilMes.faturamento), 22)
       return NextResponse.json({
         ...r, funil: funilMes, metas: metas || [], periodo: { de: dataInicio, ate: dataFim, dias: 22, tipo: 'mensal_fallback' },
-        dadosDiarios: [],
+        dadosDiarios: [], fontes: { trafego: false, sdr: false, closer: false },
         metasOps: {
           minima: { faturamento: 74000, vendas: 37, reunioes: 153, agendamentos: 215, leads: 610, leadsDia: 28, agendDia: 10, reunioesDia: 7, vendasDia: 2 },
           normal: { faturamento: 90000, vendas: 45, reunioes: 187, agendamentos: 262, leads: 743, leadsDia: 34, agendDia: 12, reunioesDia: 9, vendasDia: 2 },
@@ -176,11 +191,25 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ funil: null, metas: metas || [], periodo: { de: dataInicio, ate: dataFim, dias: 0, tipo: 'vazio' } })
   }
 
+  // Usar leads do input diário se existir, senão contar do SDR
+  const totalLeads = trafego.leads > 0 ? trafego.leads : allLeads.length
+
+  const totais = {
+    investimento: trafego.investimento,
+    leads: totalLeads,
+    agendamentos: agendados,
+    reunioes_realizadas: reunioes,
+    reunioes_qualificadas: qualificadas,
+    fechamentos,
+    faturamento,
+  }
+
   const r = calcularFunil(totais.investimento, totais.leads, totais.agendamentos, totais.reunioes_realizadas, totais.reunioes_qualificadas, totais.fechamentos, totais.faturamento, numDias)
 
   return NextResponse.json({
     ...r, funil: totais, metas: metas || [],
     periodo: { de: dataInicio, ate: dataFim, dias: numDias, tipo: periodo || 'mes' },
+    fontes: { trafego: dias.length > 0, sdr: allLeads.length > 0, closer: allPipe.length > 0, leadsSDR: allLeads.length, pipeCloser: allPipe.length },
     dadosDiarios: dias,
     metasOps: {
       minima: { faturamento: 74000, vendas: 37, reunioes: 153, agendamentos: 215, leads: 610, leadsDia: 28, agendDia: 10, reunioesDia: 7, vendasDia: 2 },
