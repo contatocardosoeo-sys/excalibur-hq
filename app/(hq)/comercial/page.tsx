@@ -2,10 +2,12 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import Sidebar from '../../components/Sidebar'
+import { supabase } from '../../lib/supabase'
 
 type PipeItem = { id: string; lead_id: string; nome_clinica: string; plano: string; mrr_proposto: number; status: string; data_reuniao: string; data_fechamento: string; observacoes: string; created_at: string }
 type MetaBar = { atual: number; meta: number }
 type Metas = { reunioes: MetaBar; fechamentos: MetaBar; mrr: MetaBar; comissao_pct: number; comissao_valor: number } | null
+type LogEntry = { id: string; evento: string; numero: string; nome: string; etiqueta: string; usuario_wa: string; acao_executada: string; processado: boolean; created_at: string }
 
 const COLS = [
   { key: 'reuniao_agendada', label: '📅 Reuniao Agendada', cor: '#3b82f6' },
@@ -34,6 +36,14 @@ export default function ComercialPage() {
   const [form, setForm] = useState({ nome_clinica: '', plano: 'Pacote Completo', mrr_proposto: '1997', data_reuniao: '', observacoes: '', origem: 'outbound' })
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState('')
+  // Aba
+  const [aba, setAba] = useState<'pipeline' | 'whatsapp'>('pipeline')
+  // CRM WhatsApp
+  const [logs, setLogs] = useState<LogEntry[]>([])
+  const [waKpis, setWaKpis] = useState({ webhooksHoje: 0, leadsAtualizados: 0, etapasMovidas: 0, usersAtivos: 0 })
+  const [waTab, setWaTab] = useState<'log' | 'closer'>('log')
+  const [closerWA, setCloserWA] = useState<Array<Record<string, unknown>>>([])
+  const [waLoading, setWaLoading] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -44,6 +54,24 @@ export default function ComercialPage() {
     setLoading(false)
   }, [])
   useEffect(() => { load() }, [load])
+
+  const loadWA = useCallback(async () => {
+    setWaLoading(true)
+    const hoje = new Date().toISOString().split('T')[0]
+    const [{ data: logData }, { data: closerData }] = await Promise.all([
+      supabase.from('prospecta_webhooks_log').select('*').order('created_at', { ascending: false }).limit(100),
+      supabase.from('pipeline_closer').select('id, nome_clinica, status, etiqueta_wa, ultimo_contato_wa, total_disparos_wa, usuario_wa').gt('total_disparos_wa', 0).order('ultimo_contato_wa', { ascending: false }),
+    ])
+    const all = logData || []
+    setLogs(all as LogEntry[])
+    setCloserWA(closerData || [])
+    const hojeItems = all.filter(l => l.created_at?.startsWith(hoje))
+    setWaKpis({ webhooksHoje: hojeItems.length, leadsAtualizados: hojeItems.filter(l => l.processado).length, etapasMovidas: hojeItems.filter(l => l.acao_executada?.includes('etapa')).length, usersAtivos: new Set(hojeItems.map(l => l.usuario_wa).filter(Boolean)).size })
+    setWaLoading(false)
+  }, [])
+  useEffect(() => { if (aba === 'whatsapp') loadWA() }, [aba, loadWA])
+
+  function tempo(d: string) { if (!d) return '-'; const min = Math.floor((Date.now() - new Date(d).getTime()) / 60000); if (min < 60) return min + 'min'; const h = Math.floor(min / 60); return h < 24 ? h + 'h' : Math.floor(h / 24) + 'd' }
 
   const criar = async () => {
     if (!form.nome_clinica) return; setSaving(true)
@@ -90,6 +118,14 @@ export default function ComercialPage() {
 
         {msg && <div style={{ background: msg.includes('✅') ? '#22c55e20' : '#ef444420', border: `1px solid ${msg.includes('✅') ? '#22c55e' : '#ef4444'}40`, borderRadius: 8, padding: '8px 14px', marginBottom: 16, color: msg.includes('✅') ? '#22c55e' : '#ef4444', fontSize: 13 }}>{msg}</div>}
 
+        {/* ABAS */}
+        <div style={{ display: 'flex', gap: 4, marginBottom: 14 }}>
+          {([['pipeline', '💼 Pipeline'], ['whatsapp', '📱 WhatsApp CRM']] as const).map(([k, l]) => (
+            <button key={k} onClick={() => setAba(k)} style={{ background: aba === k ? '#f59e0b15' : '#13131f', border: `1px solid ${aba === k ? '#f59e0b' : '#252535'}`, color: aba === k ? '#f59e0b' : '#6b7280', borderRadius: '8px 8px 0 0', padding: '10px 20px', cursor: 'pointer', fontSize: 13, fontWeight: aba === k ? 700 : 400, borderBottom: aba === k ? '2px solid #f59e0b' : '1px solid #252535' }}>{l}</button>
+          ))}
+        </div>
+
+        {aba === 'pipeline' && <>
         {/* KPIs */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 16 }}>
           {[{ l: 'Reunioes (semana)', v: kpis.reunioesSemana, c: '#3b82f6' }, { l: 'Propostas enviadas', v: kpis.propostasEnviadas, c: '#f59e0b' }, { l: 'Fechamentos', v: kpis.fechamentos, c: '#22c55e' }, { l: 'MRR gerado', v: fmt(kpis.mrrMes), c: '#a855f7' }].map(k => (
@@ -159,7 +195,7 @@ export default function ComercialPage() {
           </div>
         )}
 
-        {/* Kanban */}
+        {/* Kanban (pipeline tab) */}
         {loading ? <div style={{ textAlign: 'center', color: '#6b7280', padding: '60px 0' }}>Carregando...</div> : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
             {COLS.map(col => {
@@ -193,6 +229,66 @@ export default function ComercialPage() {
                 </div>
               )
             })}
+          </div>
+        )}
+        </>}
+
+        {/* =========== ABA WHATSAPP CRM =========== */}
+        {aba === 'whatsapp' && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 16 }}>
+              {[{ l: 'Webhooks hoje', v: waKpis.webhooksHoje, c: '#3b82f6' }, { l: 'Leads atualizados', v: waKpis.leadsAtualizados, c: '#22c55e' }, { l: 'Etapas movidas', v: waKpis.etapasMovidas, c: '#f59e0b' }, { l: 'Usuarios ativos', v: waKpis.usersAtivos, c: '#a855f7' }].map(k => (
+                <div key={k.l} style={{ background: '#13131f', border: '1px solid #252535', borderRadius: 10, padding: '14px 16px' }}><div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>{k.l}</div><div style={{ fontSize: 26, fontWeight: 800, color: k.c }}>{k.v}</div></div>
+              ))}
+            </div>
+            <div style={{ background: '#13131f', border: '1px solid #252535', borderRadius: 10, padding: '10px 16px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 11, color: '#6b7280' }}>Webhook:</span>
+              <code style={{ fontSize: 12, color: '#f59e0b', background: '#252535', padding: '4px 10px', borderRadius: 6, flex: 1 }}>https://excalibur-hq.vercel.app/api/crm/webhook</code>
+              <button onClick={() => navigator.clipboard.writeText('https://excalibur-hq.vercel.app/api/crm/webhook')} style={{ background: '#f59e0b20', color: '#f59e0b', border: '1px solid #f59e0b40', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontSize: 11 }}>Copiar</button>
+            </div>
+            <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
+              {(['log', 'closer'] as const).map(k => <button key={k} onClick={() => setWaTab(k)} style={{ background: waTab === k ? '#f59e0b20' : 'transparent', border: `1px solid ${waTab === k ? '#f59e0b' : '#252535'}`, color: waTab === k ? '#f59e0b' : '#9ca3af', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontSize: 12 }}>{k === 'log' ? 'Log Webhooks' : 'Pipeline WA'}</button>)}
+            </div>
+            {waLoading ? <div style={{ textAlign: 'center', color: '#6b7280', padding: 40 }}>Carregando...</div> : waTab === 'log' ? (
+              <div style={{ background: '#13131f', border: '1px solid #252535', borderRadius: 12, overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead><tr>{['Hora', 'Evento', 'Nome', 'Numero', 'Etiqueta', 'Acao', ''].map(h => <th key={h} style={{ color: '#6b7280', fontSize: 10, fontWeight: 600, padding: '10px 10px', textAlign: 'left', borderBottom: '1px solid #252535' }}>{h}</th>)}</tr></thead>
+                  <tbody>
+                    {logs.length === 0 ? <tr><td colSpan={7} style={{ padding: 30, textAlign: 'center', color: '#374151' }}>Nenhum webhook ainda</td></tr> :
+                    logs.map(l => (
+                      <tr key={l.id} style={{ borderBottom: '1px solid #1a1a2e' }}>
+                        <td style={{ padding: '6px 10px', color: '#6b7280', fontSize: 11 }}>{tempo(l.created_at)}</td>
+                        <td style={{ padding: '6px 10px', color: '#e5e7eb', fontSize: 11 }}>{l.evento}</td>
+                        <td style={{ padding: '6px 10px', color: '#fff', fontSize: 11 }}>{l.nome || '-'}</td>
+                        <td style={{ padding: '6px 10px', color: '#6b7280', fontSize: 10, fontFamily: 'monospace' }}>{l.numero || '-'}</td>
+                        <td style={{ padding: '6px 10px' }}>{l.etiqueta ? <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 999, background: '#a855f720', color: '#a855f7' }}>{l.etiqueta}</span> : '-'}</td>
+                        <td style={{ padding: '6px 10px', color: '#9ca3af', fontSize: 10 }}>{l.acao_executada || '-'}</td>
+                        <td style={{ padding: '6px 10px' }}><span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 999, background: l.processado ? '#22c55e20' : '#ef444420', color: l.processado ? '#22c55e' : '#ef4444' }}>{l.processado ? 'OK' : '!'}</span></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div style={{ background: '#13131f', border: '1px solid #252535', borderRadius: 12, overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead><tr>{['Clinica', 'Status', 'Etiqueta WA', 'Ultimo', 'Disparos', 'Usuario'].map(h => <th key={h} style={{ color: '#6b7280', fontSize: 10, fontWeight: 600, padding: '10px 10px', textAlign: 'left', borderBottom: '1px solid #252535' }}>{h}</th>)}</tr></thead>
+                  <tbody>
+                    {closerWA.length === 0 ? <tr><td colSpan={6} style={{ padding: 30, textAlign: 'center', color: '#374151' }}>Sem atividade WA</td></tr> :
+                    closerWA.map(p => (
+                      <tr key={String(p.id)} style={{ borderBottom: '1px solid #1a1a2e' }}>
+                        <td style={{ padding: '6px 10px', color: '#fff', fontSize: 12 }}>{String(p.nome_clinica)}</td>
+                        <td style={{ padding: '6px 10px' }}><span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 999, background: '#f59e0b20', color: '#f59e0b' }}>{String(p.status)}</span></td>
+                        <td style={{ padding: '6px 10px' }}>{p.etiqueta_wa ? <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 999, background: '#a855f720', color: '#a855f7' }}>{String(p.etiqueta_wa)}</span> : '-'}</td>
+                        <td style={{ padding: '6px 10px', color: '#6b7280', fontSize: 11 }}>{tempo(String(p.ultimo_contato_wa || ''))}</td>
+                        <td style={{ padding: '6px 10px', color: '#22c55e', fontSize: 12, fontWeight: 700 }}>{String(p.total_disparos_wa)}</td>
+                        <td style={{ padding: '6px 10px', color: '#9ca3af', fontSize: 11 }}>{String(p.usuario_wa || '-')}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
       </div>
