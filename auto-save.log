@@ -28,3 +28,6 @@ f 'auto-save.log', LF will be replaced by CRLF the next time Git touches it
 To https://github.com/contatocardosoeo-sys/excalibur-hq.git
    55f3834..b93cbce  main -> main
 ✅ Auto-save: 2026-04-09 20:26
+warning: in the working copy of 'auto-save.log', LF will be replaced by CRLF the next time Git touches it
+[main 8e28a53] auto-save: 2026-04-09 20:56 — auto-save.log,
+ 1 file changed, 9 insertions(+), 6 deletions(-)
