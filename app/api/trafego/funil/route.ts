@@ -3,33 +3,26 @@ import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
-// Baseline histórico (média saudável do sistema)
 const BASELINE = { cpl: 10.68, agendamento: 35.25, comparecimento: 71.30, qualificacao: 82.56, conversao: 24.09, cac: 188.94 }
 
-// Regras de classificação (cores)
 function classificar(valor: number, tipo: string): { cor: string; status: string; emoji: string } {
-  const regras: Record<string, [number, number][]> = {
-    agendamento: [[35, 30]], // >=35 verde, 30-34 amarelo, <30 vermelho
-    comparecimento: [[70, 65]],
-    qualificacao: [[75, 65]],
-    conversao: [[24, 20]],
-    cac_inv: [[200, 300]], // <=200 verde, 201-300 amarelo, >300 vermelho
-    cpl_inv: [[12, 15]],
+  const r: Record<string, [number, number][]> = {
+    agendamento: [[35, 30]], comparecimento: [[70, 65]], qualificacao: [[75, 65]], conversao: [[24, 20]],
+    cac_inv: [[200, 300]], cpl_inv: [[12, 15]],
   }
-  const r = regras[tipo]
-  if (!r) return { cor: '#6b7280', status: 'neutro', emoji: '⚪' }
-  const [limites] = r
+  const lim = r[tipo]
+  if (!lim) return { cor: '#6b7280', status: 'neutro', emoji: '⚪' }
+  const [l] = lim
   if (tipo.endsWith('_inv')) {
-    if (valor <= limites[0]) return { cor: '#22c55e', status: 'verde', emoji: '🟢' }
-    if (valor <= limites[1]) return { cor: '#f59e0b', status: 'amarelo', emoji: '🟡' }
+    if (valor <= l[0]) return { cor: '#22c55e', status: 'verde', emoji: '🟢' }
+    if (valor <= l[1]) return { cor: '#f59e0b', status: 'amarelo', emoji: '🟡' }
     return { cor: '#ef4444', status: 'vermelho', emoji: '🔴' }
   }
-  if (valor >= limites[0]) return { cor: '#22c55e', status: 'verde', emoji: '🟢' }
-  if (valor >= limites[1]) return { cor: '#f59e0b', status: 'amarelo', emoji: '🟡' }
+  if (valor >= l[0]) return { cor: '#22c55e', status: 'verde', emoji: '🟢' }
+  if (valor >= l[1]) return { cor: '#f59e0b', status: 'amarelo', emoji: '🟡' }
   return { cor: '#ef4444', status: 'vermelho', emoji: '🔴' }
 }
 
-// Ações por métrica e status
 const ACOES: Record<string, Record<string, string[]>> = {
   agendamento: {
     vermelho: ['Prioridade total em SDR', 'Revisar tempo de resposta ao lead', 'Auditar conversas das ultimas 24h', 'Ajustar script inicial', 'Implementar follow-ups obrigatorios', 'Suspender escala de trafego'],
@@ -37,60 +30,37 @@ const ACOES: Record<string, Record<string, string[]>> = {
     verde: ['Manter processo atual', 'Escalar trafego com seguranca'],
   },
   comparecimento: {
-    vermelho: ['Confirmacao D-1 e D-0 obrigatoria', 'Audio personalizado pre-reuniao', 'Reforco de escassez na confirmacao', 'Revisar promessa vs entrega'],
+    vermelho: ['Confirmacao D-1 e D-0 obrigatoria', 'Audio personalizado pre-reuniao', 'Reforco de escassez', 'Revisar promessa vs entrega'],
     amarelo: ['Melhorar lembretes automaticos', 'Reduzir tempo entre agendamento e reuniao'],
     verde: ['Escalar volume de agendamentos'],
   },
   conversao: {
-    vermelho: ['Revisar gravacoes das calls', 'Ajustar oferta e ancoragem', 'Mapear objecoes recorrentes', 'Treinar contorno de objecoes'],
+    vermelho: ['Revisar gravacoes das calls', 'Ajustar oferta e ancoragem', 'Mapear objecoes recorrentes'],
     amarelo: ['Refinar script de fechamento', 'Treinar tecnicas de fechamento'],
     verde: ['Escalar reunioes com confianca'],
   },
-  cac: {
-    vermelho: ['NAO aumentar trafego', 'Corrigir gargalo interno primeiro', 'Focar em eficiencia do funil'],
-    amarelo: ['Otimizar campanhas de menor ROI'],
-    verde: ['Escalar investimento em trafego'],
-  },
-  cpl: {
-    vermelho: ['Trocar criativos imediatamente', 'Revisar segmentacao de publico', 'Testar novos angulos de copy'],
-    amarelo: ['Otimizar campanhas existentes', 'A/B test de criativos'],
-    verde: ['Escalar investimento atual'],
-  },
+  cac: { vermelho: ['NAO aumentar trafego', 'Corrigir gargalo interno primeiro'], amarelo: ['Otimizar campanhas de menor ROI'], verde: ['Escalar investimento'] },
+  cpl: { vermelho: ['Trocar criativos', 'Revisar segmentacao'], amarelo: ['Otimizar campanhas', 'A/B test criativos'], verde: ['Escalar investimento'] },
 }
 
-export async function GET(req: NextRequest) {
-  const mes = Number(req.nextUrl.searchParams.get('mes')) || new Date().getMonth() + 1
-  const ano = Number(req.nextUrl.searchParams.get('ano')) || new Date().getFullYear()
+function calcularFunil(invest: number, leads: number, agend: number, reun: number, qual: number, fech: number, fat: number, dias: number) {
+  const cpl = leads > 0 ? invest / leads : 0
+  const txAgend = leads > 0 ? (agend / leads) * 100 : 0
+  const txComp = agend > 0 ? (reun / agend) * 100 : 0
+  const txQual = reun > 0 ? (qual / reun) * 100 : 0
+  const txConv = qual > 0 ? (fech / qual) * 100 : 0
+  const cac = fech > 0 ? invest / fech : 0
+  const custoAgend = agend > 0 ? invest / agend : 0
+  const custoReuniao = reun > 0 ? invest / reun : 0
+  const receitaLead = leads > 0 ? fat / leads : 0
+  const receitaReuniao = reun > 0 ? fat / reun : 0
+  const ticketMedio = fech > 0 ? fat / fech : 0
+  const roas = invest > 0 ? fat / invest : 0
+  const leadsDia = dias > 0 ? Math.round(leads / dias * 10) / 10 : 0
+  const agendDia = dias > 0 ? Math.round(agend / dias * 10) / 10 : 0
+  const reunioesDia = dias > 0 ? Math.round(reun / dias * 10) / 10 : 0
+  const vendasDia = dias > 0 ? Math.round(fech / dias * 10) / 10 : 0
 
-  const [{ data: funil }, { data: metas }] = await Promise.all([
-    supabase.from('funil_trafego').select('*').eq('mes', mes).eq('ano', ano).single(),
-    supabase.from('metas_trafego').select('*').order('nome'),
-  ])
-
-  if (!funil) return NextResponse.json({ funil: null, metas: metas || [] })
-
-  const f = funil
-  const invest = Number(f.investimento_total)
-  const cpl = f.leads > 0 ? invest / f.leads : 0
-  const txAgend = f.leads > 0 ? (f.agendamentos / f.leads) * 100 : 0
-  const txComp = f.agendamentos > 0 ? (f.reunioes_realizadas / f.agendamentos) * 100 : 0
-  const txQual = f.reunioes_realizadas > 0 ? (f.reunioes_qualificadas / f.reunioes_realizadas) * 100 : 0
-  const txConv = f.reunioes_qualificadas > 0 ? (f.fechamentos / f.reunioes_qualificadas) * 100 : 0
-  const cac = f.fechamentos > 0 ? invest / f.fechamentos : 0
-  const custoAgend = f.agendamentos > 0 ? invest / f.agendamentos : 0
-  const custoReuniao = f.reunioes_realizadas > 0 ? invest / f.reunioes_realizadas : 0
-  const receitaLead = f.leads > 0 ? Number(f.faturamento) / f.leads : 0
-  const receitaReuniao = f.reunioes_realizadas > 0 ? Number(f.faturamento) / f.reunioes_realizadas : 0
-  const ticketMedio = f.fechamentos > 0 ? Number(f.faturamento) / f.fechamentos : 0
-  const roas = invest > 0 ? Number(f.faturamento) / invest : 0
-
-  const diasUteis = 22
-  const leadsDia = Math.round(f.leads / diasUteis * 10) / 10
-  const agendDia = Math.round(f.agendamentos / diasUteis * 10) / 10
-  const reunioesDia = Math.round(f.reunioes_realizadas / diasUteis * 10) / 10
-  const vendasDia = Math.round(f.fechamentos / diasUteis * 10) / 10
-
-  // Classificações
   const diagAgend = classificar(txAgend, 'agendamento')
   const diagComp = classificar(txComp, 'comparecimento')
   const diagQual = classificar(txQual, 'qualificacao')
@@ -98,33 +68,27 @@ export async function GET(req: NextRequest) {
   const diagCac = classificar(cac, 'cac_inv')
   const diagCpl = classificar(cpl, 'cpl_inv')
 
-  // Funil visual (horizontal, da esquerda p/ direita)
   const etapas = [
-    { nome: 'Leads', valor: f.leads, custo: cpl, custoLabel: 'CPL', taxa: null, diag: diagCpl, baseline: BASELINE.cpl },
-    { nome: 'Agendamentos', valor: f.agendamentos, custo: custoAgend, custoLabel: 'Custo/agend', taxa: Math.round(txAgend * 100) / 100, diag: diagAgend, baseline: BASELINE.agendamento },
-    { nome: 'Reunioes', valor: f.reunioes_realizadas, custo: custoReuniao, custoLabel: 'Custo/reuniao', taxa: Math.round(txComp * 100) / 100, diag: diagComp, baseline: BASELINE.comparecimento },
-    { nome: 'Qualificadas', valor: f.reunioes_qualificadas, custo: null, custoLabel: null, taxa: Math.round(txQual * 100) / 100, diag: diagQual, baseline: BASELINE.qualificacao },
-    { nome: 'Fechamentos', valor: f.fechamentos, custo: cac, custoLabel: 'CAC', taxa: Math.round(txConv * 100) / 100, diag: diagConv, baseline: BASELINE.conversao },
-    { nome: 'Faturamento', valor: Number(f.faturamento), custo: null, custoLabel: null, taxa: null, diag: null, baseline: null },
+    { nome: 'Leads', valor: leads, custo: cpl, custoLabel: 'CPL', taxa: null, diag: diagCpl, baseline: BASELINE.cpl },
+    { nome: 'Agendamentos', valor: agend, custo: custoAgend, custoLabel: 'Custo/agend', taxa: Math.round(txAgend * 100) / 100, diag: diagAgend, baseline: BASELINE.agendamento },
+    { nome: 'Reunioes', valor: reun, custo: custoReuniao, custoLabel: 'Custo/reuniao', taxa: Math.round(txComp * 100) / 100, diag: diagComp, baseline: BASELINE.comparecimento },
+    { nome: 'Qualificadas', valor: qual, custo: null, custoLabel: null, taxa: Math.round(txQual * 100) / 100, diag: diagQual, baseline: BASELINE.qualificacao },
+    { nome: 'Fechamentos', valor: fech, custo: cac, custoLabel: 'CAC', taxa: Math.round(txConv * 100) / 100, diag: diagConv, baseline: BASELINE.conversao },
+    { nome: 'Faturamento', valor: fat, custo: null, custoLabel: null, taxa: null, diag: null, baseline: null },
   ]
 
-  // Alertas automáticos
   const alertas: string[] = []
-  if (diagAgend.status === 'vermelho') alertas.push('GARGALO: Taxa de agendamento critica (' + txAgend.toFixed(1) + '%) — revisar SDR imediatamente')
-  if (diagComp.status === 'vermelho') alertas.push('GARGALO: Comparecimento abaixo do aceitavel (' + txComp.toFixed(1) + '%) — corrigir confirmacao')
-  if (diagConv.status === 'vermelho') alertas.push('GARGALO: Conversao critica (' + txConv.toFixed(1) + '%) — revisar calls e oferta')
-  if (diagCac.status === 'vermelho') alertas.push('GARGALO: CAC acima de R$300 (R$' + cac.toFixed(0) + ') — NAO escalar trafego, corrigir funil')
-  if (diagCpl.status === 'vermelho') alertas.push('GARGALO: CPL acima de R$15 (R$' + cpl.toFixed(2) + ') — trocar criativos')
+  if (diagAgend.status === 'vermelho') alertas.push('GARGALO: Agendamento critico (' + txAgend.toFixed(1) + '%)')
+  if (diagComp.status === 'vermelho') alertas.push('GARGALO: Comparecimento abaixo (' + txComp.toFixed(1) + '%)')
+  if (diagConv.status === 'vermelho') alertas.push('GARGALO: Conversao critica (' + txConv.toFixed(1) + '%)')
+  if (diagCac.status === 'vermelho') alertas.push('GARGALO: CAC acima de R$300 (R$' + cac.toFixed(0) + ')')
 
-  // Gargalo principal (prioridade: agendamento > comparecimento > conversão > tráfego)
   let gargalo = null
   if (diagAgend.status === 'vermelho') gargalo = { nome: 'Agendamento', taxa: txAgend, status: 'vermelho', acoes: ACOES.agendamento.vermelho }
   else if (diagComp.status === 'vermelho') gargalo = { nome: 'Comparecimento', taxa: txComp, status: 'vermelho', acoes: ACOES.comparecimento.vermelho }
   else if (diagConv.status === 'vermelho') gargalo = { nome: 'Conversao', taxa: txConv, status: 'vermelho', acoes: ACOES.conversao.vermelho }
   else if (diagAgend.status === 'amarelo') gargalo = { nome: 'Agendamento', taxa: txAgend, status: 'amarelo', acoes: ACOES.agendamento.amarelo }
-  else if (diagComp.status === 'amarelo') gargalo = { nome: 'Comparecimento', taxa: txComp, status: 'amarelo', acoes: ACOES.comparecimento.amarelo }
 
-  // Decisões por métrica
   const decisoes = [
     { metrica: 'Agendamento', valor: txAgend, ...diagAgend, acoes: ACOES.agendamento[diagAgend.status] || [], baseline: BASELINE.agendamento, unidade: '%' },
     { metrica: 'Comparecimento', valor: txComp, ...diagComp, acoes: ACOES.comparecimento[diagComp.status] || [], baseline: BASELINE.comparecimento, unidade: '%' },
@@ -133,44 +97,112 @@ export async function GET(req: NextRequest) {
     { metrica: 'CPL', valor: cpl, ...diagCpl, acoes: ACOES.cpl[diagCpl.status] || [], baseline: BASELINE.cpl, unidade: 'R$' },
   ]
 
-  // Metas operacionais 3 tiers
-  const metasOps = {
-    minima: { faturamento: 74000, vendas: 37, reunioes: 153, agendamentos: 215, leads: 610, leadsDia: 28, agendDia: 10, reunioesDia: 7, vendasDia: 2 },
-    normal: { faturamento: 90000, vendas: 45, reunioes: 187, agendamentos: 262, leads: 743, leadsDia: 34, agendDia: 12, reunioesDia: 9, vendasDia: 2 },
-    super:  { faturamento: 106000, vendas: 53, reunioes: 220, agendamentos: 308, leads: 874, leadsDia: 40, agendDia: 14, reunioesDia: 10, vendasDia: 3 },
-  }
+  const resumoParts: string[] = []
+  if (diagCpl.status === 'verde') resumoParts.push('CPL saudavel (R$' + cpl.toFixed(2) + ').')
+  else resumoParts.push('CPL em ' + diagCpl.status + ' (R$' + cpl.toFixed(2) + ').')
+  if (diagAgend.status === 'vermelho') resumoParts.push('Gargalo principal: agendamento (' + txAgend.toFixed(1) + '%) abaixo da media 35%.')
+  if (diagCac.status === 'vermelho') resumoParts.push('CAC acima do limite (R$' + cac.toFixed(0) + '). Corrigir funil antes de escalar.')
+  if (diagConv.status === 'verde') resumoParts.push('Fechamento estavel.')
+  resumoParts.push('Prioridade: 1) Agendamento 2) Comparecimento 3) Conversao 4) Trafego.')
 
-  // Resumo executivo
-  const resumo = gerarResumo(diagAgend, diagComp, diagConv, diagCac, diagCpl, txAgend, txComp, txConv, cac, cpl)
-
-  return NextResponse.json({
-    funil: f, etapas, alertas, gargalo, decisoes, metasOps, resumo, metas: metas || [],
+  return {
+    etapas, alertas, gargalo, decisoes, resumo: resumoParts.join(' '),
     metricas: { cpl, txAgend, txComp, txQual, txConv, cac, custoAgend, custoReuniao, receitaLead, receitaReuniao, ticketMedio, roas },
     diario: { leadsDia, agendDia, reunioesDia, vendasDia, metaReunioesDia: 10 },
-    diagnosticos: { agend: diagAgend, comp: diagComp, qual: diagQual, conv: diagConv, cac: diagCac, cpl: diagCpl },
-  })
+  }
 }
 
-function gerarResumo(dA: {status:string}, dCo: {status:string}, dCv: {status:string}, dCac: {status:string}, dCpl: {status:string}, txA: number, txCo: number, txCv: number, cac: number, cpl: number): string {
-  const parts: string[] = []
-  if (dCpl.status === 'verde') parts.push('CPL saudavel (R$' + cpl.toFixed(2) + '), geracao de leads consistente.')
-  else parts.push('CPL em ' + dCpl.status + ' (R$' + cpl.toFixed(2) + '), revisar criativos e segmentacao.')
+export async function GET(req: NextRequest) {
+  const de = req.nextUrl.searchParams.get('de')
+  const ate = req.nextUrl.searchParams.get('ate')
+  const periodo = req.nextUrl.searchParams.get('periodo') // hoje, 7d, 14d, 30d, mes, custom
 
-  if (dA.status === 'vermelho') parts.push('O principal gargalo esta na conversao de leads em agendamentos (' + txA.toFixed(1) + '%), muito abaixo da media ideal de 35%, impactando o volume de reunioes e elevando o CAC.')
-  else if (dA.status === 'amarelo') parts.push('Agendamento em atencao (' + txA.toFixed(1) + '%), proximo do limite. Monitorar de perto.')
+  const { data: metas } = await supabase.from('metas_trafego').select('*').order('nome')
 
-  if (dCo.status !== 'verde') parts.push('Comparecimento em ' + dCo.status + ' (' + txCo.toFixed(1) + '%), necessita correcao no processo de confirmacao.')
-  if (dCv.status === 'verde') parts.push('Fechamento estavel, indicando que o problema nao esta na venda.')
-  else parts.push('Conversao em ' + dCv.status + ' (' + txCv.toFixed(1) + '%), revisar script e oferta.')
+  let dataInicio: string
+  let dataFim: string
+  const hoje = new Date().toISOString().split('T')[0]
 
-  if (dCac.status === 'vermelho') parts.push('CAC acima do limite (R$' + cac.toFixed(0) + '). Prioridade: corrigir funil antes de escalar investimento.')
+  if (de && ate) {
+    dataInicio = de; dataFim = ate
+  } else if (periodo === 'hoje') {
+    dataInicio = hoje; dataFim = hoje
+  } else if (periodo === '7d') {
+    const d = new Date(); d.setDate(d.getDate() - 6); dataInicio = d.toISOString().split('T')[0]; dataFim = hoje
+  } else if (periodo === '14d') {
+    const d = new Date(); d.setDate(d.getDate() - 13); dataInicio = d.toISOString().split('T')[0]; dataFim = hoje
+  } else {
+    // Default: mês atual
+    const now = new Date()
+    dataInicio = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
+    dataFim = hoje
+  }
 
-  parts.push('Ordem de prioridade: 1) Agendamento 2) Comparecimento 3) Conversao 4) Trafego.')
-  return parts.join(' ')
+  // Buscar dados diários no range
+  const { data: rows } = await supabase.from('funil_trafego_diario')
+    .select('*').gte('data', dataInicio).lte('data', dataFim).order('data')
+
+  const dias = rows || []
+  const numDias = dias.length || 1
+
+  // Agregar
+  const totais = dias.reduce((acc, d) => ({
+    investimento: acc.investimento + Number(d.investimento || 0),
+    leads: acc.leads + (d.leads || 0),
+    agendamentos: acc.agendamentos + (d.agendamentos || 0),
+    reunioes_realizadas: acc.reunioes_realizadas + (d.reunioes_realizadas || 0),
+    reunioes_qualificadas: acc.reunioes_qualificadas + (d.reunioes_qualificadas || 0),
+    fechamentos: acc.fechamentos + (d.fechamentos || 0),
+    faturamento: acc.faturamento + Number(d.faturamento || 0),
+  }), { investimento: 0, leads: 0, agendamentos: 0, reunioes_realizadas: 0, reunioes_qualificadas: 0, fechamentos: 0, faturamento: 0 })
+
+  // Se não tem dados diários, tentar funil mensal como fallback
+  if (dias.length === 0) {
+    const mes = Number(req.nextUrl.searchParams.get('mes')) || new Date().getMonth() + 1
+    const ano = Number(req.nextUrl.searchParams.get('ano')) || new Date().getFullYear()
+    const { data: funilMes } = await supabase.from('funil_trafego').select('*').eq('mes', mes).eq('ano', ano).single()
+    if (funilMes) {
+      const r = calcularFunil(Number(funilMes.investimento_total), funilMes.leads, funilMes.agendamentos, funilMes.reunioes_realizadas, funilMes.reunioes_qualificadas, funilMes.fechamentos, Number(funilMes.faturamento), 22)
+      return NextResponse.json({
+        ...r, funil: funilMes, metas: metas || [], periodo: { de: dataInicio, ate: dataFim, dias: 22, tipo: 'mensal_fallback' },
+        dadosDiarios: [],
+        metasOps: {
+          minima: { faturamento: 74000, vendas: 37, reunioes: 153, agendamentos: 215, leads: 610, leadsDia: 28, agendDia: 10, reunioesDia: 7, vendasDia: 2 },
+          normal: { faturamento: 90000, vendas: 45, reunioes: 187, agendamentos: 262, leads: 743, leadsDia: 34, agendDia: 12, reunioesDia: 9, vendasDia: 2 },
+          super:  { faturamento: 106000, vendas: 53, reunioes: 220, agendamentos: 308, leads: 874, leadsDia: 40, agendDia: 14, reunioesDia: 10, vendasDia: 3 },
+        },
+      })
+    }
+    return NextResponse.json({ funil: null, metas: metas || [], periodo: { de: dataInicio, ate: dataFim, dias: 0, tipo: 'vazio' } })
+  }
+
+  const r = calcularFunil(totais.investimento, totais.leads, totais.agendamentos, totais.reunioes_realizadas, totais.reunioes_qualificadas, totais.fechamentos, totais.faturamento, numDias)
+
+  return NextResponse.json({
+    ...r, funil: totais, metas: metas || [],
+    periodo: { de: dataInicio, ate: dataFim, dias: numDias, tipo: periodo || 'mes' },
+    dadosDiarios: dias,
+    metasOps: {
+      minima: { faturamento: 74000, vendas: 37, reunioes: 153, agendamentos: 215, leads: 610, leadsDia: 28, agendDia: 10, reunioesDia: 7, vendasDia: 2 },
+      normal: { faturamento: 90000, vendas: 45, reunioes: 187, agendamentos: 262, leads: 743, leadsDia: 34, agendDia: 12, reunioesDia: 9, vendasDia: 2 },
+      super:  { faturamento: 106000, vendas: 53, reunioes: 220, agendamentos: 308, leads: 874, leadsDia: 40, agendDia: 14, reunioesDia: 10, vendasDia: 3 },
+    },
+  })
 }
 
 export async function PATCH(req: NextRequest) {
   const body = await req.json()
+
+  // Se tem campo 'data', é inserção diária
+  if (body.data) {
+    const { data: d, ...campos } = body
+    const { data, error } = await supabase.from('funil_trafego_diario')
+      .upsert({ data: d, ...campos }, { onConflict: 'data' }).select().single()
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ success: true, data })
+  }
+
+  // Senão, é atualização do funil mensal (legado)
   const { mes, ano, ...dados } = body
   dados.updated_at = new Date().toISOString()
   const { data, error } = await supabase.from('funil_trafego')
