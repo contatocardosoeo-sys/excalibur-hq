@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import Sidebar from '../../components/Sidebar'
 
-type Lead = { id: string; nome: string; cidade: string; responsavel_lead: string; telefone: string; origem: string; status: string; proxima_acao: string; observacoes: string; data_contato: string; created_at: string; campanha_id: string | null }
+type Lead = { id: string; nome: string; cidade: string; responsavel_lead: string; telefone: string; origem: string; status: string; proxima_acao: string; observacoes: string; data_contato: string; created_at: string; campanha_id: string | null; total_disparos_wa: number; etiqueta_wa: string | null; ultimo_contato_wa: string | null }
 type MetaBar = { atual: number; meta: number }
 type CampanhaOpt = { id: string; nome: string }
 
@@ -159,6 +159,14 @@ export default function SDRPage() {
                             <span style={{ fontSize: 9, color: '#4b5563' }}>{diasAtras(l.created_at)}</span>
                           </div>
                           {l.observacoes && <div style={{ fontSize: 10, color: '#4b5563', marginBottom: 4 }}>{l.observacoes.slice(0, 60)}{l.observacoes.length > 60 ? '...' : ''}</div>}
+                          {/* Badges WA */}
+                          {(l.total_disparos_wa > 0 || l.etiqueta_wa) && (
+                            <div style={{ display: 'flex', gap: 4, alignItems: 'center', marginBottom: 4, flexWrap: 'wrap' }}>
+                              {l.total_disparos_wa > 0 && <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 999, background: '#22c55e20', color: '#22c55e' }}>💬 {l.total_disparos_wa} disparo{l.total_disparos_wa > 1 ? 's' : ''}</span>}
+                              {l.etiqueta_wa && <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 999, background: '#a855f720', color: '#a855f7' }}>{l.etiqueta_wa}</span>}
+                              {l.ultimo_contato_wa && <span style={{ fontSize: 9, color: '#4b5563' }}>WA: {diasAtras(l.ultimo_contato_wa)}</span>}
+                            </div>
+                          )}
                           {/* Proxima acao editavel */}
                           <div style={{ marginBottom: 6 }}>
                             {editId === l.id ? (
