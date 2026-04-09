@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import Sidebar from '../../components/Sidebar'
 
-type Campanha = { id: string; nome: string; canal: string; investimento: number; leads: number; cpl: number; status: string; inicio: string }
+type Campanha = { id: string; nome: string; canal: string; investimento: number; leads: number; leads_reais: number; cpl: number; status: string; inicio: string }
 
 const CN: Record<string, { l: string; c: string }> = { meta_ads: { l: 'Meta Ads', c: '#3b82f6' }, google_ads: { l: 'Google Ads', c: '#ef4444' }, organico: { l: 'Organico', c: '#22c55e' }, indicacao: { l: 'Indicacao', c: '#a855f7' }, outro: { l: 'Outro', c: '#6b7280' } }
 const SC: Record<string, string> = { ativa: '#22c55e', pausada: '#f59e0b', encerrada: '#6b7280' }
@@ -119,7 +119,7 @@ export default function TrafegoPage() {
         {loading ? <div style={{ textAlign: 'center', color: '#6b7280', padding: '60px 0' }}>Carregando...</div> : filtered.length === 0 ? <div style={{ textAlign: 'center', color: '#6b7280', padding: '60px 0' }}><div style={{ fontSize: 40, marginBottom: 12 }}>📣</div><p>Nenhuma campanha</p></div> : (
           <div style={{ background: '#13131f', border: '1px solid #252535', borderRadius: 12, overflow: 'hidden' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead><tr>{['Campanha', 'Canal', 'Leads', 'CPL', 'Investimento', 'Status', 'Acoes'].map(h => <th key={h} style={{ color: '#6b7280', fontSize: 11, fontWeight: 600, padding: '12px 14px', textAlign: 'left', borderBottom: '1px solid #252535' }}>{h}</th>)}</tr></thead>
+              <thead><tr>{['Campanha', 'Canal', 'Leads', 'Leads Reais', 'CPL', 'Investimento', 'Status', 'Acoes'].map(h => <th key={h} style={{ color: '#6b7280', fontSize: 11, fontWeight: 600, padding: '12px 14px', textAlign: 'left', borderBottom: '1px solid #252535' }}>{h}</th>)}</tr></thead>
               <tbody>
                 {filtered.map(c => {
                   const cn = CN[c.canal] || { l: c.canal, c: '#6b7280' }
@@ -128,6 +128,7 @@ export default function TrafegoPage() {
                       <td style={{ padding: '12px 14px', color: '#fff', fontSize: 13, fontWeight: 500 }}>{c.nome}</td>
                       <td style={{ padding: '12px 14px' }}><span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 999, background: `${cn.c}20`, color: cn.c, fontWeight: 600 }}>{cn.l}</span></td>
                       <td style={{ padding: '12px 14px', color: '#3b82f6', fontSize: 14, fontWeight: 700 }}>{c.leads}</td>
+                      <td style={{ padding: '12px 14px', color: c.leads_reais > 0 ? '#22c55e' : '#374151', fontSize: 13, fontWeight: 600 }}>{c.leads_reais || 0}</td>
                       <td style={{ padding: '12px 14px', color: Number(c.cpl) > 0 && Number(c.cpl) <= 100 ? '#22c55e' : Number(c.cpl) > 100 ? '#ef4444' : '#6b7280', fontSize: 13 }}>{Number(c.cpl) > 0 ? fmt(Number(c.cpl)) : '-'}</td>
                       <td style={{ padding: '12px 14px', color: '#e5e7eb', fontSize: 13 }}>{fmt(Number(c.investimento))}</td>
                       <td style={{ padding: '12px 14px' }}><span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 999, background: `${SC[c.status] || '#6b7280'}20`, color: SC[c.status] || '#6b7280', fontWeight: 600 }}>{c.status}</span></td>

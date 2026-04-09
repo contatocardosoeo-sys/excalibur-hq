@@ -59,7 +59,11 @@ export default function Sidebar() {
   const router = useRouter()
   const [userRoles, setUserRoles] = useState<string[]>([])
   const [nome, setNome] = useState('')
+  const [userEmail, setUserEmail] = useState('')
   const [loaded, setLoaded] = useState(false)
+  const [notifs, setNotifs] = useState(0)
+  const [notifsData, setNotifsData] = useState<Array<{ id: string; titulo: string; mensagem: string; link: string }>>([])
+  const [showNotifs, setShowNotifs] = useState(false)
 
   const loadUser = useCallback(async () => {
     try {
@@ -76,6 +80,7 @@ export default function Sidebar() {
       }
 
       if (email) {
+        setUserEmail(email)
         const { data: interno } = await supabase
           .from('usuarios_internos')
           .select('role, roles, nome')
@@ -86,6 +91,14 @@ export default function Sidebar() {
           setUserRoles(roles)
           setNome(interno.nome)
         }
+        // Load notifications
+        try {
+          const nr = await fetch(`/api/notificacoes?email=${encodeURIComponent(email)}`)
+          const nd = await nr.json()
+          const items = nd.notificacoes || []
+          setNotifs(items.length)
+          setNotifsData(items.slice(0, 5))
+        } catch { /* */ }
       }
     } catch {
       // Silently handle auth errors
@@ -125,7 +138,31 @@ export default function Sidebar() {
   return (
     <div className="w-56 bg-gray-900 border-r border-gray-800 flex flex-col shrink-0" style={{ minHeight: '100vh' }}>
       <div className="p-5 border-b border-gray-800">
-        <h1 className="text-white font-bold text-lg">⚔️ Excalibur HQ</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-white font-bold text-lg">⚔️ Excalibur HQ</h1>
+          <div style={{ position: 'relative' }}>
+            <button onClick={() => setShowNotifs(!showNotifs)} className="text-gray-400 hover:text-white transition" style={{ fontSize: 16, background: 'none', border: 'none', cursor: 'pointer', position: 'relative' }}>
+              🔔
+              {notifs > 0 && <span style={{ position: 'absolute', top: -4, right: -6, background: '#ef4444', color: '#fff', fontSize: 9, fontWeight: 700, borderRadius: '50%', width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{notifs}</span>}
+            </button>
+            {showNotifs && notifsData.length > 0 && (
+              <div style={{ position: 'absolute', top: 28, right: 0, width: 260, background: '#1a1a2e', border: '1px solid #252535', borderRadius: 10, zIndex: 50, overflow: 'hidden', boxShadow: '0 8px 24px #00000060' }}>
+                {notifsData.map(n => (
+                  <button key={n.id} onClick={async () => {
+                    await fetch('/api/notificacoes', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: n.id }) })
+                    setNotifs(prev => Math.max(0, prev - 1))
+                    setNotifsData(prev => prev.filter(x => x.id !== n.id))
+                    setShowNotifs(false)
+                    if (n.link) router.push(n.link)
+                  }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '10px 14px', background: 'transparent', border: 'none', borderBottom: '1px solid #252535', cursor: 'pointer' }}>
+                    <div style={{ fontSize: 12, color: '#fff', fontWeight: 600, marginBottom: 2 }}>{n.titulo}</div>
+                    {n.mensagem && <div style={{ fontSize: 10, color: '#6b7280' }}>{n.mensagem.slice(0, 60)}</div>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
         <p className="text-gray-500 text-[10px] mt-0.5">Sistema Operacional</p>
       </div>
       <nav className="p-3 flex flex-col gap-0.5 flex-1 overflow-auto">

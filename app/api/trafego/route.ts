@@ -4,9 +4,15 @@ import { createClient } from '@supabase/supabase-js'
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
 export async function GET() {
-  const { data: campanhas } = await supabase.from('campanhas_trafego').select('*').order('created_at', { ascending: false })
+  const [{ data: campanhas }, { data: leadsSDR }] = await Promise.all([
+    supabase.from('campanhas_trafego').select('*').order('created_at', { ascending: false }),
+    supabase.from('leads_sdr').select('campanha_id'),
+  ])
 
-  const items = campanhas || []
+  const items = (campanhas || []).map(c => ({
+    ...c,
+    leads_reais: (leadsSDR || []).filter(l => l.campanha_id === c.id).length,
+  }))
   const totalLeads = items.reduce((s, c) => s + (c.leads || 0), 0)
   const totalInvest = items.reduce((s, c) => s + Number(c.investimento || 0), 0)
   const cplMedio = totalLeads > 0 ? Math.round((totalInvest / totalLeads) * 100) / 100 : 0

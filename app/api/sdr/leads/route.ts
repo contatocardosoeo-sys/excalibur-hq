@@ -9,22 +9,24 @@ export async function GET(req: NextRequest) {
   const mes = now.getMonth() + 1
   const ano = now.getFullYear()
 
-  const [{ data: leads }, { data: metas }] = await Promise.all([
+  const [{ data: leads }, { data: metas }, { data: campanhas }] = await Promise.all([
     supabase.from('leads_sdr').select('*').order('created_at', { ascending: false }),
     supabase.from('metas_sdr').select('*').eq('sdr_email', email).eq('mes', mes).eq('ano', ano).single(),
+    supabase.from('campanhas_trafego').select('id, nome').eq('status', 'ativa').order('nome'),
   ])
 
   const all = leads || []
   const hoje = now.toISOString().split('T')[0]
   const totalLeads = all.length
   const contatosHoje = all.filter(l => l.status !== 'prospeccao' && l.data_contato === hoje).length
-  const agendamentos = all.filter(l => l.status === 'agendado' || l.status === 'reuniao_feita' || l.status === 'convertido').length
-  const reunioes = all.filter(l => l.status === 'reuniao_feita' || l.status === 'convertido').length
+  const agendamentos = all.filter(l => ['agendado', 'reuniao_feita', 'convertido'].includes(l.status)).length
+  const reunioes = all.filter(l => ['reuniao_feita', 'convertido'].includes(l.status)).length
   const conversoes = all.filter(l => l.status === 'convertido').length
   const taxaConversao = totalLeads > 0 ? Math.round((conversoes / totalLeads) * 100) : 0
 
   return NextResponse.json({
     leads: all,
+    campanhas: campanhas || [],
     kpis: { totalLeads, contatosHoje, agendamentos, taxaConversao },
     metas: metas ? {
       leads: { atual: totalLeads, meta: metas.meta_leads },
@@ -37,7 +39,10 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const body = await req.json()
   const { data, error } = await supabase.from('leads_sdr').insert({
-    ...body, data_contato: body.data_contato || new Date().toISOString().split('T')[0],
+    nome: body.nome, cidade: body.cidade, responsavel_lead: body.responsavel_lead,
+    telefone: body.telefone, origem: body.origem, proxima_acao: body.proxima_acao,
+    observacoes: body.observacoes, campanha_id: body.campanha_id || null,
+    data_contato: body.data_contato || new Date().toISOString().split('T')[0],
   }).select().single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ success: true, data })

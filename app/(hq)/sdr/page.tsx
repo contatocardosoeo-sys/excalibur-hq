@@ -3,8 +3,9 @@
 import { useEffect, useState, useCallback } from 'react'
 import Sidebar from '../../components/Sidebar'
 
-type Lead = { id: string; nome: string; cidade: string; responsavel_lead: string; telefone: string; origem: string; status: string; proxima_acao: string; observacoes: string; data_contato: string; created_at: string }
+type Lead = { id: string; nome: string; cidade: string; responsavel_lead: string; telefone: string; origem: string; status: string; proxima_acao: string; observacoes: string; data_contato: string; created_at: string; campanha_id: string | null }
 type MetaBar = { atual: number; meta: number }
+type CampanhaOpt = { id: string; nome: string }
 
 const COLS = [
   { key: 'prospeccao', label: '🔍 Prospeccao', cor: '#6b7280' },
@@ -22,9 +23,10 @@ export default function SDRPage() {
   const [leads, setLeads] = useState<Lead[]>([])
   const [kpis, setKpis] = useState({ totalLeads: 0, contatosHoje: 0, agendamentos: 0, taxaConversao: 0 })
   const [metas, setMetas] = useState<{ leads: MetaBar; reunioes: MetaBar; conversoes: MetaBar } | null>(null)
+  const [campanhas, setCampanhas] = useState<CampanhaOpt[]>([])
   const [loading, setLoading] = useState(true)
   const [modal, setModal] = useState(false)
-  const [form, setForm] = useState({ nome: '', cidade: '', responsavel_lead: '', telefone: '', origem: 'manual', proxima_acao: '', observacoes: '' })
+  const [form, setForm] = useState({ nome: '', cidade: '', responsavel_lead: '', telefone: '', origem: 'manual', proxima_acao: '', observacoes: '', campanha_id: '' })
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState('')
   const [editId, setEditId] = useState<string | null>(null)
@@ -35,7 +37,7 @@ export default function SDRPage() {
     try {
       const res = await fetch('/api/sdr/leads')
       const d = await res.json()
-      setLeads(d.leads || []); setKpis(d.kpis || { totalLeads: 0, contatosHoje: 0, agendamentos: 0, taxaConversao: 0 }); setMetas(d.metas || null)
+      setLeads(d.leads || []); setKpis(d.kpis || { totalLeads: 0, contatosHoje: 0, agendamentos: 0, taxaConversao: 0 }); setMetas(d.metas || null); setCampanhas(d.campanhas || [])
     } catch { /* network error */ }
     setLoading(false)
   }, [])
@@ -43,8 +45,8 @@ export default function SDRPage() {
 
   const criar = async () => {
     if (!form.nome) return; setSaving(true)
-    await fetch('/api/sdr/leads', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
-    setForm({ nome: '', cidade: '', responsavel_lead: '', telefone: '', origem: 'manual', proxima_acao: '', observacoes: '' }); setModal(false); setSaving(false); load()
+    await fetch('/api/sdr/leads', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...form, campanha_id: form.campanha_id || null }) })
+    setForm({ nome: '', cidade: '', responsavel_lead: '', telefone: '', origem: 'manual', proxima_acao: '', observacoes: '', campanha_id: '' }); setModal(false); setSaving(false); load()
   }
 
   const mover = async (id: string, dir: 'next' | 'prev' | string) => {
@@ -122,6 +124,9 @@ export default function SDRPage() {
                 <div><label style={{ color: '#6b7280', fontSize: 11, display: 'block', marginBottom: 4 }}>Origem</label><select value={form.origem} onChange={e => setForm({ ...form, origem: e.target.value })} style={inp}><option value="manual">Manual</option><option value="meta_ads">Meta Ads</option><option value="google_ads">Google Ads</option><option value="indicacao">Indicacao</option><option value="organico">Organico</option></select></div>
                 <div><label style={{ color: '#6b7280', fontSize: 11, display: 'block', marginBottom: 4 }}>Proxima acao</label><input value={form.proxima_acao} onChange={e => setForm({ ...form, proxima_acao: e.target.value })} style={inp} /></div>
               </div>
+              {campanhas.length > 0 && (
+                <div style={{ marginTop: 10 }}><label style={{ color: '#6b7280', fontSize: 11, display: 'block', marginBottom: 4 }}>Campanha (opcional)</label><select value={form.campanha_id} onChange={e => setForm({ ...form, campanha_id: e.target.value })} style={inp}><option value="">Nenhuma</option>{campanhas.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}</select></div>
+              )}
               <div style={{ marginTop: 10 }}><label style={{ color: '#6b7280', fontSize: 11, display: 'block', marginBottom: 4 }}>Observacoes</label><textarea value={form.observacoes} onChange={e => setForm({ ...form, observacoes: e.target.value })} style={{ ...inp, minHeight: 60, resize: 'vertical' }} /></div>
               <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
                 <button onClick={criar} disabled={saving || !form.nome} style={{ background: '#f59e0b', color: '#000', border: 'none', borderRadius: 8, padding: '10px 24px', cursor: 'pointer', fontSize: 13, fontWeight: 700, opacity: saving || !form.nome ? 0.5 : 1 }}>{saving ? 'Salvando...' : 'Criar Lead'}</button>
