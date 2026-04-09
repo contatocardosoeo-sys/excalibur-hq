@@ -4,6 +4,13 @@ import { useEffect, useState, useCallback } from 'react'
 import Sidebar from '../../components/Sidebar'
 import { supabase } from '../../lib/supabase'
 
+interface CockpitData {
+  clinicas: { id: string; nome: string }[]
+  jornada: { clinica_id: string; etapa: string; dias_na_plataforma: number; data_inicio: string; notas: string; updated_at: string }[]
+  adocao: { clinica_id: string; score: number }[]
+  alertas: { id: string; clinica_id: string; tipo: string; titulo: string; nivel: number; resolvido: boolean; created_at: string }[]
+}
+
 interface Clinica {
   id: string
   nome: string
@@ -23,15 +30,6 @@ interface ProximaAcao {
   alerta_id: string | null
 }
 
-function getWeekString(date: Date): string {
-  const d = new Date(date)
-  d.setHours(0, 0, 0, 0)
-  d.setDate(d.getDate() + 3 - (d.getDay() + 6) % 7)
-  const week1 = new Date(d.getFullYear(), 0, 4)
-  const weekNum = 1 + Math.round(((d.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7)
-  return `${d.getFullYear()}-W${weekNum.toString().padStart(2, '0')}`
-}
-
 export default function CSCockpit() {
   const [clinicas, setClinicas] = useState<Clinica[]>([])
   const [proximas, setProximas] = useState<ProximaAcao[]>([])
@@ -42,20 +40,15 @@ export default function CSCockpit() {
   const [salvando, setSalvando] = useState(false)
 
   const load = useCallback(async () => {
-    const semana = getWeekString(new Date())
     const hoje = new Date()
 
-    const [clinicasRes, jornadaRes, adocaoRes, alertasRes] = await Promise.all([
-      supabase.from('clinicas').select('id, nome'),
-      supabase.from('jornada_clinica').select('clinica_id, etapa, dias_na_plataforma, data_inicio, notas, updated_at'),
-      supabase.from('adocao_clinica').select('clinica_id, score').eq('semana', semana),
-      supabase.from('alertas_clinica').select('id, clinica_id, tipo, titulo, nivel, resolvido, created_at').eq('resolvido', false),
-    ])
+    const res = await fetch('/api/cs/cockpit')
+    const data: CockpitData = await res.json()
 
-    const cl = clinicasRes.data || []
-    const jo = jornadaRes.data || []
-    const ad = adocaoRes.data || []
-    const al = alertasRes.data || []
+    const cl = data.clinicas || []
+    const jo = data.jornada || []
+    const ad = data.adocao || []
+    const al = data.alertas || []
 
     const result: Clinica[] = cl.map(c => {
       const j = jo.find(x => x.clinica_id === c.id)

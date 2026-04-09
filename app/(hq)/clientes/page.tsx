@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { supabase } from '../../lib/supabase'
 import Sidebar from '../../components/Sidebar'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -18,6 +17,14 @@ interface ClienteCompleto {
   alertas_ativos: number
   faturamento_mes: number
   cs_responsavel: string
+}
+
+interface ListaData {
+  clinicas: { id: string; nome: string }[]
+  jornada: { clinica_id: string; etapa: string; dias_na_plataforma: number; cs_responsavel: string }[]
+  adocao: { clinica_id: string; score: number; classificacao: string }[]
+  alertas: { clinica_id: string }[]
+  funil: { clinica_id: string; faturamento: number }[]
 }
 
 function getInitials(nome: string): string {
@@ -38,15 +45,6 @@ function getScoreBg(score: number): string {
 
 function fmt(v: number) { return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v) }
 
-function getWeekString(date: Date): string {
-  const d = new Date(date)
-  d.setHours(0, 0, 0, 0)
-  d.setDate(d.getDate() + 3 - (d.getDay() + 6) % 7)
-  const week1 = new Date(d.getFullYear(), 0, 4)
-  const weekNum = 1 + Math.round(((d.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7)
-  return `${d.getFullYear()}-W${weekNum.toString().padStart(2, '0')}`
-}
-
 export default function ClientesPage() {
   const [clientes, setClientes] = useState<ClienteCompleto[]>([])
   const [loading, setLoading] = useState(true)
@@ -55,22 +53,15 @@ export default function ClientesPage() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const inicioMes = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]
-    const semana = getWeekString(new Date())
 
-    const [clinicasRes, jornadaRes, adocaoRes, alertasRes, funilRes] = await Promise.all([
-      supabase.from('clinicas').select('id, nome'),
-      supabase.from('jornada_clinica').select('clinica_id, etapa, dias_na_plataforma, cs_responsavel'),
-      supabase.from('adocao_clinica').select('clinica_id, score, classificacao').eq('semana', semana),
-      supabase.from('alertas_clinica').select('clinica_id').eq('resolvido', false),
-      supabase.from('funil_diario').select('clinica_id, faturamento').gte('data', inicioMes),
-    ])
+    const res = await fetch('/api/cs/lista')
+    const data: ListaData = await res.json()
 
-    const clinicasList = clinicasRes.data || []
-    const jornadaData = jornadaRes.data || []
-    const adocaoData = adocaoRes.data || []
-    const alertasData = alertasRes.data || []
-    const funilData = funilRes.data || []
+    const clinicasList = data.clinicas || []
+    const jornadaData = data.jornada || []
+    const adocaoData = data.adocao || []
+    const alertasData = data.alertas || []
+    const funilData = data.funil || []
 
     const result: ClienteCompleto[] = clinicasList.map(c => {
       const jornada = jornadaData.find(j => j.clinica_id === c.id)
