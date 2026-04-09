@@ -83,7 +83,13 @@ export default function DashboardHQ() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {funil.map((etapa, i) => {
                   const pct = Math.max(5, (etapa.valor / maxFunil) * 100)
-                  const convPct = i > 0 && funil[i - 1].valor > 0
+                  const topo = funil[0]?.valor || 0
+                  // Conversão desde o topo do funil (tráfego)
+                  const convFromTop = i > 0 && topo > 0
+                    ? Math.round((etapa.valor / topo) * 100)
+                    : null
+                  // Conversão entre etapas adjacentes
+                  const convAdj = i > 0 && funil[i - 1].valor > 0
                     ? Math.round((etapa.valor / funil[i - 1].valor) * 100)
                     : null
                   return (
@@ -95,9 +101,10 @@ export default function DashboardHQ() {
                             <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{etapa.valor}</span>
                           </div>
                         </div>
-                        {convPct !== null && (
-                          <span style={{ fontSize: 11, color: convPct >= 50 ? '#22c55e' : convPct >= 20 ? '#f59e0b' : '#ef4444', width: 50, textAlign: 'right', fontWeight: 600 }}>
-                            {convPct}%
+                        {convFromTop !== null && (
+                          <span style={{ fontSize: 11, color: convFromTop >= 10 ? '#22c55e' : convFromTop >= 3 ? '#f59e0b' : '#ef4444', width: 80, textAlign: 'right', fontWeight: 600 }}>
+                            {convFromTop}%
+                            {convAdj !== null && <span style={{ color: '#4b5563', fontWeight: 400 }}> ({convAdj}%)</span>}
                           </span>
                         )}
                       </div>
@@ -109,6 +116,9 @@ export default function DashboardHQ() {
                     </div>
                   )
                 })}
+              </div>
+              <div style={{ marginTop: 12, fontSize: 10, color: '#4b5563' }}>
+                % principal = conversao desde trafego · (%) = conversao da etapa anterior
               </div>
             </div>
           </>

@@ -32,8 +32,9 @@ export async function GET() {
   // Funil comercial
   const totalLeadsTrafego = cp.reduce((s, c) => s + (c.leads || 0), 0)
   const leadsSDRAtivos = ld.filter(l => !['perdido', 'convertido'].includes(l.status)).length
-  const reunioes = ld.filter(l => l.status === 'reuniao_feita' || l.status === 'convertido').length
-    + pl.filter(p => ['reuniao_agendada', 'proposta_enviada', 'fechado'].includes(p.status)).length
+  // Reuniões: leads em reuniao_feita (ainda no SDR) + todos do pipeline (já passaram da reunião)
+  // Não contar 'convertido' em leads_sdr para evitar double-counting com pipeline
+  const reunioes = ld.filter(l => l.status === 'reuniao_feita').length + pl.length
   const fechamentos = pl.filter(p => p.status === 'fechado').length
   const mrrTotal = pl.filter(p => p.status === 'fechado').reduce((s, p) => s + Number(p.mrr_proposto || 0), 0)
 
