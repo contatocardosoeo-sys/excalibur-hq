@@ -28,7 +28,6 @@ const allSections: MenuSection[] = [
       { href: '/trafego', icon: '📣', label: 'Trafego', roles: ['admin', 'cmo'] },
       { href: '/sdr', icon: '📞', label: 'SDR', roles: ['admin', 'sdr', 'closer'] },
       { href: '/crm', icon: '📱', label: 'Prospecta CRM', roles: ['admin', 'sdr', 'closer', 'cmo', 'cs'] },
-      { href: '/crm-whatsapp', icon: '💬', label: 'CRM WhatsApp', roles: ['admin', 'cs'] },
       { href: '/cs', icon: '🎯', label: 'CS', roles: ['admin', 'cs'] },
     ],
   },
