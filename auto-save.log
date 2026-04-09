@@ -9,3 +9,6 @@ warning: in the working copy of 'middleware.ts', LF will be replaced by CRLF the
 [main 9167a2a] auto-save: 2026-04-09 00:56 — app/(hq)/crm-whatsapp/page.tsx,app/components/Sidebar.tsx,middleware.ts,
  3 files changed, 163 deletions(-)
  delete mode 100644 app/(hq)/crm-whatsapp/page.tsx
+To https://github.com/contatocardosoeo-sys/excalibur-hq.git
+   b1b5ce0..9167a2a  main -> main
+✅ Auto-save: 2026-04-09 00:56
