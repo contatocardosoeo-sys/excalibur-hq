@@ -8,6 +8,9 @@ type Etapa = { nome: string; valor: number; custo: number | null; custoLabel: st
 type Decisao = { metrica: string; valor: number; cor: string; status: string; emoji: string; acoes: string[]; baseline: number; unidade: string }
 type MetasOps = { faturamento: number; vendas: number; reunioes: number; agendamentos: number; leads: number; leadsDia: number; agendDia: number; reunioesDia: number; vendasDia: number }
 type DadoDiario = { data: string; investimento: number; leads: number; agendamentos: number; reunioes_realizadas: number; fechamentos: number; faturamento: number }
+type InputRow = { id: string; email: string; nome: string; data: string; investimento: number; leads: number; agendamentos: number; reunioes_realizadas: number; reunioes_qualificadas: number; fechamentos: number; faturamento: number; observacoes: string }
+type ConsolidadoDia = { data: string; investimento: number; leads: number; agendamentos: number; reunioes_realizadas: number; reunioes_qualificadas: number; fechamentos: number; faturamento: number; pessoas: string[] }
+type PorPessoa = { nome: string; email: string; dias: number; investimento: number; leads: number; agendamentos: number; reunioes_realizadas: number; fechamentos: number; faturamento: number }
 
 function f$(v: number) { return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: v < 100 ? 2 : 0 }) }
 function pct(v: number) { return v.toFixed(1) + '%' }
@@ -43,6 +46,17 @@ export default function TrafegoBI() {
   const [dadosForm, setDadosForm] = useState({ data: new Date().toISOString().split('T')[0], investimento: '', leads: '', agendamentos: '', reunioes_realizadas: '', reunioes_qualificadas: '', fechamentos: '', faturamento: '' })
   const [saving, setSaving] = useState(false)
   const [funil, setFunil] = useState<Record<string, number> | null>(null)
+  // Aba Diário
+  const [abaAtiva, setAbaAtiva] = useState<'bi' | 'diario'>('bi')
+  const [inputRows, setInputRows] = useState<InputRow[]>([])
+  const [consolidado, setConsolidado] = useState<ConsolidadoDia[]>([])
+  const [porPessoa, setPorPessoa] = useState<PorPessoa[]>([])
+  const [filtroPessoa, setFiltroPessoa] = useState('todos')
+  const [userEmail, setUserEmail] = useState('')
+  const [userName, setUserName] = useState('')
+  const [inputForm, setInputForm] = useState({ data: new Date().toISOString().split('T')[0], investimento: '', leads: '', agendamentos: '', reunioes_realizadas: '', reunioes_qualificadas: '', fechamentos: '', faturamento: '', observacoes: '' })
+  const [showInput, setShowInput] = useState(false)
+  const [savingInput, setSavingInput] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -65,26 +79,43 @@ export default function TrafegoBI() {
     setLoading(false)
   }, [periodo, customDe, customAte])
 
+  const loadDiario = useCallback(async () => {
+    const p = filtroPessoa !== 'todos' ? `&pessoa=${encodeURIComponent(filtroPessoa)}` : ''
+    try {
+      const d = await (await fetch(`/api/input-diario?de=${periodoInfo.de || ''}&ate=${periodoInfo.ate || ''}${p}`)).json()
+      setInputRows(d.registros || [])
+      setConsolidado(d.consolidado || [])
+      setPorPessoa(d.porPessoa || [])
+    } catch { /* */ }
+  }, [periodoInfo.de, periodoInfo.ate, filtroPessoa])
+
   useEffect(() => { load() }, [load])
+  useEffect(() => { if (abaAtiva === 'diario') loadDiario() }, [abaAtiva, loadDiario])
   useEffect(() => {
     ;(async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user?.email) {
-        const { data: u } = await supabase.from('usuarios_internos').select('roles, role').eq('email', session.user.email).single()
+        setUserEmail(session.user.email)
+        const { data: u } = await supabase.from('usuarios_internos').select('roles, role, nome').eq('email', session.user.email).single()
         const roles: string[] = (u?.roles && Array.isArray(u.roles) && u.roles.length > 0) ? u.roles : [u?.role || '']
         setIsAdmin(roles.includes('admin'))
+        setUserName(u?.nome || '')
       }
     })()
   }, [])
 
   const salvarDados = async () => {
-    setSaving(true)
-    await fetch('/api/trafego/funil', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
-      data: dadosForm.data, investimento: Number(dadosForm.investimento), leads: Number(dadosForm.leads),
-      agendamentos: Number(dadosForm.agendamentos), reunioes_realizadas: Number(dadosForm.reunioes_realizadas),
-      reunioes_qualificadas: Number(dadosForm.reunioes_qualificadas), fechamentos: Number(dadosForm.fechamentos), faturamento: Number(dadosForm.faturamento),
+    setSavingInput(true)
+    await fetch('/api/input-diario', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+      email: userEmail, nome: userName, data: inputForm.data,
+      investimento: Number(inputForm.investimento), leads: Number(inputForm.leads),
+      agendamentos: Number(inputForm.agendamentos), reunioes_realizadas: Number(inputForm.reunioes_realizadas),
+      reunioes_qualificadas: Number(inputForm.reunioes_qualificadas), fechamentos: Number(inputForm.fechamentos),
+      faturamento: Number(inputForm.faturamento), observacoes: inputForm.observacoes,
     }) })
-    setSaving(false); setShowDados(false); load()
+    setSavingInput(false); setShowInput(false)
+    setInputForm({ data: new Date().toISOString().split('T')[0], investimento: '', leads: '', agendamentos: '', reunioes_realizadas: '', reunioes_qualificadas: '', fechamentos: '', faturamento: '', observacoes: '' })
+    loadDiario(); load()
   }
 
   const inp: React.CSSProperties = { width: '100%', background: '#1a1a2e', border: '1px solid #252535', borderRadius: 8, padding: '8px 12px', color: '#fff', fontSize: 13, outline: 'none' }
@@ -103,10 +134,107 @@ export default function TrafegoBI() {
             <p style={{ color: '#6b7280', fontSize: 13, margin: '4px 0 0' }}>2 closers · 10 reunioes/dia · Ticket medio R$2.000</p>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={() => setShowDados(true)} style={{ background: '#f59e0b', color: '#000', border: 'none', borderRadius: 8, padding: '7px 14px', cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>+ Inserir dia</button>
+            <button onClick={() => setShowInput(true)} style={{ background: '#f59e0b', color: '#000', border: 'none', borderRadius: 8, padding: '7px 14px', cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>+ Preencher meu dia</button>
             <button onClick={load} style={{ background: 'transparent', border: '1px solid #252535', color: '#9ca3af', borderRadius: 8, padding: '7px 10px', cursor: 'pointer' }}>🔄</button>
           </div>
         </div>
+
+        {/* ABAS: BI | Diário */}
+        <div style={{ display: 'flex', gap: 4, marginBottom: 14 }}>
+          {([['bi', '📊 BI Comercial'], ['diario', '📋 Planilha Diaria']] as const).map(([k, l]) => (
+            <button key={k} onClick={() => setAbaAtiva(k)} style={{ background: abaAtiva === k ? '#f59e0b15' : '#13131f', border: `1px solid ${abaAtiva === k ? '#f59e0b' : '#252535'}`, color: abaAtiva === k ? '#f59e0b' : '#6b7280', borderRadius: '8px 8px 0 0', padding: '10px 20px', cursor: 'pointer', fontSize: 13, fontWeight: abaAtiva === k ? 700 : 400, borderBottom: abaAtiva === k ? '2px solid #f59e0b' : '1px solid #252535' }}>{l}</button>
+          ))}
+        </div>
+
+        {/* =========== ABA DIÁRIO =========== */}
+        {abaAtiva === 'diario' && (
+          <div>
+            {/* Filtro por pessoa */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 14, alignItems: 'center' }}>
+              <select value={filtroPessoa} onChange={e => setFiltroPessoa(e.target.value)} style={{ background: '#13131f', border: '1px solid #252535', color: '#fff', borderRadius: 8, padding: '7px 12px', fontSize: 13, outline: 'none', cursor: 'pointer' }}>
+                <option value="todos">Todos</option>
+                <option value="contato.cardosoeo@gmail.com">Cardoso</option>
+                <option value="guilherme.excalibur@gmail.com">Guilherme</option>
+                <option value="trindade.excalibur@gmail.com">Trindade</option>
+              </select>
+              <span style={{ fontSize: 12, color: '#4b5563' }}>{consolidado.length} dia{consolidado.length !== 1 ? 's' : ''} · {inputRows.length} registro{inputRows.length !== 1 ? 's' : ''}</span>
+              <button onClick={loadDiario} style={{ background: 'transparent', border: '1px solid #252535', color: '#9ca3af', borderRadius: 8, padding: '5px 10px', cursor: 'pointer', fontSize: 12 }}>🔄</button>
+            </div>
+
+            {/* Rendimento por pessoa (CEO vê) */}
+            {isAdmin && porPessoa.length > 0 && filtroPessoa === 'todos' && (
+              <div style={{ background: '#13131f', border: '1px solid #252535', borderRadius: 10, padding: 16, marginBottom: 14 }}>
+                <h4 style={{ fontSize: 11, color: '#6b7280', marginBottom: 10, textTransform: 'uppercase' }}>Rendimento por Pessoa</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${porPessoa.length}, 1fr)`, gap: 10 }}>
+                  {porPessoa.map(p => (
+                    <div key={p.email} style={{ background: '#09090f', borderRadius: 8, padding: 12 }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 8 }}>{p.nome}</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        {[
+                          { l: 'Dias preenchidos', v: String(p.dias), c: '#6b7280' },
+                          { l: 'Leads', v: String(p.leads), c: '#3b82f6' },
+                          { l: 'Agendamentos', v: String(p.agendamentos), c: '#f59e0b' },
+                          { l: 'Reunioes', v: String(p.reunioes_realizadas), c: '#a855f7' },
+                          { l: 'Fechamentos', v: String(p.fechamentos), c: '#22c55e' },
+                          { l: 'Faturamento', v: f$(p.faturamento), c: '#f59e0b' },
+                        ].map(m => (
+                          <div key={m.l} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+                            <span style={{ fontSize: 10, color: '#6b7280' }}>{m.l}</span>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: m.c }}>{m.v}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Tabela dia a dia */}
+            <div style={{ background: '#13131f', border: '1px solid #252535', borderRadius: 10, overflow: 'hidden', marginBottom: 14 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr>{['Data', 'Quem', 'Invest', 'Leads', 'Agend', 'Reunioes', 'Fech', 'Fat', 'Obs'].map(h => <th key={h} style={{ color: '#6b7280', fontSize: 10, fontWeight: 600, padding: '10px 8px', textAlign: 'left', borderBottom: '1px solid #252535', textTransform: 'uppercase' }}>{h}</th>)}</tr>
+                </thead>
+                <tbody>
+                  {inputRows.length === 0 ? (
+                    <tr><td colSpan={9} style={{ padding: 30, textAlign: 'center', color: '#374151', fontSize: 13 }}>Nenhum registro ainda. Clique em "+ Preencher meu dia" para comecar.</td></tr>
+                  ) : inputRows.map(r => (
+                    <tr key={r.id} style={{ borderBottom: '1px solid #1a1a2e' }}>
+                      <td style={{ padding: '8px', color: '#9ca3af', fontSize: 12, fontFamily: 'monospace' }}>{fmtData(r.data)}</td>
+                      <td style={{ padding: '8px' }}><span style={{ fontSize: 11, color: '#fff', fontWeight: 500 }}>{r.nome}</span></td>
+                      <td style={{ padding: '8px', color: '#e5e7eb', fontSize: 12 }}>{f$(Number(r.investimento))}</td>
+                      <td style={{ padding: '8px', color: '#3b82f6', fontSize: 12, fontWeight: 700 }}>{r.leads}</td>
+                      <td style={{ padding: '8px', color: '#f59e0b', fontSize: 12, fontWeight: 700 }}>{r.agendamentos}</td>
+                      <td style={{ padding: '8px', color: '#a855f7', fontSize: 12, fontWeight: 700 }}>{r.reunioes_realizadas}</td>
+                      <td style={{ padding: '8px', color: '#22c55e', fontSize: 12, fontWeight: 700 }}>{r.fechamentos}</td>
+                      <td style={{ padding: '8px', color: '#f59e0b', fontSize: 12 }}>{f$(Number(r.faturamento))}</td>
+                      <td style={{ padding: '8px', color: '#4b5563', fontSize: 10, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.observacoes || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                {/* Totais */}
+                {inputRows.length > 0 && (
+                  <tfoot>
+                    <tr style={{ borderTop: '2px solid #252535', background: '#09090f' }}>
+                      <td style={{ padding: '10px 8px', color: '#fff', fontSize: 12, fontWeight: 700 }} colSpan={2}>TOTAL</td>
+                      <td style={{ padding: '10px 8px', color: '#fff', fontSize: 12, fontWeight: 700 }}>{f$(inputRows.reduce((s, r) => s + Number(r.investimento || 0), 0))}</td>
+                      <td style={{ padding: '10px 8px', color: '#3b82f6', fontSize: 12, fontWeight: 700 }}>{inputRows.reduce((s, r) => s + (r.leads || 0), 0)}</td>
+                      <td style={{ padding: '10px 8px', color: '#f59e0b', fontSize: 12, fontWeight: 700 }}>{inputRows.reduce((s, r) => s + (r.agendamentos || 0), 0)}</td>
+                      <td style={{ padding: '10px 8px', color: '#a855f7', fontSize: 12, fontWeight: 700 }}>{inputRows.reduce((s, r) => s + (r.reunioes_realizadas || 0), 0)}</td>
+                      <td style={{ padding: '10px 8px', color: '#22c55e', fontSize: 12, fontWeight: 700 }}>{inputRows.reduce((s, r) => s + (r.fechamentos || 0), 0)}</td>
+                      <td style={{ padding: '10px 8px', color: '#f59e0b', fontSize: 12, fontWeight: 700 }}>{f$(inputRows.reduce((s, r) => s + Number(r.faturamento || 0), 0))}</td>
+                      <td></td>
+                    </tr>
+                  </tfoot>
+                )}
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* =========== ABA BI (tudo que já existia) =========== */}
+        {abaAtiva === 'bi' && <>
 
         {/* BARRA DE PERÍODO (estilo Gerenciador de Anúncios) */}
         <div style={{ background: '#13131f', border: '1px solid #252535', borderRadius: 10, padding: '10px 14px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
@@ -276,25 +404,30 @@ export default function TrafegoBI() {
               </div>
             )}
 
-            {/* MODAL INSERIR DIA */}
-            {showDados && (
-              <div style={{ position: 'fixed', inset: 0, background: '#00000080', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }} onClick={() => setShowDados(false)}>
-                <div style={{ background: '#13131f', border: '1px solid #252535', borderRadius: 16, padding: 24, width: 520 }} onClick={e => e.stopPropagation()}>
-                  <h3 style={{ color: '#fff', fontSize: 18, fontWeight: 700, marginBottom: 16 }}>Inserir dados do dia</h3>
-                  <div style={{ marginBottom: 12 }}><label style={{ color: '#6b7280', fontSize: 11, display: 'block', marginBottom: 4 }}>Data</label><input type="date" value={dadosForm.data} onChange={e => setDadosForm({ ...dadosForm, data: e.target.value })} style={inp} /></div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                    {[{ k: 'investimento', l: 'Investimento (R$)' }, { k: 'leads', l: 'Leads' }, { k: 'agendamentos', l: 'Agendamentos' }, { k: 'reunioes_realizadas', l: 'Reunioes' }, { k: 'reunioes_qualificadas', l: 'Qualificadas' }, { k: 'fechamentos', l: 'Fechamentos' }, { k: 'faturamento', l: 'Faturamento (R$)' }].map(f => (
-                      <div key={f.k}><label style={{ color: '#6b7280', fontSize: 11, display: 'block', marginBottom: 4 }}>{f.l}</label><input type="number" value={(dadosForm as Record<string, string>)[f.k]} onChange={e => setDadosForm({ ...dadosForm, [f.k]: e.target.value })} style={inp} /></div>
-                    ))}
-                  </div>
-                  <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-                    <button onClick={salvarDados} disabled={saving} style={{ background: '#f59e0b', color: '#000', border: 'none', borderRadius: 8, padding: '10px 24px', cursor: 'pointer', fontSize: 13, fontWeight: 700, opacity: saving ? 0.5 : 1 }}>{saving ? 'Salvando...' : 'Salvar'}</button>
-                    <button onClick={() => setShowDados(false)} style={{ background: 'transparent', border: '1px solid #252535', color: '#6b7280', borderRadius: 8, padding: '10px 24px', cursor: 'pointer', fontSize: 13 }}>Cancelar</button>
-                  </div>
-                </div>
-              </div>
-            )}
           </>
+        )}
+
+        </>}
+
+        {/* MODAL PREENCHER MEU DIA (compartilhado entre abas) */}
+        {showInput && (
+          <div style={{ position: 'fixed', inset: 0, background: '#00000080', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }} onClick={() => setShowInput(false)}>
+            <div style={{ background: '#13131f', border: '1px solid #252535', borderRadius: 16, padding: 24, width: 560 }} onClick={e => e.stopPropagation()}>
+              <h3 style={{ color: '#fff', fontSize: 18, fontWeight: 700, marginBottom: 4 }}>Preencher meu dia</h3>
+              <p style={{ color: '#6b7280', fontSize: 12, marginBottom: 16 }}>Preenchendo como <span style={{ color: '#f59e0b', fontWeight: 600 }}>{userName}</span></p>
+              <div style={{ marginBottom: 12 }}><label style={{ color: '#6b7280', fontSize: 11, display: 'block', marginBottom: 4 }}>Data</label><input type="date" value={inputForm.data} onChange={e => setInputForm({ ...inputForm, data: e.target.value })} style={inp} /></div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                {[{ k: 'investimento', l: 'Investimento (R$)' }, { k: 'leads', l: 'Leads gerados' }, { k: 'agendamentos', l: 'Agendamentos' }, { k: 'reunioes_realizadas', l: 'Reunioes realizadas' }, { k: 'reunioes_qualificadas', l: 'Qualificadas' }, { k: 'fechamentos', l: 'Fechamentos' }, { k: 'faturamento', l: 'Faturamento (R$)' }].map(f => (
+                  <div key={f.k}><label style={{ color: '#6b7280', fontSize: 11, display: 'block', marginBottom: 4 }}>{f.l}</label><input type="number" value={(inputForm as Record<string, string>)[f.k]} onChange={e => setInputForm({ ...inputForm, [f.k]: e.target.value })} style={inp} placeholder="0" /></div>
+                ))}
+              </div>
+              <div style={{ marginTop: 10 }}><label style={{ color: '#6b7280', fontSize: 11, display: 'block', marginBottom: 4 }}>Observacoes (opcional)</label><input value={inputForm.observacoes} onChange={e => setInputForm({ ...inputForm, observacoes: e.target.value })} style={inp} placeholder="Notas do dia..." /></div>
+              <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+                <button onClick={salvarDados} disabled={savingInput} style={{ background: '#f59e0b', color: '#000', border: 'none', borderRadius: 8, padding: '10px 24px', cursor: 'pointer', fontSize: 13, fontWeight: 700, opacity: savingInput ? 0.5 : 1 }}>{savingInput ? 'Salvando...' : 'Salvar'}</button>
+                <button onClick={() => setShowInput(false)} style={{ background: 'transparent', border: '1px solid #252535', color: '#6b7280', borderRadius: 8, padding: '10px 24px', cursor: 'pointer', fontSize: 13 }}>Cancelar</button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

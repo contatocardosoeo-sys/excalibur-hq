@@ -139,19 +139,35 @@ export async function GET(req: NextRequest) {
   }
 
   // Buscar dados de TODAS as fontes em paralelo
-  const [{ data: rows }, { data: leadsSDR }, { data: pipeCloser }] = await Promise.all([
-    // Fonte 1: input diário do CMO (investimento + leads do tráfego)
+  const [{ data: inputDiario }, { data: rows }, { data: leadsSDR }, { data: pipeCloser }] = await Promise.all([
+    // Fonte principal: input_diario (cada pessoa preenche seus números)
+    supabase.from('input_diario').select('*').gte('data', dataInicio).lte('data', dataFim).order('data'),
+    // Fonte legada: funil_trafego_diario (fallback)
     supabase.from('funil_trafego_diario').select('*').gte('data', dataInicio).lte('data', dataFim).order('data'),
-    // Fonte 2: kanban SDR (agendamentos, reuniões — dados reais do Trindade/Cardoso/Guilherme)
+    // Fonte SDR (fallback para agendamentos/reuniões)
     supabase.from('leads_sdr').select('id, status, created_at, updated_at'),
-    // Fonte 3: pipeline Closer (fechamentos, faturamento — dados reais do Guilherme/Cardoso)
+    // Fonte Closer (fallback para fechamentos/faturamento)
     supabase.from('pipeline_closer').select('id, status, mrr_proposto, created_at, data_fechamento'),
   ])
 
+  const inputs = inputDiario || []
   const dias = rows || []
-  const numDias = dias.length || 1
 
-  // Agregar investimento + leads do input diário do CMO
+  // Se tem input_diario, usar como fonte principal (consolidado de todas as pessoas)
+  const temInput = inputs.length > 0
+  const numDias = temInput ? [...new Set(inputs.map(i => i.data))].length : (dias.length || 1)
+
+  const inputAgregado = inputs.reduce((acc, d) => ({
+    investimento: acc.investimento + Number(d.investimento || 0),
+    leads: acc.leads + (d.leads || 0),
+    agendamentos: acc.agendamentos + (d.agendamentos || 0),
+    reunioes_realizadas: acc.reunioes_realizadas + (d.reunioes_realizadas || 0),
+    reunioes_qualificadas: acc.reunioes_qualificadas + (d.reunioes_qualificadas || 0),
+    fechamentos: acc.fechamentos + (d.fechamentos || 0),
+    faturamento: acc.faturamento + Number(d.faturamento || 0),
+  }), { investimento: 0, leads: 0, agendamentos: 0, reunioes_realizadas: 0, reunioes_qualificadas: 0, fechamentos: 0, faturamento: 0 })
+
+  // Fallback legado
   const trafego = dias.reduce((acc, d) => ({
     investimento: acc.investimento + Number(d.investimento || 0),
     leads: acc.leads + (d.leads || 0),
@@ -191,12 +207,18 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ funil: null, metas: metas || [], periodo: { de: dataInicio, ate: dataFim, dias: 0, tipo: 'vazio' } })
   }
 
-  // Usar leads do input diário se existir, senão contar do SDR
-  const totalLeads = trafego.leads > 0 ? trafego.leads : allLeads.length
-
-  const totais = {
+  // Prioridade: input_diario > funil_trafego_diario > kanban SDR/Closer
+  const totais = temInput ? {
+    investimento: inputAgregado.investimento,
+    leads: inputAgregado.leads,
+    agendamentos: inputAgregado.agendamentos || agendados,
+    reunioes_realizadas: inputAgregado.reunioes_realizadas || reunioes,
+    reunioes_qualificadas: inputAgregado.reunioes_qualificadas || qualificadas,
+    fechamentos: inputAgregado.fechamentos || fechamentos,
+    faturamento: inputAgregado.faturamento || faturamento,
+  } : {
     investimento: trafego.investimento,
-    leads: totalLeads,
+    leads: trafego.leads > 0 ? trafego.leads : allLeads.length,
     agendamentos: agendados,
     reunioes_realizadas: reunioes,
     reunioes_qualificadas: qualificadas,
