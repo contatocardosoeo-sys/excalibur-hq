@@ -12,7 +12,7 @@ const ROUTE_ROLES: Record<string, string[]> = {
   '/crm-whatsapp': ['admin', 'cs'],
   '/crm': ['admin', 'sdr', 'closer', 'cmo', 'cs'],
   '/dashboard': ['admin', 'cs', 'closer', 'cmo', 'sdr'],
-  '/sdr': ['admin', 'sdr'],
+  '/sdr': ['admin', 'sdr', 'closer'],
   '/comercial': ['admin', 'closer'],
   '/trafego': ['admin', 'cmo'],
   '/planos': ['admin'],
