@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 
 interface MenuItem {
@@ -61,37 +61,53 @@ export default function Sidebar() {
   const [nome, setNome] = useState('')
   const [loaded, setLoaded] = useState(false)
 
-  useEffect(() => {
-    ;(async () => {
-      try {
-        // Tentar getUser primeiro, fallback para getSession
-        let email: string | undefined
+  const loadUser = useCallback(async () => {
+    try {
+      let email: string | undefined
+
+      // Tentar getSession primeiro (lê do cookie local, mais confiável)
+      const { data: { session } } = await supabase.auth.getSession()
+      email = session?.user?.email ?? undefined
+
+      // Fallback para getUser (verifica no servidor)
+      if (!email) {
         const { data: { user } } = await supabase.auth.getUser()
         email = user?.email ?? undefined
-
-        if (!email) {
-          const { data: { session } } = await supabase.auth.getSession()
-          email = session?.user?.email ?? undefined
-        }
-
-        if (email) {
-          const { data: interno } = await supabase
-            .from('usuarios_internos')
-            .select('role, roles, nome')
-            .eq('email', email)
-            .single()
-          if (interno) {
-            const roles = (interno.roles && interno.roles.length > 0) ? interno.roles : [interno.role]
-            setUserRoles(roles)
-            setNome(interno.nome)
-          }
-        }
-      } catch {
-        // Silently handle auth errors
       }
-      setLoaded(true)
-    })()
+
+      if (email) {
+        const { data: interno } = await supabase
+          .from('usuarios_internos')
+          .select('role, roles, nome')
+          .eq('email', email)
+          .single()
+        if (interno) {
+          const roles = (interno.roles && interno.roles.length > 0) ? interno.roles : [interno.role]
+          setUserRoles(roles)
+          setNome(interno.nome)
+        }
+      }
+    } catch {
+      // Silently handle auth errors
+    }
+    setLoaded(true)
   }, [])
+
+  useEffect(() => {
+    loadUser()
+
+    // Escutar mudanças de auth (login/logout) para reagir em tempo real
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user?.email) {
+        loadUser()
+      } else {
+        setUserRoles([])
+        setNome('')
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [loadUser])
 
   const filteredSections = loaded
     ? allSections

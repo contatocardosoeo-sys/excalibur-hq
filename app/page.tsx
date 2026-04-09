@@ -32,12 +32,23 @@ export default function LoginHQ() {
     const roles = (interno?.roles && interno.roles.length > 0) ? interno.roles : [interno?.role || 'cs']
     const primaryRole = roles[0]
 
-    // Redirecionar para rota padrão do role
+    // Aguardar sessão ser persistida nos cookies antes de redirecionar
     const destino: Record<string, string> = {
       admin: '/dashboard', cs: '/cs', sdr: '/sdr',
       closer: '/comercial', cmo: '/trafego', financeiro: '/financeiro',
     }
-    window.location.href = destino[primaryRole] || '/dashboard'
+    const target = destino[primaryRole] || '/dashboard'
+
+    // Verificar que a sessão está realmente salva
+    await new Promise(resolve => setTimeout(resolve, 200))
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session) {
+      window.location.href = target
+    } else {
+      // Fallback: tentar novamente com delay maior
+      await new Promise(resolve => setTimeout(resolve, 500))
+      window.location.href = target
+    }
   }
 
   return (
