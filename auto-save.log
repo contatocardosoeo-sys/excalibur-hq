@@ -4,9 +4,13 @@ warning: in the working copy of 'auto-save.log', LF will be replaced by CRLF the
  2 files changed, 51 insertions(+), 16 deletions(-)
 To https://github.com/contatocardosoeo-sys/excalibur-hq.git
    fd3e6dd..5facfd6  main -> main
-✅ Auto-save: 2026-04-09 warning: in the working copy of 'app/components/Sidebar.tsx', LF will be replaced by CRLF the next time Git touches it
-warning: in the working copy of 'middleware.ts', LF will be replaced by CRLF the next time Git touches it
-[main 9167a2a] auto-save: 2026-04-09 00:56 — app/(hq)/crm-whatsapp/page.tsx,app/components/Sidebar.tsx,middleware.ts,
+✅ Auto-save: 2026-04-09 warninwarning: in the working copy of 'auto-save.log', LF will be replaced by CRLF the next time Git touches it
+[main a285e68] auto-save: 2026-04-09 00:57
+ 1 file changed, 3 insertions(+)
+To https://github.com/contatocardosoeo-sys/excalibur-hq.git
+   afc3be8..a285e68  main -> main
+✅ Auto-save: 2026-04-09 00:57
+nts/Sidebar.tsx,middleware.ts,
  3 files changed, 163 deletions(-)
  delete mode 100644 app/(hq)/crm-whatsapp/page.tsx
 To https://github.com/contatocardosoeo-sys/excalibur-hq.git
