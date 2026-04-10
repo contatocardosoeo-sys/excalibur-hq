@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Sidebar from '../../../components/Sidebar'
+import { useDispararEvento } from '../../../hooks/useDispararEvento'
 
 type Tarefa = {
   id: string; fase: string; titulo: string; descricao: string
@@ -35,6 +36,7 @@ const GRUPOS = [
 export default function JornadaDetalhePage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
+  const { disparar } = useDispararEvento()
   const [dados, setDados] = useState<JornadaData | null>(null)
   const [loading, setLoading] = useState(true)
   const [att, setAtt] = useState<string | null>(null)
@@ -63,6 +65,33 @@ export default function JornadaDetalhePage() {
     })
     try {
       await fetch('/api/jornada', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tarefa_id: t.id, status: s, clinica_id: id }) })
+      if (s === 'concluida' && t.status !== 'concluida') {
+        const clinicaNome = dados?.clinica?.nome || 'Clinica'
+        // Marcos especiais D7 e D30 -> evento pra empresa toda
+        if (t.fase === 'D7' || t.fase === 'D7-D15') {
+          disparar({
+            tipo: 'marco_d7',
+            titulo: 'Marco D7 Concluído!',
+            mensagem: `${clinicaNome} completou a primeira semana!`,
+            usuario_nome: 'Medina',
+          })
+        } else if (t.fase === 'D30' || t.fase === 'D15-D30') {
+          disparar({
+            tipo: 'marco_d30',
+            titulo: 'MARCO D30 CONCLUÍDO!',
+            mensagem: `${clinicaNome} completou a jornada D30!`,
+            usuario_nome: 'Medina',
+          })
+        } else {
+          // Tarefas comuns -> evento privado de CS
+          disparar({
+            tipo: 'tarefa_concluida',
+            titulo: 'Tarefa concluída',
+            mensagem: `${t.titulo} — ${clinicaNome}`,
+            usuario_nome: 'Medina',
+          })
+        }
+      }
     } finally {
       setAtt(null)
     }

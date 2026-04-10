@@ -2,12 +2,14 @@
 
 import { useState } from 'react'
 import Sidebar from '../../../components/Sidebar'
+import { useDispararEvento } from '../../../hooks/useDispararEvento'
 
 const ESTADOS = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO']
 
 interface UserRow { nome: string; email: string; role: string }
 
 export default function NovoOnboarding() {
+  const { disparar } = useDispararEvento()
   const [step, setStep] = useState(1)
   // Passo 1
   const [nome, setNome] = useState('')
@@ -61,7 +63,16 @@ export default function NovoOnboarding() {
         }),
       })
       const j = await res.json()
-      if (j.success) { setResult({ clinica_id: j.clinica_id, total: j.total_tarefas_criadas }); setStep(4) }
+      if (j.success) {
+        setResult({ clinica_id: j.clinica_id, total: j.total_tarefas_criadas })
+        setStep(4)
+        disparar({
+          tipo: 'nova_clinica_ativa',
+          titulo: 'NOVA CLÍNICA ATIVADA!',
+          mensagem: `${nome} entrou na jornada D0!`,
+          usuario_nome: 'CS',
+        })
+      }
       else setErro(j.error || 'Erro ao salvar')
     } catch (e) { setErro(String(e)) }
     setSaving(false)

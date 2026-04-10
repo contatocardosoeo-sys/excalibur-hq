@@ -37,6 +37,7 @@ const allSections: MenuSection[] = [
   {
     label: 'Sistema',
     items: [
+      { href: '/eventos', icon: '⚡', label: 'Eventos', roles: ['admin'] },
       { href: '/admin/usuarios', icon: '🔐', label: 'Usuarios', roles: ['admin'] },
     ],
   },

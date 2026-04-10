@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Sidebar from '../../components/Sidebar'
 import { useToast } from '../../components/Toast'
 import { supabase } from '../../lib/supabase'
+import { useDispararEvento } from '../../hooks/useDispararEvento'
 
 interface Metricas {
   periodo?: string
@@ -51,6 +52,7 @@ function corPct(p: number) { return p >= 80 ? '#4ade80' : p >= 50 ? '#fbbf24' : 
 
 export default function SDRPage() {
   const { toast } = useToast()
+  const { disparar } = useDispararEvento()
   const [data, setData] = useState<Metricas | null>(null)
   const [loading, setLoading] = useState(true)
   const [aba, setAba] = useState<'overview' | 'rotina' | 'etapas' | 'historico'>('overview')
@@ -103,12 +105,27 @@ export default function SDRPage() {
   const salvarMetricas = async () => {
     setSalvando(true)
     try {
+      const novosAgend = Number(form.agendamentos) || 0
+      const antesAgend = Number(data?.metricas_dia?.agendamentos) || 0
+      const delta = Math.max(0, novosAgend - antesAgend)
+
       const r = await fetch('/api/sdr/metricas', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...form, sdr_email: userEmail }),
       })
       if (!r.ok) throw new Error('falha')
       toast('success', 'Metricas do dia salvas')
+
+      // Disparar um evento por novo agendamento registrado na sessao
+      for (let i = 0; i < delta; i++) {
+        disparar({
+          tipo: 'agendamento',
+          titulo: 'Agendamento Feito!',
+          mensagem: 'Trindade marcou mais uma reunião na agenda',
+          usuario_nome: 'Trindade',
+        })
+      }
+
       setEditando(false)
       load()
     } catch {

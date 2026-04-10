@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import Sidebar from '../../../components/Sidebar'
 import { useToast } from '../../../components/Toast'
 import KPICard from '../../../components/KPICard'
+import { useDispararEvento } from '../../../hooks/useDispararEvento'
 
 /* ── Types ── */
 type Receber = { id: string; data_vencimento: string; cliente_nome: string; clinica_id: string | null; plano: string; valor: number; status: string; data_pagamento: string | null; observacao: string | null }
@@ -141,6 +142,7 @@ function SectionHeader({ icon, title, count, total, color }: { icon: string; tit
 
 export default function FinanceiroOperacao() {
   const { toast } = useToast()
+  const { disparar } = useDispararEvento()
   const now = new Date()
   const [mes, setMes] = useState(now.getMonth() + 1)
   const [ano, setAno] = useState(now.getFullYear())
@@ -199,6 +201,29 @@ export default function FinanceiroOperacao() {
       const r = await fetch(`/api/financeiro/${tabela}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, status: 'pago' }) })
       if (!r.ok) throw new Error('falha')
       toast('success', 'Marcado como pago')
+      if (tabela === 'receber') {
+        const item = receber.find(x => x.id === id)
+        if (item) {
+          disparar({
+            tipo: 'pagamento_recebido',
+            titulo: 'Pagamento Recebido!',
+            mensagem: `${item.cliente_nome} — ${item.plano || 'pagamento confirmado'}`,
+            usuario_nome: 'Financeiro',
+            valor: Number(item.valor) || 0,
+          })
+        }
+      } else {
+        const item = pagar.find(x => x.id === id)
+        if (item) {
+          disparar({
+            tipo: 'folha_paga',
+            titulo: 'Pagamento efetuado',
+            mensagem: item.descricao || item.tipo || 'Pagamento realizado',
+            usuario_nome: 'Financeiro',
+            valor: Number(item.valor) || 0,
+          })
+        }
+      }
       load()
     } catch {
       toast('error', 'Erro ao marcar como pago')

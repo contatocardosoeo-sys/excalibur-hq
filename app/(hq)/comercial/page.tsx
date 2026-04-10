@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import Sidebar from '../../components/Sidebar'
 import { useToast } from '../../components/Toast'
 import { supabase } from '../../lib/supabase'
+import { useDispararEvento } from '../../hooks/useDispararEvento'
 
 type PipeItem = { id: string; lead_id: string; nome_clinica: string; plano: string; mrr_proposto: number; status: string; data_reuniao: string; data_fechamento: string; observacoes: string; created_at: string }
 type MetaBar = { atual: number; meta: number }
@@ -28,6 +29,7 @@ function fmt(v: number) { return 'R$ ' + v.toLocaleString('pt-BR', { minimumFrac
 
 export default function ComercialPage() {
   const { toast } = useToast()
+  const { disparar } = useDispararEvento()
   const [pipeline, setPipeline] = useState<PipeItem[]>([])
   const [kpis, setKpis] = useState({ reunioesSemana: 0, propostasEnviadas: 0, fechamentos: 0, mrrMes: 0 })
   const [metas, setMetas] = useState<Metas>(null)
@@ -95,7 +97,17 @@ export default function ComercialPage() {
     if (dir === 'next') { const i = ORDER.indexOf(item.status); s = ORDER[Math.min(i + 1, 2)] } else s = dir
     const updates: Record<string, unknown> = { status: s }
     if (s === 'fechado') updates.data_fechamento = new Date().toISOString().split('T')[0]
-    await fetch('/api/comercial/pipeline', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, ...updates }) }); load()
+    await fetch('/api/comercial/pipeline', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, ...updates }) })
+    if (s === 'fechado' && item.status !== 'fechado') {
+      disparar({
+        tipo: 'venda_fechada',
+        titulo: 'VENDA FECHADA!',
+        mensagem: `${item.nome_clinica} entrou no time!`,
+        usuario_nome: 'Guilherme',
+        valor: Number(item.mrr_proposto) || 0,
+      })
+    }
+    load()
   }
 
   const ativar = async () => {
