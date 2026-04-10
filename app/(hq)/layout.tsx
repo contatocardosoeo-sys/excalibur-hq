@@ -27,16 +27,8 @@ export default function HQLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      {ready && email && (
-        <div style={{ position: 'fixed', top: 0, left: 224, right: 0, zIndex: 40 }}>
-          <div style={{ paddingTop: 12 }}>
-            <AlertaPreenchimento userEmail={email} isAdmin={isAdmin} />
-          </div>
-        </div>
-      )}
-      <div style={{ paddingTop: ready && email ? 60 : 0 }}>
-        {children}
-      </div>
+      {ready && email && <AlertaPreenchimento userEmail={email} isAdmin={isAdmin} />}
+      {children}
     </>
   )
 }

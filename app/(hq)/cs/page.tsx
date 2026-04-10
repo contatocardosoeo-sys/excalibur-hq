@@ -1,313 +1,550 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import Sidebar from '../../components/Sidebar'
 import { supabase } from '../../lib/supabase'
 
-interface CockpitData {
-  clinicas: { id: string; nome: string }[]
-  jornada: { clinica_id: string; etapa: string; dias_na_plataforma: number; data_inicio: string; notas: string; updated_at: string }[]
-  adocao: { clinica_id: string; score: number }[]
-  alertas: { id: string; clinica_id: string; tipo: string; titulo: string; nivel: number; resolvido: boolean; created_at: string }[]
-}
-
-interface Clinica {
+/* ── Types ── */
+interface Cliente {
   id: string
   nome: string
+  plano: string
+  valor_contrato: number
+  cidade: string | null
+  estado: string | null
+  cs_responsavel: string
   etapa: string
   dias_na_plataforma: number
-  data_inicio: string
+  data_inicio: string | null
   score: number
+  classificacao: string
   alertas_count: number
+  alertas_criticos: number
+  faturamento_mes: number
+  tarefas_total: number
+  tarefas_pendentes: number
+  tarefas_bloqueantes: number
   ultima_acao: string | null
+  dias_sem_acao: number
+  notas: string | null
 }
 
-interface ProximaAcao {
-  clinica_id: string
-  clinica_nome: string
-  motivo: string
-  tipo: string
-  alerta_id: string | null
+interface Tarefa { id: string; clinica_id: string; clinica_nome: string; fase: string; titulo: string; status: string; bloqueante: boolean; data_prazo: string }
+interface Acao { clinica_id: string; clinica_nome: string; motivo: string; tipo: string; urgencia: number }
+interface Alerta { id: string; clinica_id: string; tipo: string; titulo: string; nivel: number; descricao: string; created_at: string }
+interface Log { id: string; clinica_id: string; clinica_nome: string; tipo: string; descricao: string; responsavel: string; created_at: string }
+interface Atrasado { cliente_nome: string; valor: number; status: string; data_vencimento: string }
+
+interface Painel {
+  kpis: {
+    total_ativos: number; em_risco: number; em_atencao: number; saudaveis: number
+    sem_interacao: number; alertas_criticos: number; alertas_total: number
+    score_medio: number; faturamento_mes: number; mrr_total: number
+    tarefas_semana: number; tarefas_bloqueantes: number
+  }
+  clientes: Cliente[]
+  tarefas_semana: Tarefa[]
+  acoes: Acao[]
+  alertas: Alerta[]
+  log_recente: Log[]
+  atrasados_financeiro: Atrasado[]
+  distribuicao_etapas: Record<string, number>
 }
 
-export default function CSCockpit() {
-  const [clinicas, setClinicas] = useState<Clinica[]>([])
-  const [proximas, setProximas] = useState<ProximaAcao[]>([])
+/* ── Helpers ── */
+function fmt(v: number) { return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }
+function fmtDate(d: string | null) {
+  if (!d) return '-'
+  const dt = new Date(d.length === 10 ? d + 'T12:00:00' : d)
+  return `${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}`
+}
+function tempoAtras(d: string) {
+  const diff = (Date.now() - new Date(d).getTime()) / 1000
+  if (diff < 60) return 'agora'
+  if (diff < 3600) return `${Math.floor(diff / 60)}m`
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h`
+  return `${Math.floor(diff / 86400)}d`
+}
+
+const scoreCor = (s: number) => s >= 80 ? '#4ade80' : s >= 60 ? '#fbbf24' : '#f87171'
+const etapaCor = (e: string) => {
+  if (e.match(/D0|D1|D3|D5/)) return '#a78bfa'
+  if (e.match(/D7|D15/)) return '#fbbf24'
+  if (e.match(/D30|D60|D90/)) return '#4ade80'
+  if (e === 'RISCO' || e === 'CHURN') return '#f87171'
+  return '#6b7280'
+}
+const tipoAcaoCor = (t: string) => {
+  if (t === 'critico') return '#ef4444'
+  if (t === 'risco') return '#f97316'
+  if (t === 'bloqueante') return '#f59e0b'
+  if (t === 'onboarding') return '#a855f7'
+  return '#3b82f6'
+}
+
+/* ══════════════ COMPONENT ══════════════ */
+export default function CSPainel() {
+  const router = useRouter()
+  const [data, setData] = useState<Painel | null>(null)
   const [loading, setLoading] = useState(true)
-  const [modalClinica, setModalClinica] = useState<Clinica | null>(null)
+  const [lastUpdate, setLastUpdate] = useState('')
+  const [aba, setAba] = useState<'overview' | 'clientes' | 'tarefas' | 'acoes' | 'log'>('overview')
+  const [busca, setBusca] = useState('')
+  const [filtroScore, setFiltroScore] = useState('')
+
+  // Modal contato
+  const [modalCliente, setModalCliente] = useState<Cliente | null>(null)
   const [contatoTipo, setContatoTipo] = useState('mensagem')
   const [contatoDesc, setContatoDesc] = useState('')
   const [salvando, setSalvando] = useState(false)
 
   const load = useCallback(async () => {
-    const hoje = new Date()
-
-    const res = await fetch('/api/cs/cockpit')
-    const data: CockpitData = await res.json()
-
-    const cl = data.clinicas || []
-    const jo = data.jornada || []
-    const ad = data.adocao || []
-    const al = data.alertas || []
-
-    const result: Clinica[] = cl.map(c => {
-      const j = jo.find(x => x.clinica_id === c.id)
-      const a = ad.find(x => x.clinica_id === c.id)
-      const alertasCount = al.filter(x => x.clinica_id === c.id).length
-      return {
-        id: c.id,
-        nome: c.nome,
-        etapa: j?.etapa ?? 'N/A',
-        dias_na_plataforma: j?.dias_na_plataforma ?? 0,
-        data_inicio: j?.data_inicio ?? '',
-        score: a?.score ?? 0,
-        alertas_count: alertasCount,
-        ultima_acao: j?.updated_at ?? null,
-      }
-    }).sort((a, b) => a.score - b.score)
-
-    setClinicas(result)
-
-    // Gerar proximas acoes
-    const acoes: ProximaAcao[] = []
-    result.forEach(c => {
-      const dias = c.dias_na_plataforma
-      const inicio = c.data_inicio ? new Date(c.data_inicio) : null
-      const diasDesdeInicio = inicio ? Math.floor((hoje.getTime() - inicio.getTime()) / 86400000) : 0
-
-      if (c.score < 60) {
-        const ultimaAcao = c.ultima_acao ? new Date(c.ultima_acao) : null
-        const diasSemAcao = ultimaAcao ? Math.floor((hoje.getTime() - ultimaAcao.getTime()) / 86400000) : 999
-        if (diasSemAcao >= 3) {
-          acoes.push({ clinica_id: c.id, clinica_nome: c.nome, motivo: `Score ${c.score} — sem acao ha ${diasSemAcao} dias`, tipo: 'risco', alerta_id: null })
-        }
-      }
-      if (dias <= 7 && diasDesdeInicio > 7) {
-        acoes.push({ clinica_id: c.id, clinica_nome: c.nome, motivo: 'Travada no onboarding ha mais de 7 dias', tipo: 'onboarding', alerta_id: null })
-      }
-      if (Math.abs(dias - 15) <= 3 && dias < 15) {
-        acoes.push({ clinica_id: c.id, clinica_nome: c.nome, motivo: 'Proximo do marco D15 — preparar reuniao', tipo: 'marco', alerta_id: null })
-      }
-      if (Math.abs(dias - 30) <= 3 && dias < 30) {
-        acoes.push({ clinica_id: c.id, clinica_nome: c.nome, motivo: 'Proximo do marco D30 — avaliar resultados', tipo: 'marco', alerta_id: null })
-      }
-      // Alertas criticos
-      al.filter(x => x.clinica_id === c.id && x.nivel === 3).forEach(a => {
-        acoes.push({ clinica_id: c.id, clinica_nome: c.nome, motivo: a.titulo, tipo: 'critico', alerta_id: a.id })
-      })
-    })
-
-    setProximas(acoes)
+    setLoading(true)
+    try {
+      const res = await fetch('/api/cs/painel')
+      const d = await res.json()
+      setData(d)
+      setLastUpdate(new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }))
+    } catch { /* */ }
     setLoading(false)
   }, [])
 
-  useEffect(() => {
-    load()
-    const interval = setInterval(load, 60000)
-    return () => clearInterval(interval)
-  }, [load])
+  useEffect(() => { load(); const iv = setInterval(load, 60000); return () => clearInterval(iv) }, [load])
 
   const registrarContato = async () => {
-    if (!modalClinica || !contatoDesc.trim()) return
+    if (!modalCliente || !contatoDesc.trim()) return
     setSalvando(true)
     const { data: { user } } = await supabase.auth.getUser()
     await fetch('/api/cs/registrar-contato', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ clinica_id: modalClinica.id, tipo: contatoTipo, descricao: contatoDesc, cs_email: user?.email || '' }),
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clinica_id: modalCliente.id, tipo: contatoTipo, descricao: contatoDesc, cs_email: user?.email || '' }),
     })
-    setModalClinica(null)
-    setContatoDesc('')
-    setSalvando(false)
+    // Tambem registra no log de atividades
+    await fetch('/api/cs/log', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clinica_id: modalCliente.id, clinica_nome: modalCliente.nome, tipo: contatoTipo, descricao: contatoDesc, responsavel: 'CS' }),
+    })
+    setModalCliente(null); setContatoDesc(''); setSalvando(false)
     load()
   }
 
-  const marcarFeito = async (acao: ProximaAcao) => {
-    if (acao.alerta_id) {
-      await supabase.from('alertas_clinica').update({ resolvido: true, resolvido_em: new Date().toISOString() }).eq('id', acao.alerta_id)
-    } else {
-      await supabase.from('alertas_clinica').insert({
-        clinica_id: acao.clinica_id, tipo: 'ACAO_CS', nivel: 1,
-        titulo: `Acao CS realizada: ${acao.motivo}`, descricao: 'Marcado como feito pelo CS', resolvido: true, resolvido_em: new Date().toISOString(),
-      })
-    }
-    load()
-  }
-
-  const totalAtivos = clinicas.length
-  const emRisco = clinicas.filter(c => c.score < 60).length
-  const semInteracao = clinicas.filter(c => {
-    if (!c.ultima_acao) return true
-    return (Date.now() - new Date(c.ultima_acao).getTime()) / 86400000 >= 5
-  }).length
-  const alertasCriticos = proximas.filter(a => a.tipo === 'critico').length
-
-  const scoreColor = (s: number) => s >= 80 ? '#22c55e' : s >= 60 ? '#f59e0b' : '#ef4444'
-  const etapaColor = (e: string) => {
-    if (e.includes('D0') || e.includes('D1') || e.includes('D3') || e.includes('D5')) return '#a855f7'
-    if (e.includes('D7') || e.includes('D15')) return '#f59e0b'
-    if (e.includes('D30') || e.includes('D60') || e.includes('D90')) return '#22c55e'
-    if (e === 'RISCO' || e === 'CHURN') return '#ef4444'
-    return '#6b7280'
-  }
-
-  if (loading) {
+  /* ── Loading state ── */
+  if (loading || !data) {
     return (
       <div style={{ minHeight: '100vh', background: '#030712', display: 'flex' }}>
         <Sidebar />
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7280' }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 32, marginBottom: 12 }}>🎯</div>
-            <p>Carregando cockpit CS...</p>
+        <div style={{ flex: 1, padding: 32 }}>
+          <div style={{ height: 28, width: 200, background: '#111827', borderRadius: 8, animation: 'pulse 1.5s infinite', marginBottom: 24 }} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 10, marginBottom: 16 }}>
+            {[1, 2, 3, 4, 5, 6].map(i => <div key={i} style={{ background: '#111827', borderRadius: 12, height: 80, animation: 'pulse 1.5s infinite' }} />)}
           </div>
+          {[1, 2, 3].map(i => <div key={i} style={{ background: '#111827', borderRadius: 12, height: 200, marginBottom: 12, animation: 'pulse 1.5s infinite' }} />)}
+          <style>{`@keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: 0.4 } }`}</style>
         </div>
       </div>
     )
   }
 
+  const { kpis, clientes, tarefas_semana, acoes, alertas, log_recente, atrasados_financeiro, distribuicao_etapas } = data
+
+  /* ── Filtros ── */
+  const clientesFiltrados = clientes.filter(c => {
+    if (busca && !c.nome.toLowerCase().includes(busca.toLowerCase())) return false
+    if (filtroScore === 'risco' && c.score >= 60) return false
+    if (filtroScore === 'atencao' && (c.score < 60 || c.score >= 80)) return false
+    if (filtroScore === 'saudavel' && c.score < 80) return false
+    return true
+  })
+
+  /* ── Card ── */
+  const KPICard = ({ icon, label, valor, sub, cor, onClick }: { icon: string; label: string; valor: string | number; sub?: string; cor: string; onClick?: () => void }) => (
+    <div onClick={onClick} style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 12, padding: '12px 14px', cursor: onClick ? 'pointer' : 'default', transition: 'border 0.2s' }}
+      onMouseEnter={e => { if (onClick) (e.currentTarget as HTMLDivElement).style.borderColor = cor + '60' }}
+      onMouseLeave={e => { if (onClick) (e.currentTarget as HTMLDivElement).style.borderColor = '#1f2937' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+        <span style={{ fontSize: 12 }}>{icon}</span>
+        <span style={{ fontSize: 9, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>{label}</span>
+      </div>
+      <div style={{ fontSize: 22, fontWeight: 800, color: cor, fontFamily: 'monospace' }}>{valor}</div>
+      {sub && <div style={{ fontSize: 9, color: '#4b5563', marginTop: 2 }}>{sub}</div>}
+    </div>
+  )
+
   return (
     <div style={{ minHeight: '100vh', background: '#030712', display: 'flex' }}>
       <Sidebar />
-      <div style={{ flex: 1, padding: '24px 32px', overflowY: 'auto' }}>
-        {/* Header */}
-        <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ flex: 1, padding: '24px 32px', overflowY: 'auto', maxWidth: 1400 }}>
+
+        {/* ── Header ── */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <div>
-            <h1 style={{ fontSize: 22, fontWeight: 700, color: '#fff', margin: 0 }}>Cockpit CS</h1>
-            <p style={{ color: '#6b7280', fontSize: 13, margin: '4px 0 0' }}>Visao acionavel de todas as clinicas — atualiza a cada 60s</p>
+            <h1 style={{ fontSize: 22, fontWeight: 700, color: '#fff', margin: 0 }}>🎯 Customer Success</h1>
+            <p style={{ color: '#4b5563', fontSize: 12, margin: '4px 0 0' }}>Painel completo da operacao CS · atualiza a cada 60s</p>
           </div>
-          <button onClick={() => {
-            const bom = '\uFEFF'
-            const csv = bom + ['Clinica;Etapa;Dias;Score;Alertas;Ultima Acao', ...clinicas.map(c => [c.nome, c.etapa, c.dias_na_plataforma, c.score, c.alertas_count, c.ultima_acao || '-'].join(';'))].join('\n')
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-            const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'cs_clinicas.csv'; a.click(); URL.revokeObjectURL(url)
-          }} style={{ background: '#1f2937', color: '#9ca3af', border: '1px solid #374151', borderRadius: 8, padding: '6px 14px', fontSize: 11, cursor: 'pointer' }}>📥 CSV</button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 10, color: '#4b5563' }}>Atualizado as {lastUpdate}</span>
+            <button onClick={load} style={{ background: '#1f2937', color: '#9ca3af', border: '1px solid #374151', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontSize: 13 }}>🔄</button>
+          </div>
         </div>
 
-        {/* KPIs */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 24 }}>
+        {/* ── KPIs principais ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 10, marginBottom: 12 }}>
+          <KPICard icon="👥" label="Clientes ativos" valor={kpis.total_ativos} sub={`MRR ${fmt(kpis.mrr_total)}`} cor="#60a5fa" />
+          <KPICard icon="💚" label="Saudaveis" valor={kpis.saudaveis} sub="score >= 80" cor="#4ade80" onClick={() => { setAba('clientes'); setFiltroScore('saudavel') }} />
+          <KPICard icon="⚠️" label="Em atencao" valor={kpis.em_atencao} sub="60-79" cor="#fbbf24" onClick={() => { setAba('clientes'); setFiltroScore('atencao') }} />
+          <KPICard icon="🔴" label="Em risco" valor={kpis.em_risco} sub="< 60" cor="#f87171" onClick={() => { setAba('clientes'); setFiltroScore('risco') }} />
+          <KPICard icon="🚨" label="Alertas criticos" valor={kpis.alertas_criticos} sub={`${kpis.alertas_total} totais`} cor={kpis.alertas_criticos > 0 ? '#f87171' : '#4ade80'} />
+          <KPICard icon="📅" label="Tarefas semana" valor={kpis.tarefas_semana} sub={`${kpis.tarefas_bloqueantes} bloqueantes`} cor={kpis.tarefas_bloqueantes > 0 ? '#fbbf24' : '#9ca3af'} onClick={() => router.push('/cs/calendario')} />
+        </div>
+
+        {/* ── KPIs secundarios ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 20 }}>
+          <KPICard icon="📊" label="Score medio" valor={`${kpis.score_medio}%`} cor={scoreCor(kpis.score_medio)} />
+          <KPICard icon="💰" label="Faturamento mes" valor={fmt(kpis.faturamento_mes)} sub="dos clientes" cor="#fbbf24" />
+          <KPICard icon="⏳" label="Sem interacao" valor={kpis.sem_interacao} sub=">= 5 dias" cor={kpis.sem_interacao > 0 ? '#f97316' : '#4ade80'} />
+          <KPICard icon="🎯" label="Acoes pendentes" valor={acoes.length} sub="obrigatorias" cor={acoes.length > 0 ? '#fbbf24' : '#4ade80'} />
+        </div>
+
+        {/* ── Abas ── */}
+        <div style={{ display: 'flex', gap: 2, marginBottom: 16, background: '#111827', borderRadius: 10, padding: 3 }}>
           {[
-            { label: 'Clientes ativos', valor: totalAtivos, color: '#f59e0b' },
-            { label: 'Em risco (< 60)', valor: emRisco, color: emRisco > 0 ? '#ef4444' : '#22c55e' },
-            { label: 'Sem interacao 5+ dias', valor: semInteracao, color: semInteracao > 0 ? '#f97316' : '#22c55e' },
-            { label: 'Alertas criticos', valor: alertasCriticos, color: alertasCriticos > 0 ? '#ef4444' : '#22c55e' },
-          ].map(k => (
-            <div key={k.label} style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 12, padding: 16 }}>
-              <div style={{ fontSize: 11, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.5 }}>{k.label}</div>
-              <div style={{ fontSize: 28, fontWeight: 800, color: k.color, marginTop: 4 }}>{k.valor}</div>
-            </div>
+            { key: 'overview' as const, label: '📊 Visao Geral' },
+            { key: 'acoes' as const, label: `🎯 Acoes (${acoes.length})` },
+            { key: 'clientes' as const, label: `👥 Clientes (${clientes.length})` },
+            { key: 'tarefas' as const, label: `📅 Tarefas (${tarefas_semana.length})` },
+            { key: 'log' as const, label: '📝 Log' },
+          ].map(t => (
+            <button key={t.key} onClick={() => setAba(t.key)}
+              style={{ flex: 1, background: aba === t.key ? '#f59e0b' : 'transparent', color: aba === t.key ? '#030712' : '#6b7280', border: 'none', borderRadius: 8, padding: '10px 16px', fontSize: 12, fontWeight: aba === t.key ? 700 : 500, cursor: 'pointer' }}>
+              {t.label}
+            </button>
           ))}
         </div>
 
-        {/* Modal registrar contato */}
-        {modalClinica && (
-          <div style={{ background: '#111827', border: '1px solid #374151', borderRadius: 16, padding: 24, marginBottom: 24 }}>
-            <h3 style={{ color: '#fff', fontSize: 16, fontWeight: 600, marginBottom: 4 }}>Registrar contato — {modalClinica.nome}</h3>
-            <p style={{ color: '#6b7280', fontSize: 12, marginBottom: 16 }}>Score: {modalClinica.score} | Etapa: {modalClinica.etapa}</p>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-              {['mensagem', 'ligacao', 'reuniao', 'ajuste'].map(t => (
-                <button key={t} onClick={() => setContatoTipo(t)}
-                  style={{ background: contatoTipo === t ? '#f59e0b' : '#1f2937', color: contatoTipo === t ? '#030712' : '#9ca3af', border: `1px solid ${contatoTipo === t ? '#f59e0b' : '#374151'}`, borderRadius: 8, padding: '6px 14px', fontSize: 12, cursor: 'pointer', fontWeight: contatoTipo === t ? 600 : 400 }}>
-                  {t.charAt(0).toUpperCase() + t.slice(1)}
-                </button>
-              ))}
+        {/* ════════ ABA OVERVIEW ════════ */}
+        {aba === 'overview' && (
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
+            {/* Coluna esquerda */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {/* Top 5 acoes obrigatorias */}
+              <div style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 12, overflow: 'hidden' }}>
+                <div style={{ padding: '12px 16px', borderBottom: '1px solid #1f2937', display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>🎯 Acoes prioritarias</span>
+                  {acoes.length > 5 && <button onClick={() => setAba('acoes')} style={{ fontSize: 10, color: '#f59e0b', background: 'none', border: 'none', cursor: 'pointer' }}>Ver todas {acoes.length} →</button>}
+                </div>
+                {acoes.length === 0 ? (
+                  <div style={{ padding: 24, textAlign: 'center', color: '#4ade80', fontSize: 12 }}>✅ Tudo em dia!</div>
+                ) : (
+                  <div>
+                    {acoes.slice(0, 5).map((a, i) => (
+                      <div key={i} onClick={() => router.push(`/jornada/${a.clinica_id}`)}
+                        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', borderBottom: i < 4 ? '1px solid #1f293730' : 'none', cursor: 'pointer' }}>
+                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: tipoAcaoCor(a.tipo), flexShrink: 0 }} />
+                        <div style={{ flex: 1 }}>
+                          <div style={{ color: '#fff', fontSize: 12, fontWeight: 600 }}>{a.clinica_nome}</div>
+                          <div style={{ color: '#6b7280', fontSize: 10 }}>{a.motivo}</div>
+                        </div>
+                        <span style={{ background: tipoAcaoCor(a.tipo) + '20', color: tipoAcaoCor(a.tipo), padding: '2px 8px', borderRadius: 6, fontSize: 9, fontWeight: 700, textTransform: 'uppercase' }}>{a.tipo}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Top 5 clientes em risco */}
+              <div style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 12, overflow: 'hidden' }}>
+                <div style={{ padding: '12px 16px', borderBottom: '1px solid #1f2937' }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>🔴 Clientes que precisam de atencao</span>
+                </div>
+                {clientes.filter(c => c.score < 80).slice(0, 5).length === 0 ? (
+                  <div style={{ padding: 24, textAlign: 'center', color: '#4ade80', fontSize: 12 }}>✅ Todos saudaveis</div>
+                ) : (
+                  clientes.filter(c => c.score < 80).slice(0, 5).map(c => (
+                    <div key={c.id} onClick={() => router.push(`/jornada/${c.id}`)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px', borderBottom: '1px solid #1f293730', cursor: 'pointer' }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ color: '#fff', fontSize: 12, fontWeight: 600 }}>{c.nome}</div>
+                        <div style={{ color: '#6b7280', fontSize: 10 }}>{c.cidade ? `${c.cidade}/${c.estado} · ` : ''}CS: {c.cs_responsavel}</div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ background: etapaCor(c.etapa) + '20', color: etapaCor(c.etapa), padding: '2px 8px', borderRadius: 6, fontSize: 9, fontWeight: 600 }}>{c.etapa}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, width: 60 }}>
+                          <span style={{ fontSize: 13, fontWeight: 800, color: scoreCor(c.score), fontFamily: 'monospace' }}>{c.score}</span>
+                          <div style={{ flex: 1, height: 4, background: '#1f2937', borderRadius: 2, overflow: 'hidden' }}>
+                            <div style={{ height: '100%', background: scoreCor(c.score), width: `${c.score}%` }} />
+                          </div>
+                        </div>
+                        <button onClick={e => { e.stopPropagation(); setModalCliente(c) }} style={{ background: '#f59e0b15', color: '#f59e0b', border: '1px solid #f59e0b30', borderRadius: 6, padding: '4px 10px', fontSize: 9, fontWeight: 600, cursor: 'pointer' }}>Contato</button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Tarefas da semana */}
+              <div style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 12, overflow: 'hidden' }}>
+                <div style={{ padding: '12px 16px', borderBottom: '1px solid #1f2937', display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>📅 Proximas tarefas da semana</span>
+                  <button onClick={() => router.push('/cs/calendario')} style={{ fontSize: 10, color: '#f59e0b', background: 'none', border: 'none', cursor: 'pointer' }}>Ver calendario →</button>
+                </div>
+                {tarefas_semana.length === 0 ? (
+                  <div style={{ padding: 24, textAlign: 'center', color: '#6b7280', fontSize: 12 }}>Nenhuma tarefa esta semana</div>
+                ) : (
+                  tarefas_semana.slice(0, 6).map(t => (
+                    <div key={t.id} onClick={() => router.push(`/jornada/${t.clinica_id}`)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 16px', borderBottom: '1px solid #1f293730', cursor: 'pointer', borderLeft: t.bloqueante ? '3px solid #f59e0b' : '3px solid transparent' }}>
+                      <span style={{ fontSize: 10, color: '#6b7280', fontFamily: 'monospace', minWidth: 36 }}>{fmtDate(t.data_prazo)}</span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ color: '#fff', fontSize: 11, fontWeight: 500 }}>{t.titulo}</div>
+                        <div style={{ color: '#6b7280', fontSize: 9 }}>{t.clinica_nome} · {t.fase}</div>
+                      </div>
+                      {t.bloqueante && <span style={{ color: '#f59e0b', fontSize: 10 }}>🔒</span>}
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
-            <textarea value={contatoDesc} onChange={e => setContatoDesc(e.target.value)} placeholder="Descreva o contato realizado..."
-              style={{ width: '100%', background: '#1f2937', border: '1px solid #374151', borderRadius: 8, padding: '10px 14px', color: '#fff', fontSize: 13, outline: 'none', minHeight: 80, resize: 'vertical' }} />
-            <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-              <button onClick={registrarContato} disabled={salvando}
-                style={{ background: '#f59e0b', color: '#030712', fontWeight: 700, fontSize: 13, border: 'none', borderRadius: 8, padding: '8px 20px', cursor: 'pointer', opacity: salvando ? 0.5 : 1 }}>
-                {salvando ? 'Salvando...' : 'Registrar'}
-              </button>
-              <button onClick={() => { setModalClinica(null); setContatoDesc('') }}
-                style={{ background: 'transparent', color: '#6b7280', border: '1px solid #374151', borderRadius: 8, padding: '8px 20px', cursor: 'pointer', fontSize: 13 }}>
-                Cancelar
-              </button>
+
+            {/* Coluna direita */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {/* Distribuicao por etapa */}
+              <div style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 12, padding: 16 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 12 }}>📈 Distribuicao por etapa</div>
+                {Object.keys(distribuicao_etapas).length === 0 ? (
+                  <div style={{ color: '#6b7280', fontSize: 11, textAlign: 'center', padding: 12 }}>Sem dados</div>
+                ) : (
+                  Object.entries(distribuicao_etapas).sort((a, b) => b[1] - a[1]).map(([etapa, qtd]) => (
+                    <div key={etapa} style={{ marginBottom: 8 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                        <span style={{ fontSize: 10, color: etapaCor(etapa) }}>{etapa}</span>
+                        <span style={{ fontSize: 10, color: '#fff', fontWeight: 700 }}>{qtd}</span>
+                      </div>
+                      <div style={{ height: 4, background: '#1f2937', borderRadius: 2, overflow: 'hidden' }}>
+                        <div style={{ height: '100%', background: etapaCor(etapa), width: `${(qtd / kpis.total_ativos) * 100}%` }} />
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Inadimplentes do mes */}
+              <div style={{ background: '#111827', border: `1px solid ${atrasados_financeiro.length > 0 ? '#ef444430' : '#1f2937'}`, borderRadius: 12, padding: 16 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: atrasados_financeiro.length > 0 ? '#f87171' : '#fff', marginBottom: 12 }}>
+                  {atrasados_financeiro.length > 0 ? '🔴' : '✅'} Inadimplentes do mes
+                </div>
+                {atrasados_financeiro.length === 0 ? (
+                  <div style={{ color: '#4ade80', fontSize: 11, textAlign: 'center', padding: 12 }}>Nenhum inadimplente</div>
+                ) : (
+                  atrasados_financeiro.slice(0, 5).map((a, i) => (
+                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: i < Math.min(4, atrasados_financeiro.length - 1) ? '1px solid #1f293740' : 'none' }}>
+                      <span style={{ fontSize: 11, color: '#fff' }}>{a.cliente_nome}</span>
+                      <span style={{ fontSize: 11, color: '#f87171', fontWeight: 700, fontFamily: 'monospace' }}>{fmt(Number(a.valor))}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Atividade recente */}
+              <div style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 12, padding: 16 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 12 }}>📝 Atividade recente</div>
+                {log_recente.length === 0 ? (
+                  <div style={{ color: '#6b7280', fontSize: 11, textAlign: 'center', padding: 12 }}>Nenhuma atividade registrada</div>
+                ) : (
+                  log_recente.slice(0, 6).map(l => (
+                    <div key={l.id} style={{ marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid #1f293730' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+                        <span style={{ fontSize: 10, color: '#fff', fontWeight: 600 }}>{l.clinica_nome}</span>
+                        <span style={{ fontSize: 9, color: '#4b5563' }}>{tempoAtras(l.created_at)}</span>
+                      </div>
+                      <div style={{ fontSize: 10, color: '#6b7280' }}>{l.tipo}: {l.descricao.substring(0, 50)}{l.descricao.length > 50 ? '...' : ''}</div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           </div>
         )}
 
-        {/* Lista acionavel */}
-        <div style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 16, overflow: 'hidden', marginBottom: 24 }}>
-          <div style={{ padding: '16px 20px', borderBottom: '1px solid #1f2937', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h2 style={{ fontSize: 15, fontWeight: 600, color: '#fff', margin: 0 }}>Lista Acionavel</h2>
-            <span style={{ fontSize: 11, color: '#6b7280' }}>{clinicas.length} clinicas</span>
-          </div>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                {['Clinica', 'Etapa', 'Dias', 'Score', 'Alertas', 'Ultima acao', 'Acao'].map(h => (
-                  <th key={h} style={{ color: '#6b7280', fontSize: 11, fontWeight: 600, padding: '10px 16px', textAlign: 'left', borderBottom: '1px solid #1f2937' }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {clinicas.map(c => (
-                <tr key={c.id} style={{ borderBottom: '1px solid #1f293740' }}>
-                  <td style={{ padding: '10px 16px', color: '#fff', fontSize: 13, fontWeight: 500 }}>{c.nome}</td>
-                  <td style={{ padding: '10px 16px' }}>
-                    <span style={{ background: `${etapaColor(c.etapa)}20`, color: etapaColor(c.etapa), border: `1px solid ${etapaColor(c.etapa)}40`, borderRadius: 6, padding: '2px 10px', fontSize: 11, fontWeight: 600 }}>
-                      {c.etapa.replace(/_/g, ' ')}
-                    </span>
-                  </td>
-                  <td style={{ padding: '10px 16px', color: '#9ca3af', fontSize: 13, fontFamily: 'monospace' }}>{c.dias_na_plataforma}d</td>
-                  <td style={{ padding: '10px 16px' }}>
-                    <span style={{ color: scoreColor(c.score), fontWeight: 700, fontSize: 14 }}>{c.score}</span>
-                  </td>
-                  <td style={{ padding: '10px 16px' }}>
-                    {c.alertas_count > 0 ? (
-                      <span style={{ background: '#ef444420', color: '#ef4444', borderRadius: 6, padding: '2px 8px', fontSize: 11 }}>
-                        {c.alertas_count}
-                      </span>
-                    ) : (
-                      <span style={{ color: '#22c55e', fontSize: 11 }}>OK</span>
-                    )}
-                  </td>
-                  <td style={{ padding: '10px 16px', color: '#6b7280', fontSize: 12 }}>
-                    {c.ultima_acao ? new Date(c.ultima_acao).toLocaleDateString('pt-BR') : '-'}
-                  </td>
-                  <td style={{ padding: '10px 16px' }}>
-                    <button onClick={() => setModalClinica(c)}
-                      style={{ background: '#f59e0b20', color: '#f59e0b', border: '1px solid #f59e0b40', borderRadius: 6, padding: '4px 12px', fontSize: 11, cursor: 'pointer', fontWeight: 500 }}>
-                      Registrar contato
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {clinicas.length === 0 && (
-                <tr><td colSpan={7} style={{ padding: 40, textAlign: 'center', color: '#6b7280' }}>Nenhuma clinica cadastrada</td></tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Proximas acoes obrigatorias */}
-        <div style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 16, overflow: 'hidden' }}>
-          <div style={{ padding: '16px 20px', borderBottom: '1px solid #1f2937' }}>
-            <h2 style={{ fontSize: 15, fontWeight: 600, color: '#fff', margin: 0 }}>Proximas Acoes Obrigatorias</h2>
-          </div>
-          <div style={{ padding: proximas.length > 0 ? 0 : 20 }}>
-            {proximas.length === 0 ? (
-              <p style={{ color: '#22c55e', fontSize: 13, textAlign: 'center' }}>Tudo em dia! Nenhuma acao pendente.</p>
+        {/* ════════ ABA ACOES ════════ */}
+        {aba === 'acoes' && (
+          <div style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 12, overflow: 'hidden' }}>
+            <div style={{ padding: '12px 16px', borderBottom: '1px solid #1f2937', display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>🎯 Todas as acoes obrigatorias</span>
+              <span style={{ fontSize: 11, color: '#6b7280' }}>{acoes.length} acoes</span>
+            </div>
+            {acoes.length === 0 ? (
+              <div style={{ padding: 60, textAlign: 'center', color: '#4ade80' }}>
+                <div style={{ fontSize: 40, marginBottom: 12 }}>✅</div>
+                <div>Tudo em dia! Nenhuma acao pendente</div>
+              </div>
             ) : (
-              proximas.map((a, i) => {
-                const tipoColor = a.tipo === 'critico' ? '#ef4444' : a.tipo === 'risco' ? '#f97316' : a.tipo === 'onboarding' ? '#a855f7' : '#3b82f6'
-                return (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 20px', borderBottom: i < proximas.length - 1 ? '1px solid #1f293740' : 'none' }}>
-                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: tipoColor, flexShrink: 0 }} />
-                    <div style={{ flex: 1 }}>
-                      <span style={{ color: '#fff', fontSize: 13, fontWeight: 500 }}>{a.clinica_nome}</span>
-                      <span style={{ color: '#6b7280', fontSize: 12, marginLeft: 8 }}>{a.motivo}</span>
-                    </div>
-                    <button onClick={() => marcarFeito(a)}
-                      style={{ background: '#22c55e20', color: '#22c55e', border: '1px solid #22c55e40', borderRadius: 6, padding: '4px 12px', fontSize: 11, cursor: 'pointer', fontWeight: 500 }}>
-                      Feito
-                    </button>
+              acoes.map((a, i) => (
+                <div key={i} onClick={() => router.push(`/jornada/${a.clinica_id}`)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderBottom: '1px solid #1f293730', cursor: 'pointer' }}>
+                  <span style={{ width: 10, height: 10, borderRadius: '50%', background: tipoAcaoCor(a.tipo), flexShrink: 0 }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>{a.clinica_nome}</div>
+                    <div style={{ color: '#9ca3af', fontSize: 11 }}>{a.motivo}</div>
                   </div>
-                )
-              })
+                  <span style={{ background: tipoAcaoCor(a.tipo) + '20', color: tipoAcaoCor(a.tipo), padding: '3px 10px', borderRadius: 6, fontSize: 10, fontWeight: 700, textTransform: 'uppercase' }}>{a.tipo}</span>
+                </div>
+              ))
             )}
           </div>
-        </div>
+        )}
+
+        {/* ════════ ABA CLIENTES ════════ */}
+        {aba === 'clientes' && (
+          <>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+              <input value={busca} onChange={e => setBusca(e.target.value)} placeholder="Buscar cliente..."
+                style={{ flex: 1, background: '#1f2937', border: '1px solid #374151', borderRadius: 8, padding: '8px 12px', color: '#fff', fontSize: 12, outline: 'none' }} />
+              {filtroScore && (
+                <button onClick={() => setFiltroScore('')} style={{ background: '#f59e0b15', color: '#f59e0b', border: '1px solid #f59e0b30', borderRadius: 8, padding: '6px 12px', fontSize: 11, cursor: 'pointer' }}>
+                  Limpar filtro: {filtroScore} ✕
+                </button>
+              )}
+            </div>
+            <div style={{ background: '#0d1117', border: '1px solid #1f2937', borderRadius: 12, overflow: 'hidden' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead><tr>
+                  {['Cliente', 'Etapa', 'Dias', 'Score', 'Tarefas', 'Alertas', 'Faturamento', 'Acao'].map(h => (
+                    <th key={h} style={{ color: '#4b5563', fontSize: 9, fontWeight: 600, padding: '10px 14px', textAlign: 'left', borderBottom: '1px solid #1f2937', textTransform: 'uppercase' }}>{h}</th>
+                  ))}
+                </tr></thead>
+                <tbody>
+                  {clientesFiltrados.map(c => (
+                    <tr key={c.id} style={{ borderBottom: '1px solid #1f293730', cursor: 'pointer' }} onClick={() => router.push(`/jornada/${c.id}`)}>
+                      <td style={{ padding: '10px 14px' }}>
+                        <div style={{ color: '#fff', fontSize: 12, fontWeight: 600 }}>{c.nome}</div>
+                        <div style={{ color: '#6b7280', fontSize: 9 }}>{c.plano} · {c.cs_responsavel}</div>
+                      </td>
+                      <td style={{ padding: '10px 14px' }}>
+                        <span style={{ background: etapaCor(c.etapa) + '20', color: etapaCor(c.etapa), padding: '2px 8px', borderRadius: 6, fontSize: 9, fontWeight: 600 }}>{c.etapa}</span>
+                      </td>
+                      <td style={{ padding: '10px 14px', color: '#9ca3af', fontSize: 11, fontFamily: 'monospace' }}>{c.dias_na_plataforma}d</td>
+                      <td style={{ padding: '10px 14px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: 13, fontWeight: 800, color: scoreCor(c.score), fontFamily: 'monospace', width: 24 }}>{c.score}</span>
+                          <div style={{ width: 50, height: 4, background: '#1f2937', borderRadius: 2, overflow: 'hidden' }}>
+                            <div style={{ height: '100%', background: scoreCor(c.score), width: `${c.score}%` }} />
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ padding: '10px 14px', fontSize: 10, color: '#9ca3af' }}>
+                        {c.tarefas_pendentes}/{c.tarefas_total}
+                        {c.tarefas_bloqueantes > 0 && <span style={{ color: '#f59e0b', marginLeft: 4 }}>🔒{c.tarefas_bloqueantes}</span>}
+                      </td>
+                      <td style={{ padding: '10px 14px' }}>
+                        {c.alertas_count > 0 ? (
+                          <span style={{ background: '#ef444420', color: '#f87171', padding: '2px 8px', borderRadius: 6, fontSize: 9, fontWeight: 700 }}>
+                            {c.alertas_count}{c.alertas_criticos > 0 ? ` (${c.alertas_criticos}!)` : ''}
+                          </span>
+                        ) : (
+                          <span style={{ color: '#4ade80', fontSize: 9 }}>OK</span>
+                        )}
+                      </td>
+                      <td style={{ padding: '10px 14px', color: '#fbbf24', fontSize: 11, fontFamily: 'monospace', fontWeight: 600 }}>{fmt(c.faturamento_mes)}</td>
+                      <td style={{ padding: '10px 14px' }}>
+                        <button onClick={e => { e.stopPropagation(); setModalCliente(c) }} style={{ background: '#f59e0b15', color: '#f59e0b', border: '1px solid #f59e0b30', borderRadius: 6, padding: '4px 10px', fontSize: 9, fontWeight: 600, cursor: 'pointer' }}>Contato</button>
+                      </td>
+                    </tr>
+                  ))}
+                  {clientesFiltrados.length === 0 && <tr><td colSpan={8} style={{ padding: 40, textAlign: 'center', color: '#6b7280' }}>Nenhum cliente encontrado</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+
+        {/* ════════ ABA TAREFAS ════════ */}
+        {aba === 'tarefas' && (
+          <div style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 12, overflow: 'hidden' }}>
+            <div style={{ padding: '12px 16px', borderBottom: '1px solid #1f2937', display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>📅 Tarefas da semana</span>
+              <button onClick={() => router.push('/cs/calendario')} style={{ fontSize: 10, color: '#f59e0b', background: 'none', border: 'none', cursor: 'pointer' }}>Abrir calendario →</button>
+            </div>
+            {tarefas_semana.length === 0 ? (
+              <div style={{ padding: 60, textAlign: 'center', color: '#6b7280' }}>
+                <div style={{ fontSize: 40, marginBottom: 12, opacity: 0.4 }}>📅</div>
+                <div>Nenhuma tarefa esta semana</div>
+              </div>
+            ) : (
+              tarefas_semana.map(t => (
+                <div key={t.id} onClick={() => router.push(`/jornada/${t.clinica_id}`)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px', borderBottom: '1px solid #1f293730', cursor: 'pointer', borderLeft: t.bloqueante ? '3px solid #f59e0b' : '3px solid transparent' }}>
+                  <span style={{ fontSize: 11, color: '#9ca3af', fontFamily: 'monospace', minWidth: 50 }}>{fmtDate(t.data_prazo)}</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ color: '#fff', fontSize: 12, fontWeight: 600 }}>{t.titulo}</div>
+                    <div style={{ color: '#6b7280', fontSize: 10 }}>{t.clinica_nome}</div>
+                  </div>
+                  <span style={{ background: '#37415120', color: '#9ca3af', padding: '2px 8px', borderRadius: 6, fontSize: 9, fontWeight: 600 }}>{t.fase}</span>
+                  {t.bloqueante && <span style={{ background: '#f59e0b20', color: '#f59e0b', padding: '2px 8px', borderRadius: 6, fontSize: 9, fontWeight: 700 }}>🔒 BLOQUEANTE</span>}
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {/* ════════ ABA LOG ════════ */}
+        {aba === 'log' && (
+          <div style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 12, overflow: 'hidden' }}>
+            <div style={{ padding: '12px 16px', borderBottom: '1px solid #1f2937' }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>📝 Log de atividades</span>
+            </div>
+            {log_recente.length === 0 ? (
+              <div style={{ padding: 60, textAlign: 'center', color: '#6b7280' }}>
+                <div style={{ fontSize: 40, marginBottom: 12, opacity: 0.4 }}>📝</div>
+                <div>Nenhuma atividade registrada</div>
+                <div style={{ fontSize: 10, marginTop: 4 }}>Quando registrar contatos com clientes, aparecera aqui</div>
+              </div>
+            ) : (
+              log_recente.map(l => (
+                <div key={l.id} style={{ padding: '12px 16px', borderBottom: '1px solid #1f293730' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span style={{ fontSize: 12, color: '#fff', fontWeight: 600 }}>{l.clinica_nome}</span>
+                    <span style={{ fontSize: 10, color: '#4b5563' }}>{tempoAtras(l.created_at)} · {l.responsavel}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ background: '#3b82f620', color: '#60a5fa', padding: '1px 8px', borderRadius: 6, fontSize: 9, fontWeight: 600 }}>{l.tipo}</span>
+                    <span style={{ fontSize: 11, color: '#9ca3af' }}>{l.descricao}</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {/* ════════ MODAL CONTATO ════════ */}
+        {modalCliente && (
+          <div style={{ position: 'fixed', inset: 0, background: '#000000cc', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }} onClick={() => setModalCliente(null)}>
+            <div style={{ background: '#111827', border: '1px solid #374151', borderRadius: 16, padding: 24, width: 480 }} onClick={e => e.stopPropagation()}>
+              <h3 style={{ color: '#fff', fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Registrar contato</h3>
+              <p style={{ color: '#6b7280', fontSize: 12, marginBottom: 16 }}>{modalCliente.nome} · Score {modalCliente.score} · {modalCliente.etapa}</p>
+              <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+                {['mensagem', 'ligacao', 'reuniao', 'ajuste'].map(t => (
+                  <button key={t} onClick={() => setContatoTipo(t)}
+                    style={{ background: contatoTipo === t ? '#f59e0b' : '#1f2937', color: contatoTipo === t ? '#030712' : '#9ca3af', border: 'none', borderRadius: 8, padding: '6px 14px', fontSize: 11, cursor: 'pointer', fontWeight: contatoTipo === t ? 700 : 500 }}>
+                    {t}
+                  </button>
+                ))}
+              </div>
+              <textarea value={contatoDesc} onChange={e => setContatoDesc(e.target.value)} placeholder="Descreva o contato realizado..."
+                style={{ width: '100%', background: '#1f2937', border: '1px solid #374151', borderRadius: 8, padding: '10px 14px', color: '#fff', fontSize: 12, outline: 'none', minHeight: 80, resize: 'vertical' }} />
+              <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+                <button onClick={registrarContato} disabled={salvando}
+                  style={{ background: '#f59e0b', color: '#030712', fontWeight: 700, fontSize: 12, border: 'none', borderRadius: 8, padding: '10px 24px', cursor: 'pointer', opacity: salvando ? 0.5 : 1 }}>
+                  {salvando ? 'Salvando...' : 'Registrar'}
+                </button>
+                <button onClick={() => setModalCliente(null)}
+                  style={{ background: 'transparent', color: '#6b7280', border: '1px solid #374151', borderRadius: 8, padding: '10px 24px', cursor: 'pointer', fontSize: 12 }}>
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

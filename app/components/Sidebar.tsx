@@ -61,6 +61,23 @@ export default function Sidebar() {
 
   // Mobile drawer
   const [mobileOpen, setMobileOpen] = useState(false)
+  // Desktop collapsed (persistido em localStorage)
+  const [collapsed, setCollapsed] = useState(false)
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('sidebar-collapsed')
+      if (saved === '1') setCollapsed(true)
+    }
+  }, [])
+
+  const toggleCollapsed = () => {
+    const novo = !collapsed
+    setCollapsed(novo)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('sidebar-collapsed', novo ? '1' : '0')
+    }
+  }
 
   // Global search
   const [searchQuery, setSearchQuery] = useState('')
@@ -223,6 +240,31 @@ export default function Sidebar() {
     </>
   )
 
+  // Versao colapsada (so icones)
+  const CollapsedSidebar = () => (
+    <div style={{ width: 56, background: '#111827', borderRight: '1px solid #1f2937', display: 'flex', flexDirection: 'column', minHeight: '100vh', alignItems: 'center', padding: '12px 0' }}>
+      <button onClick={toggleCollapsed} style={{ background: '#1f2937', border: 'none', borderRadius: 8, padding: 8, cursor: 'pointer', color: '#9ca3af', marginBottom: 12 }} title="Expandir sidebar">☰</button>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, width: '100%', padding: '0 6px', overflowY: 'auto' }}>
+        {filteredSections.map(section => section.items.map(({ href, icon, label }) => {
+          const active = pathname === href || pathname.startsWith(href + '/')
+          return (
+            <Link key={href} href={href} title={label}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: 44, height: 44, borderRadius: 8,
+                background: active ? '#f59e0b' : 'transparent',
+                color: active ? '#030712' : '#9ca3af',
+                fontSize: 18, textDecoration: 'none',
+              }}>
+              {icon}
+            </Link>
+          )
+        }))}
+      </div>
+      <button onClick={logout} title="Sair" style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 16, padding: 8 }}>↪</button>
+    </div>
+  )
+
   return (
     <>
       {/* Mobile hamburger button */}
@@ -239,17 +281,34 @@ export default function Sidebar() {
         <div className="md:hidden fixed inset-0 bg-black/60 z-40" onClick={() => setMobileOpen(false)} />
       )}
 
-      {/* Sidebar — desktop: always visible, mobile: drawer */}
-      <div className={`
-        bg-gray-900 border-r border-gray-800 flex flex-col shrink-0
-        fixed md:static z-50 md:z-auto
-        h-screen md:h-auto
-        w-56
-        transition-transform duration-200 ease-in-out
-        ${mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-      `} style={{ minHeight: '100vh' }}>
-        <SidebarContent />
-      </div>
+      {/* Desktop: collapsed ou full */}
+      {collapsed ? (
+        <div className="hidden md:flex shrink-0">
+          <CollapsedSidebar />
+        </div>
+      ) : (
+        <div className={`
+          bg-gray-900 border-r border-gray-800 flex flex-col shrink-0
+          fixed md:static z-50 md:z-auto
+          h-screen md:h-auto
+          w-56
+          transition-transform duration-200 ease-in-out
+          ${mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        `} style={{ minHeight: '100vh' }}>
+          {/* Toggle desktop button */}
+          <button onClick={toggleCollapsed} className="hidden md:flex absolute -right-3 top-6 z-10 bg-gray-800 border border-gray-700 rounded-full w-6 h-6 items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700 transition" title="Recolher sidebar">
+            ←
+          </button>
+          <SidebarContent />
+        </div>
+      )}
+
+      {/* Mobile: sempre o full quando aberto */}
+      {collapsed && mobileOpen && (
+        <div className="md:hidden fixed inset-y-0 left-0 z-50 w-56 bg-gray-900 border-r border-gray-800 flex flex-col">
+          <SidebarContent />
+        </div>
+      )}
     </>
   )
 }
