@@ -211,7 +211,7 @@ export default function ReactionsPage() {
           </div>
 
           {/* KPIs */}
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             {[
               { label: 'Reacoes Ativas', valor: reacaoAtivas, icon: '⚡', cor: 'text-amber-400' },
               { label: 'Execucoes Hoje', valor: execucoesHoje, icon: '🔄', cor: 'text-blue-400' },

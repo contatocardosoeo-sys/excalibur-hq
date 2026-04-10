@@ -166,7 +166,7 @@ export default function SupervisorPage() {
           </div>
 
           {/* KPIs */}
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             {[
               { label: 'Sessões Hoje', valor: sessoesHoje, icon: '🧠', cor: 'text-amber-400' },
               { label: 'Tokens Consumidos', valor: tokensTotal.toLocaleString(), icon: '⚡', cor: 'text-blue-400' },
@@ -191,7 +191,7 @@ export default function SupervisorPage() {
                 <p className="text-white text-sm leading-relaxed">{runResult.resumo}</p>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
                 {runResult.prioridades.map((p, i) => {
                   const imp = IMPACTO[p.impacto] || IMPACTO.medio
                   return (

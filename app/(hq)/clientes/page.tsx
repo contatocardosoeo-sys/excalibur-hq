@@ -192,10 +192,10 @@ export default function ClientesPage() {
   return (
     <div className="min-h-screen bg-gray-950 flex">
       <Sidebar />
-      <div className="flex-1 p-8 overflow-auto">
-        <div className="flex items-center justify-between mb-6">
+      <div className="flex-1 p-4 md:p-8 overflow-auto">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
           <div>
-            <h1 className="text-white text-2xl font-bold">Clientes</h1>
+            <h1 className="text-white text-xl md:text-2xl font-bold">Clientes</h1>
             <p className="text-gray-400 text-sm mt-1">Visao de todas as clinicas com dados reais</p>
           </div>
           <button onClick={() => {
@@ -207,10 +207,10 @@ export default function ClientesPage() {
         </div>
 
         {/* KPIs rapidos */}
-        <div className="grid grid-cols-5 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 mb-6">
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-center">
             <p className="text-gray-500 text-[10px] uppercase">Total Ativas</p>
-            <p className="text-white text-2xl font-bold">{clientes.length}</p>
+            <p className="text-white text-xl md:text-2xl font-bold">{clientes.length}</p>
           </div>
           <div className="bg-gray-900 border border-green-900/30 rounded-xl p-4 text-center cursor-pointer" onClick={() => setScoreFilter(scoreFilter === 'saudavel' ? '' : 'saudavel')}>
             <p className="text-gray-500 text-[10px] uppercase">Saudaveis (≥80)</p>
@@ -251,7 +251,7 @@ export default function ClientesPage() {
         ) : filtered.length === 0 ? (
           <EmptyState icon="🏥" title="Nenhum cliente encontrado" description="Ajuste os filtros ou cadastre novos clientes em /onboarding/novo" />
         ) : (
-          <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+          <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="border-gray-800 hover:bg-transparent">

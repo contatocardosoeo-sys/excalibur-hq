@@ -64,7 +64,7 @@ export default function HQLayout({ children }: { children: React.ReactNode }) {
     <ToastProvider>
       {ready && email && <AlertaCentral userEmail={email} isAdmin={isAdmin} />}
       {ready && primaryRole && <SistemaEventos userRole={primaryRole} />}
-      <div key={pathname} className="page-transition">
+      <div key={pathname} className="page-transition pt-14 md:pt-0 min-h-screen">
         {children}
       </div>
     </ToastProvider>

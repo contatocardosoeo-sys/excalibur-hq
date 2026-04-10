@@ -83,7 +83,7 @@ export default function OnboardingPage() {
   }, [])
 
   return (
-    <div className="flex-1 p-8 overflow-auto">
+    <div className="flex-1 p-4 md:p-8 overflow-auto">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
         <span>⚔️</span>
@@ -92,7 +92,7 @@ export default function OnboardingPage() {
       </div>
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-white">Onboarding de Clientes</h1>
           <p className="text-gray-400 text-sm mt-1">Acompanhe a jornada de ativação de cada clínica</p>
@@ -154,7 +154,7 @@ export default function OnboardingPage() {
               </p>
             </div>
           ) : (
-            <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+            <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-800 text-gray-400 text-left">

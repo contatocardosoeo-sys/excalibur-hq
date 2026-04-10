@@ -133,7 +133,7 @@ export default function JornadaDetalhePage() {
   return (
     <div style={{ minHeight: '100vh', background: '#09090f', display: 'flex' }}>
       <Sidebar />
-      <div style={{ flex: 1, padding: '20px 24px', overflowY: 'auto' }}>
+      <div style={{ flex: 1, padding: '16px', overflowY: 'auto' }}>
 
         {/* Voltar */}
         <button onClick={() => router.push('/jornada')} style={{ background: 'transparent', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 13, marginBottom: 16, padding: 0 }}>
@@ -148,7 +148,7 @@ export default function JornadaDetalhePage() {
               <div style={{ height: 8, background: '#252535', borderRadius: 4 }} />
             </div>
             {/* Skeleton das 3 colunas Kanban */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {[0, 1, 2].map(i => (
                 <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <div style={{ height: 48, background: '#13131f', border: '1px solid #252535', borderRadius: 10 }} />
@@ -164,14 +164,14 @@ export default function JornadaDetalhePage() {
         ) : (
           <>
             {/* Header + progresso */}
-            <div style={{ background: '#13131f', border: '1px solid #252535', borderRadius: 12, padding: 20, marginBottom: 24, display: 'grid', gridTemplateColumns: '1fr auto', gap: 16 }}>
+            <div className="bg-[#13131f] border border-[#252535] rounded-xl p-4 md:p-5 mb-6 flex flex-col gap-4 md:grid md:grid-cols-[1fr_auto] md:gap-4">
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-                  <span style={{ fontSize: 18, fontWeight: 700, color: '#fff' }}>{dados.clinica.nome}</span>
-                  <span style={{ fontSize: 11, background: '#f59e0b20', color: '#f59e0b', border: '1px solid #f59e0b40', borderRadius: 999, padding: '2px 10px' }}>
+                <div className="flex items-center gap-2 md:gap-3 flex-wrap mb-2">
+                  <span className="text-base md:text-lg font-bold text-white break-words">{dados.clinica.nome}</span>
+                  <span className="text-[11px] bg-amber-500/10 text-amber-500 border border-amber-500/30 rounded-full px-2.5 py-0.5">
                     {dados.jornada?.etapa?.replace(/_/g, ' ') || 'D0'}
                   </span>
-                  <span style={{ fontSize: 11, color: '#6b7280' }}>Dia {dados.jornada?.dias_na_plataforma || 0}</span>
+                  <span className="text-[11px] text-gray-500">Dia {dados.jornada?.dias_na_plataforma || 0}</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{ flex: 1, height: 8, background: '#252535', borderRadius: 4, overflow: 'hidden' }}>
@@ -190,20 +190,23 @@ export default function JornadaDetalhePage() {
                   )}
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: 12 }}>
+              <div className="grid grid-cols-4 gap-2 md:flex md:gap-3">
                 {[
                   { l: 'Pendentes', v: stats?.pendentes, c: '#6b7280' },
-                  { l: 'Em andamento', v: stats?.emAndamento, c: '#f59e0b' },
+                  { l: 'Em and.', lDesk: 'Em andamento', v: stats?.emAndamento, c: '#f59e0b' },
                   { l: 'Atrasadas', v: stats?.atrasadas, c: '#ef4444' },
-                  { l: 'Concluidas', v: stats?.concluidas, c: '#22c55e' },
+                  { l: 'Concluídas', v: stats?.concluidas, c: '#22c55e' },
                 ].map(s => (
-                  <div key={s.l} style={{ textAlign: 'center', padding: '8px 16px', background: '#09090f', borderRadius: 8 }}>
+                  <div key={s.l} className="text-center px-2 md:px-4 py-1.5 md:py-2 bg-[#09090f] rounded-lg">
                     {stats ? (
-                      <div style={{ fontSize: 20, fontWeight: 800, color: s.c }}>{s.v}</div>
+                      <div className="text-lg md:text-xl font-extrabold" style={{ color: s.c }}>{s.v}</div>
                     ) : (
-                      <div style={{ width: 24, height: 24, background: '#252535', borderRadius: 4, margin: '0 auto' }} className="animate-pulse" />
+                      <div className="w-6 h-6 bg-[#252535] rounded mx-auto animate-pulse" />
                     )}
-                    <div style={{ fontSize: 10, color: '#6b7280' }}>{s.l}</div>
+                    <div className="text-[9px] md:text-[10px] text-gray-500">
+                      <span className="md:hidden">{s.l}</span>
+                      <span className="hidden md:inline">{(s as { lDesk?: string }).lDesk || s.l}</span>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -225,7 +228,7 @@ export default function JornadaDetalhePage() {
             )}
 
             {/* Kanban 3 colunas */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {GRUPOS.map(g => {
                 const ts = dados.tarefas.filter(t => g.fases.includes(t.fase))
                 const concl = contar(ts, 'concluida')

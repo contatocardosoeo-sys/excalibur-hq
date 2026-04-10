@@ -199,9 +199,9 @@ export default function ClientePerfilPage() {
     return (
       <div className="min-h-screen bg-gray-950 flex">
         <Sidebar />
-        <div className="flex-1 p-8">
+        <div className="flex-1 p-4 md:p-8">
           <div className="h-8 w-64 bg-gray-800 rounded mb-6 animate-pulse" />
-          <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 mb-6">
             {[0, 1, 2].map(i => <div key={i} className="h-24 bg-gray-900 border border-gray-800 rounded-xl animate-pulse" />)}
           </div>
           <div className="h-64 bg-gray-900 border border-gray-800 rounded-xl animate-pulse" />
@@ -219,7 +219,7 @@ export default function ClientePerfilPage() {
   return (
     <div className="min-h-screen bg-gray-950 flex">
       <Sidebar />
-      <div className="flex-1 p-8 overflow-auto">
+      <div className="flex-1 p-4 md:p-8 overflow-auto">
         <button onClick={() => router.push('/clientes')} className="text-gray-500 text-sm mb-4 hover:text-amber-400 transition">
           ← Voltar para clientes
         </button>
@@ -260,11 +260,11 @@ export default function ClientePerfilPage() {
         )}
 
         {/* Header + ações */}
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-6">
-          <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4 md:p-6 mb-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-3 flex-wrap mb-2">
-                <h1 className="text-white text-2xl font-bold">{c.nome}</h1>
+                <h1 className="text-white text-xl md:text-2xl font-bold break-words">{c.nome}</h1>
                 {avisoAtivo && (
                   <span className="bg-red-500/20 text-red-400 border border-red-500/40 rounded-full px-3 py-1 text-xs font-bold uppercase animate-pulse">
                     ⚠️ AVISO PRÉVIO · {avisoDias > 0 ? `${avisoDias}d restantes` : 'EXPIRADO'}
@@ -284,42 +284,42 @@ export default function ClientePerfilPage() {
               </div>
             </div>
 
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-2 flex-wrap lg:flex-nowrap lg:justify-end">
               <button onClick={() => router.push(`/jornada/${id}`)}
-                className="bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg px-4 py-2 text-sm font-medium transition">
+                className="bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg px-3 md:px-4 py-2 text-xs md:text-sm font-medium transition whitespace-nowrap">
                 📋 Ver jornada
               </button>
               {!editando ? (
                 <button onClick={() => setEditando(true)}
-                  className="bg-gray-800 hover:bg-gray-700 text-white border border-gray-700 rounded-lg px-4 py-2 text-sm font-medium transition flex items-center gap-2">
+                  className="bg-gray-800 hover:bg-gray-700 text-white border border-gray-700 rounded-lg px-3 md:px-4 py-2 text-xs md:text-sm font-medium transition whitespace-nowrap flex items-center gap-2">
                   ✏️ Editar
                 </button>
               ) : (
                 <>
                   <button onClick={salvar} disabled={salvando}
-                    className="bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/30 rounded-lg px-4 py-2 text-sm font-medium transition disabled:opacity-50">
+                    className="bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/30 rounded-lg px-3 md:px-4 py-2 text-xs md:text-sm font-medium transition whitespace-nowrap disabled:opacity-50">
                     {salvando ? 'Salvando...' : '💾 Salvar'}
                   </button>
                   <button onClick={() => { setEditando(false); setForm(c) }}
-                    className="bg-gray-800 hover:bg-gray-700 text-gray-400 border border-gray-700 rounded-lg px-4 py-2 text-sm font-medium transition">
+                    className="bg-gray-800 hover:bg-gray-700 text-gray-400 border border-gray-700 rounded-lg px-3 md:px-4 py-2 text-xs md:text-sm font-medium transition whitespace-nowrap">
                     Cancelar
                   </button>
                 </>
               )}
               {!avisoAtivo ? (
                 <button onClick={ativarAvisoPrevio}
-                  className="bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded-lg px-4 py-2 text-sm font-medium transition">
+                  className="bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded-lg px-3 md:px-4 py-2 text-xs md:text-sm font-medium transition whitespace-nowrap">
                   ⚠️ Aviso prévio
                 </button>
               ) : (
                 <button onClick={cancelarAvisoPrevio}
-                  className="bg-green-500/10 hover:bg-green-500/20 text-green-400 border border-green-500/30 rounded-lg px-4 py-2 text-sm font-medium transition">
+                  className="bg-green-500/10 hover:bg-green-500/20 text-green-400 border border-green-500/30 rounded-lg px-3 md:px-4 py-2 text-xs md:text-sm font-medium transition whitespace-nowrap">
                   ✅ Cancelar aviso
                 </button>
               )}
               {isAdmin && (
                 <button onClick={deletar} disabled={deletando}
-                  className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg px-4 py-2 text-sm font-medium transition disabled:opacity-50">
+                  className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg px-3 md:px-4 py-2 text-xs md:text-sm font-medium transition whitespace-nowrap disabled:opacity-50">
                   {deletando ? 'Deletando...' : '🗑️ Deletar'}
                 </button>
               )}
@@ -340,7 +340,7 @@ export default function ClientePerfilPage() {
         )}
 
         {/* Seções de informações */}
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
           {/* Identificação */}
           <Secao titulo="Identificação">
             <Campo label="Nome" valor={form.nome} editando={editando} onChange={v => setField('nome', v)} />

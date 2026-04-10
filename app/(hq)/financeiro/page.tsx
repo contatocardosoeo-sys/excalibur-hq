@@ -224,7 +224,7 @@ export default function FinanceiroPage() {
       <Sidebar />
       <main className="flex-1 overflow-y-auto p-6">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6 md:mb-8">
           <div>
             <h1 className="text-2xl font-bold text-white flex items-center gap-2">
               <DollarSign className="h-7 w-7 text-amber-500" />
@@ -449,7 +449,7 @@ export default function FinanceiroPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 {/* Conservador */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">

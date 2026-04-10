@@ -126,7 +126,7 @@ export default function ObservabilidadePage() {
           </div>
 
           {/* KPIs */}
-          <div className="grid grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
             {[
               { label: 'Eventos Total', valor: totalEventos, icon: '⚡', cor: 'text-amber-400' },
               { label: 'Pendentes', valor: eventosPending, icon: '⏳', cor: eventosPending > 10 ? 'text-red-400' : 'text-yellow-400' },

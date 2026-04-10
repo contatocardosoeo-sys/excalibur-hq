@@ -368,9 +368,14 @@ export default function SistemaEventos({ userRole }: { userRole?: string }) {
       <div
         className={`xb-in ${cfg.shake ? 'xb-shake' : ''}`}
         style={{
-          position:'fixed', top:16, left:'50%', transform:'translateX(-50%)',
+          position:'fixed',
+          top: `calc(64px + env(safe-area-inset-top, 0))`,
+          left:'50%', transform:'translateX(-50%)',
           zIndex:99999, background:cfg.grad, border:`2px solid ${cfg.borda}`,
-          borderRadius:22, padding:tam.p, minWidth:tam.min, maxWidth:tam.max,
+          borderRadius:22, padding:tam.p,
+          minWidth: `min(${tam.min}, calc(100vw - 24px))`,
+          maxWidth: `min(${tam.max}, calc(100vw - 24px))`,
+          width: 'auto',
           display:'flex', alignItems:'center', gap:16,
           boxShadow:`0 28px 70px rgba(0,0,0,0.75), 0 0 60px ${cfg.borda}44`,
         }}

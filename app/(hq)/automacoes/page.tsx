@@ -166,7 +166,7 @@ export default function AutomacoesPage() {
           </div>
 
           {/* KPIs */}
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             {[
               { label: 'Workflows Ativos', valor: `${totalAtivos}/${WORKFLOWS.length}`, icon: '⚡', cor: 'text-amber-400' },
               { label: 'Execuções Hoje', valor: totalExecucoesHoje.toString(), icon: '🔄', cor: 'text-blue-400' },
@@ -266,7 +266,7 @@ export default function AutomacoesPage() {
             <h2 className="text-white font-semibold mb-4 flex items-center gap-2">
               <span className="text-amber-500">🔗</span> Webhooks Configurados
             </h2>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
               {[
                 { tabela: 'leads', evento: 'INSERT', destino: '/api/webhooks/supabase', descricao: 'Novo lead → N8N boas-vindas' },
                 { tabela: 'leads', evento: 'UPDATE', destino: '/api/webhooks/supabase', descricao: 'Lead fechou → N8N pós-venda' },

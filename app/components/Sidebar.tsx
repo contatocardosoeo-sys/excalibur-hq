@@ -273,47 +273,71 @@ export default function Sidebar() {
     </div>
   )
 
+  // Titulo da rota atual (para o mobile top bar)
+  const currentItem = filteredSections.flatMap(s => s.items).find(i => pathname === i.href || pathname.startsWith(i.href + '/'))
+  const currentLabel = currentItem?.label || 'Excalibur HQ'
+  const currentIcon = currentItem?.icon || '⚔️'
+
   return (
     <>
-      {/* Mobile hamburger button */}
-      <button
-        onClick={() => setMobileOpen(true)}
-        className="md:hidden fixed top-3 left-3 z-50 bg-gray-900 border border-gray-700 rounded-lg p-2 text-white"
-        style={{ display: mobileOpen ? 'none' : undefined }}
-      >
-        ☰
-      </button>
+      {/* ── MOBILE TOP BAR (fixa, h-14, cobre a largura toda) ── */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-gray-900 border-b border-gray-800 flex items-center justify-between px-3" style={{ paddingTop: 'env(safe-area-inset-top, 0)' }}>
+        <button
+          onClick={() => setMobileOpen(true)}
+          aria-label="Abrir menu"
+          className="w-11 h-11 flex items-center justify-center rounded-lg text-white hover:bg-gray-800 active:bg-gray-700 transition"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
+        </button>
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-base">{currentIcon}</span>
+          <span className="text-white text-sm font-semibold truncate max-w-[55vw]">{currentLabel}</span>
+        </div>
+        <button
+          onClick={() => setShowNotifs(!showNotifs)}
+          aria-label="Notificações"
+          className="w-11 h-11 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-800 relative"
+        >
+          <span className="text-lg">🔔</span>
+          {notifs > 0 && (
+            <span className="absolute top-1 right-1 bg-red-500 text-white text-[9px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">{notifs}</span>
+          )}
+        </button>
+      </div>
 
-      {/* Mobile overlay */}
+      {/* Overlay quando drawer aberto */}
       {mobileOpen && (
-        <div className="md:hidden fixed inset-0 bg-black/60 z-40" onClick={() => setMobileOpen(false)} />
+        <div className="md:hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50" onClick={() => setMobileOpen(false)} aria-hidden="true" />
       )}
 
-      {/* Desktop: collapsed ou full */}
+      {/* Drawer mobile (largo, quase full-width) */}
+      <div className={`md:hidden fixed top-0 left-0 bottom-0 z-50 w-[78vw] max-w-[320px] bg-gray-900 border-r border-gray-800 flex flex-col transition-transform duration-250 ease-out ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`} style={{ paddingTop: 'env(safe-area-inset-top, 0)' }}>
+        {mobileOpen && (
+          <button
+            onClick={() => setMobileOpen(false)}
+            aria-label="Fechar menu"
+            className="absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-800 hover:text-white z-10"
+          >
+            ✕
+          </button>
+        )}
+        <SidebarContent />
+      </div>
+
+      {/* ── DESKTOP sidebar ── */}
       {collapsed ? (
         <div className="hidden md:flex shrink-0">
           <CollapsedSidebar />
         </div>
       ) : (
-        <div className={`
-          bg-gray-900 border-r border-gray-800 flex flex-col shrink-0
-          fixed md:static z-50 md:z-auto
-          h-screen md:h-auto
-          w-56
-          transition-transform duration-200 ease-in-out
-          ${mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-        `} style={{ minHeight: '100vh' }}>
-          {/* Toggle desktop button */}
-          <button onClick={toggleCollapsed} className="hidden md:flex absolute -right-3 top-6 z-10 bg-gray-800 border border-gray-700 rounded-full w-6 h-6 items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700 transition" title="Recolher sidebar">
+        <div className="hidden md:flex bg-gray-900 border-r border-gray-800 flex-col shrink-0 md:static z-auto w-56 relative" style={{ minHeight: '100vh' }}>
+          <button onClick={toggleCollapsed} className="absolute -right-3 top-6 z-10 bg-gray-800 border border-gray-700 rounded-full w-6 h-6 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700 transition" title="Recolher sidebar">
             ←
           </button>
-          <SidebarContent />
-        </div>
-      )}
-
-      {/* Mobile: sempre o full quando aberto */}
-      {collapsed && mobileOpen && (
-        <div className="md:hidden fixed inset-y-0 left-0 z-50 w-56 bg-gray-900 border-r border-gray-800 flex flex-col">
           <SidebarContent />
         </div>
       )}

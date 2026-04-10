@@ -95,32 +95,45 @@ export default function AlertaCentral({ userEmail, isAdmin }: { userEmail: strin
       <button onClick={() => setOpen(!open)}
         className={open ? '' : 'alerta-pulsante'}
         style={{
-          position: 'fixed', bottom: 24, right: 24, zIndex: 60,
+          position: 'fixed',
+          bottom: `calc(16px + env(safe-area-inset-bottom, 0))`,
+          right: 16,
+          zIndex: 60,
           background: open ? '#1f2937' : 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)',
           color: '#fff',
           border: '3px solid #fff',
           borderRadius: open ? 12 : 999,
-          padding: open ? '12px 16px' : '14px 22px',
+          padding: open ? '10px 14px' : '12px 18px',
           cursor: 'pointer',
-          fontSize: 14, fontWeight: 800,
-          display: 'flex', alignItems: 'center', gap: 10,
+          fontSize: 13, fontWeight: 800,
+          display: 'flex', alignItems: 'center', gap: 8,
           letterSpacing: '0.02em',
           textTransform: 'uppercase',
+          maxWidth: 'calc(100vw - 32px)',
         }}>
         {open ? (
           <>✕ FECHAR</>
         ) : (
           <>
-            <span className="alerta-icon" style={{ fontSize: 22 }}>🚨</span>
-            <span>{totalBadge} ALERTA{totalBadge > 1 ? 'S' : ''}</span>
+            <span className="alerta-icon" style={{ fontSize: 20 }}>🚨</span>
+            <span>{totalBadge}</span>
+            <span className="hidden sm:inline">ALERTA{totalBadge > 1 ? 'S' : ''}</span>
           </>
         )}
       </button>
 
       {open && (
         <div style={{
-          position: 'fixed', bottom: 80, right: 20, zIndex: 60,
-          width: 380, maxHeight: '70vh', overflowY: 'auto',
+          position: 'fixed',
+          bottom: `calc(72px + env(safe-area-inset-bottom, 0))`,
+          right: 16,
+          left: 16,
+          zIndex: 60,
+          width: 'auto',
+          maxWidth: 380,
+          marginLeft: 'auto',
+          maxHeight: '70vh',
+          overflowY: 'auto',
           background: '#13131f', border: '1px solid #252535', borderRadius: 12,
           padding: 16, boxShadow: '0 8px 24px #00000080',
         }}>
