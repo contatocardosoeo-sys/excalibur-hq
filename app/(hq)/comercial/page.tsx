@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import Sidebar from '../../components/Sidebar'
+import { useToast } from '../../components/Toast'
 import { supabase } from '../../lib/supabase'
 
 type PipeItem = { id: string; lead_id: string; nome_clinica: string; plano: string; mrr_proposto: number; status: string; data_reuniao: string; data_fechamento: string; observacoes: string; created_at: string }
@@ -26,6 +27,7 @@ const PLANOS = [
 function fmt(v: number) { return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 0 }) }
 
 export default function ComercialPage() {
+  const { toast } = useToast()
   const [pipeline, setPipeline] = useState<PipeItem[]>([])
   const [kpis, setKpis] = useState({ reunioesSemana: 0, propostasEnviadas: 0, fechamentos: 0, mrrMes: 0 })
   const [metas, setMetas] = useState<Metas>(null)
@@ -57,7 +59,7 @@ export default function ComercialPage() {
       setMetas(d.metas || null)
     } catch (err) {
       console.error('Erro ao carregar pipeline comercial:', err)
-      setMsg('Erro ao carregar pipeline. Tente novamente.')
+      toast('error', 'Erro ao carregar pipeline. Tente novamente.')
     }
     setLoading(false)
   }, [])

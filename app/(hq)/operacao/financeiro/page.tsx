@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import Sidebar from '../../../components/Sidebar'
+import { useToast } from '../../../components/Toast'
 
 /* ── Types ── */
 type Receber = { id: string; data_vencimento: string; cliente_nome: string; clinica_id: string | null; plano: string; valor: number; status: string; data_pagamento: string | null; observacao: string | null }
@@ -138,6 +139,7 @@ function SectionHeader({ icon, title, count, total, color }: { icon: string; tit
 /* ══════════════════════════════════════════ COMPONENT ══════════════════════════════════════════ */
 
 export default function FinanceiroOperacao() {
+  const { toast } = useToast()
   const now = new Date()
   const [mes, setMes] = useState(now.getMonth() + 1)
   const [ano, setAno] = useState(now.getFullYear())
@@ -192,24 +194,50 @@ export default function FinanceiroOperacao() {
   useEffect(() => { load() }, [load])
 
   const marcarPago = async (tabela: 'receber' | 'pagar', id: string) => {
-    await fetch(`/api/financeiro/${tabela}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, status: 'pago' }) })
-    load()
+    try {
+      const r = await fetch(`/api/financeiro/${tabela}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, status: 'pago' }) })
+      if (!r.ok) throw new Error('falha')
+      toast('success', 'Marcado como pago')
+      load()
+    } catch {
+      toast('error', 'Erro ao marcar como pago')
+    }
   }
 
   const criarReceber = async () => {
-    if (!formR.cliente_nome || !formR.data_vencimento) return
+    if (!formR.cliente_nome || !formR.data_vencimento) {
+      toast('error', 'Preencha cliente e data de vencimento')
+      return
+    }
     setSaving(true)
-    await fetch('/api/financeiro/receber', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...formR, valor: Number(formR.valor) || 0, clinica_id: formR.clinica_id || null }) })
-    setFormR({ data_vencimento: '', cliente_nome: '', clinica_id: '', plano: 'Completo (90 dias garantia)', valor: '3000', observacao: '' })
-    setModalReceber(false); setSaving(false); load()
+    try {
+      const r = await fetch('/api/financeiro/receber', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...formR, valor: Number(formR.valor) || 0, clinica_id: formR.clinica_id || null }) })
+      if (!r.ok) throw new Error('falha')
+      toast('success', `Lancamento de R$${formR.valor} salvo`)
+      setFormR({ data_vencimento: '', cliente_nome: '', clinica_id: '', plano: 'Completo (90 dias garantia)', valor: '3000', observacao: '' })
+      setModalReceber(false); load()
+    } catch {
+      toast('error', 'Erro ao salvar lancamento')
+    }
+    setSaving(false)
   }
 
   const criarPagar = async () => {
-    if (!formP.descricao || !formP.data_vencimento) return
+    if (!formP.descricao || !formP.data_vencimento) {
+      toast('error', 'Preencha descricao e data de vencimento')
+      return
+    }
     setSaving(true)
-    await fetch('/api/financeiro/pagar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...formP, valor: Number(formP.valor) || 0 }) })
-    setFormP({ data_vencimento: '', descricao: '', tipo: 'outro', valor: '', observacao: '' })
-    setModalPagar(false); setSaving(false); load()
+    try {
+      const r = await fetch('/api/financeiro/pagar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...formP, valor: Number(formP.valor) || 0 }) })
+      if (!r.ok) throw new Error('falha')
+      toast('success', `Despesa de R$${formP.valor} salva`)
+      setFormP({ data_vencimento: '', descricao: '', tipo: 'outro', valor: '', observacao: '' })
+      setModalPagar(false); load()
+    } catch {
+      toast('error', 'Erro ao salvar despesa')
+    }
+    setSaving(false)
   }
 
   const onPlanoChange = (plano: string) => { const p = PLANOS.find(x => x.nome === plano); setFormR({ ...formR, plano, valor: String(p?.valor || 0) }) }
@@ -218,9 +246,16 @@ export default function FinanceiroOperacao() {
   const salvarEdicao = async () => {
     if (!editItem) return
     setSaving(true)
-    const { tabela, item } = editItem
-    await fetch(`/api/financeiro/${tabela}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(item) })
-    setEditItem(null); setSaving(false); load()
+    try {
+      const { tabela, item } = editItem
+      const r = await fetch(`/api/financeiro/${tabela}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(item) })
+      if (!r.ok) throw new Error('falha')
+      toast('success', 'Alteracoes salvas')
+      setEditItem(null); load()
+    } catch {
+      toast('error', 'Erro ao salvar alteracoes')
+    }
+    setSaving(false)
   }
 
   const exportarReceber = () => {

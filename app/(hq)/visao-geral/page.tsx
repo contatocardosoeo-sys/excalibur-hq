@@ -3,9 +3,9 @@
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import Sidebar from '../../components/Sidebar'
-
-function fmt(v: number) { return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }
-function pct(a: number, b: number) { return b > 0 ? Math.round((a / b) * 100) : 0 }
+import KPICard from '../../components/KPICard'
+import MetaBarComponent from '../../components/MetaBar'
+import { fmtRealCurto as fmt, pct } from '../../lib/utils'
 function statusCor(val: number, meta: number, invert?: boolean) {
   const r = meta > 0 ? val / meta : 0
   if (invert) return r <= 0.1 ? '#4ade80' : r <= 0.3 ? '#fbbf24' : '#f87171'
@@ -52,29 +52,13 @@ export default function VisaoGeral() {
   const csRisco = csScores.filter(s => s < 60).length
 
   /* ── Card ── */
+  // Wrapper para manter API antiga compativel
   const Card = ({ label, valor, sub, cor }: { label: string; valor: string; sub?: string; cor: string }) => (
-    <div style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 10, padding: '12px 14px' }}>
-      <div style={{ fontSize: 9, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600, marginBottom: 4 }}>{label}</div>
-      <div style={{ fontSize: 20, fontWeight: 800, color: cor, fontFamily: 'monospace' }}>{valor}</div>
-      {sub && <div style={{ fontSize: 9, color: '#4b5563', marginTop: 2 }}>{sub}</div>}
-    </div>
+    <KPICard label={label} valor={valor} sub={sub} cor={cor} size="sm" />
   )
 
-  /* ── MetaBar ── */
-  const MetaBar = ({ label, atual, meta, cor }: { label: string; atual: number; meta: number; cor: string }) => {
-    const p = pct(atual, meta)
-    return (
-      <div style={{ marginBottom: 10 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 3 }}>
-          <span style={{ color: '#9ca3af' }}>{label}</span>
-          <span style={{ color: cor, fontWeight: 700, fontFamily: 'monospace' }}>{atual}/{meta} ({p}%)</span>
-        </div>
-        <div style={{ height: 6, background: '#1f2937', borderRadius: 3, overflow: 'hidden' }}>
-          <div style={{ height: '100%', background: cor, borderRadius: 3, width: `${Math.min(p, 100)}%`, transition: 'width 0.5s' }} />
-        </div>
-      </div>
-    )
-  }
+  // Usar MetaBar global
+  const MetaBar = MetaBarComponent
 
   /* ── Section ── */
   const Section = ({ icon, title, href, children }: { icon: string; title: string; href: string; children: React.ReactNode }) => (

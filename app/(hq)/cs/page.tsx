@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Sidebar from '../../components/Sidebar'
+import { useToast } from '../../components/Toast'
 import { supabase } from '../../lib/supabase'
 
 /* ── Types ── */
@@ -86,6 +87,7 @@ const tipoAcaoCor = (t: string) => {
 /* ══════════════ COMPONENT ══════════════ */
 export default function CSPainel() {
   const router = useRouter()
+  const { toast } = useToast()
   const [data, setData] = useState<Painel | null>(null)
   const [loading, setLoading] = useState(true)
   const [lastUpdate, setLastUpdate] = useState('')
@@ -113,20 +115,28 @@ export default function CSPainel() {
   useEffect(() => { load(); const iv = setInterval(load, 60000); return () => clearInterval(iv) }, [load])
 
   const registrarContato = async () => {
-    if (!modalCliente || !contatoDesc.trim()) return
+    if (!modalCliente || !contatoDesc.trim()) {
+      toast('error', 'Descreva o contato realizado')
+      return
+    }
     setSalvando(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    await fetch('/api/cs/registrar-contato', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ clinica_id: modalCliente.id, tipo: contatoTipo, descricao: contatoDesc, cs_email: user?.email || '' }),
-    })
-    // Tambem registra no log de atividades
-    await fetch('/api/cs/log', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ clinica_id: modalCliente.id, clinica_nome: modalCliente.nome, tipo: contatoTipo, descricao: contatoDesc, responsavel: 'CS' }),
-    })
-    setModalCliente(null); setContatoDesc(''); setSalvando(false)
-    load()
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      await fetch('/api/cs/registrar-contato', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clinica_id: modalCliente.id, tipo: contatoTipo, descricao: contatoDesc, cs_email: user?.email || '' }),
+      })
+      await fetch('/api/cs/log', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clinica_id: modalCliente.id, clinica_nome: modalCliente.nome, tipo: contatoTipo, descricao: contatoDesc, responsavel: 'CS' }),
+      })
+      toast('success', `Contato registrado para ${modalCliente.nome}`)
+      setModalCliente(null); setContatoDesc('')
+      load()
+    } catch {
+      toast('error', 'Erro ao registrar contato')
+    }
+    setSalvando(false)
   }
 
   /* ── Loading state ── */

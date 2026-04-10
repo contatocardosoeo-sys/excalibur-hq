@@ -89,3 +89,32 @@ export function corScore(s: number): string {
   if (s >= 60) return '#fbbf24'
   return '#f87171'
 }
+
+/**
+ * Wrapper de fetch com tratamento de erro padronizado.
+ * Retorna { data, error } — nunca lança exception.
+ *
+ * @example
+ * const { data, error } = await safeFetch<MyType>('/api/x')
+ * if (error) toast('error', error)
+ * else setData(data)
+ */
+export async function safeFetch<T = unknown>(url: string, init?: RequestInit): Promise<{ data: T | null; error: string | null }> {
+  try {
+    const res = await fetch(url, init)
+    if (!res.ok) {
+      const text = await res.text().catch(() => '')
+      let msg = `HTTP ${res.status}`
+      try {
+        const json = JSON.parse(text)
+        if (json.error) msg = json.error
+      } catch { /* nao era JSON */ }
+      return { data: null, error: msg }
+    }
+    const data = (await res.json()) as T
+    return { data, error: null }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'erro desconhecido'
+    return { data: null, error: `Erro de rede: ${msg}` }
+  }
+}
