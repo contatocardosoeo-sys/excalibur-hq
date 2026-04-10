@@ -11,49 +11,45 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ tarefas: [] })
   }
 
-  const [{ data: clinicas }, { data: tarefas }] = await Promise.all([
-    supabase.from('clinicas').select('id, nome, data_inicio').eq('ativo', true),
-    supabase.from('tarefas_jornada').select('*').order('prazo_dia'),
+  const [{ data: clinicas }, { data: jornadas }, { data: tarefas }] = await Promise.all([
+    supabase.from('clinicas').select('id, nome').eq('ativo', true),
+    supabase.from('jornada_clinica').select('clinica_id, data_inicio'),
+    supabase
+      .from('tarefas_jornada')
+      .select('id, clinica_id, fase, titulo, descricao, status, bloqueante, prazo_dia, data_prazo')
+      .order('data_prazo'),
   ])
 
-  const cl = clinicas || []
-  const tf = tarefas || []
+  const clinMap = new Map((clinicas || []).map(c => [c.id, c.nome]))
+  const inicioMap = new Map((jornadas || []).map(j => [j.clinica_id, j.data_inicio]))
 
-  const result = []
-
-  for (const clinica of cl) {
-    const dataInicio = clinica.data_inicio
-    if (!dataInicio) continue
-
-    const tarefasClinica = tf.filter(t => t.clinica_id === clinica.id)
-
-    for (const tarefa of tarefasClinica) {
-      // Calcular data_prazo: data_inicio + prazo_dia
-      let dataPrazo = tarefa.data_prazo
-      if (!dataPrazo && tarefa.prazo_dia && dataInicio) {
-        const d = new Date(dataInicio + 'T12:00:00')
-        d.setDate(d.getDate() + tarefa.prazo_dia)
-        dataPrazo = d.toISOString().split('T')[0]
+  const result = (tarefas || [])
+    .filter(t => clinMap.has(t.clinica_id))
+    .map(t => {
+      let dataPrazo: string | null = t.data_prazo
+      if (!dataPrazo && t.prazo_dia) {
+        const inicio = inicioMap.get(t.clinica_id)
+        if (inicio) {
+          const d = new Date(inicio + 'T12:00:00')
+          d.setDate(d.getDate() + t.prazo_dia)
+          dataPrazo = d.toISOString().split('T')[0]
+        }
       }
-
-      if (!dataPrazo) continue
-      if (dataPrazo < start || dataPrazo > end) continue
-
-      result.push({
-        id: tarefa.id,
-        clinica_id: clinica.id,
-        clinica_nome: clinica.nome,
-        fase: tarefa.fase,
-        titulo: tarefa.titulo,
-        descricao: tarefa.descricao || '',
-        status: tarefa.status,
-        bloqueante: tarefa.bloqueante || false,
-        data_prazo: dataPrazo,
-      })
-    }
-  }
-
-  result.sort((a, b) => a.data_prazo.localeCompare(b.data_prazo))
+      return { t, dataPrazo }
+    })
+    .filter(({ dataPrazo }) => dataPrazo && dataPrazo >= start && dataPrazo <= end)
+    .map(({ t, dataPrazo }) => ({
+      id: t.id,
+      clinica_id: t.clinica_id,
+      clinica_nome: clinMap.get(t.clinica_id) as string,
+      fase: t.fase,
+      titulo: t.titulo,
+      descricao: t.descricao || '',
+      status: t.status,
+      bloqueante: t.bloqueante || false,
+      data_prazo: dataPrazo as string,
+    }))
+    .sort((a, b) => a.data_prazo.localeCompare(b.data_prazo))
 
   return NextResponse.json({ tarefas: result })
 }

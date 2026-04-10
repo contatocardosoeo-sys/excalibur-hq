@@ -38,6 +38,7 @@ export default function JornadaDetalhePage() {
   const [dados, setDados] = useState<JornadaData | null>(null)
   const [loading, setLoading] = useState(true)
   const [att, setAtt] = useState<string | null>(null)
+  const [criando, setCriando] = useState(false)
 
   const carregar = useCallback(async () => {
     if (!id) return
@@ -54,6 +55,23 @@ export default function JornadaDetalhePage() {
     await fetch('/api/jornada', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tarefa_id: t.id, status: s, clinica_id: id }) })
     await carregar()
     setAtt(null)
+  }
+
+  const criarTarefasPadrao = async () => {
+    if (!id || criando) return
+    setCriando(true)
+    const res = await fetch('/api/jornada/criar-tarefas', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clinica_id: id }),
+    })
+    if (res.ok) {
+      await carregar()
+    } else {
+      const err = await res.json().catch(() => ({}))
+      alert('Erro ao criar tarefas: ' + (err.error || 'desconhecido'))
+    }
+    setCriando(false)
   }
 
   const diasR = (d: string) => Math.ceil((new Date(d).getTime() - Date.now()) / 86400000)
@@ -106,6 +124,21 @@ export default function JornadaDetalhePage() {
                 ))}
               </div>
             </div>
+
+            {/* Empty state — clinica sem tarefas */}
+            {dados.tarefas.length === 0 && (
+              <div style={{ background: '#13131f', border: '1px dashed #f59e0b40', borderRadius: 12, padding: 48, textAlign: 'center', marginBottom: 24 }}>
+                <div style={{ fontSize: 48, marginBottom: 12 }}>🗂️</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 6 }}>Nenhuma tarefa criada ainda</div>
+                <div style={{ fontSize: 13, color: '#9ca3af', marginBottom: 20 }}>
+                  Esta clínica ainda não tem a jornada D0-D30 populada. Clique abaixo para gerar as 22 tarefas padrão.
+                </div>
+                <button onClick={criarTarefasPadrao} disabled={criando}
+                  style={{ background: criando ? '#9a6a00' : '#f59e0b', border: 'none', color: '#09090f', fontWeight: 700, padding: '10px 22px', borderRadius: 8, cursor: criando ? 'wait' : 'pointer', fontSize: 13 }}>
+                  {criando ? '⏳ Criando...' : '⚔️ Criar tarefas padrão (D0-D30)'}
+                </button>
+              </div>
+            )}
 
             {/* Kanban 3 colunas */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
