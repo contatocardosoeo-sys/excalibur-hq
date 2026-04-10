@@ -37,7 +37,8 @@ const allSections: MenuSection[] = [
   {
     label: 'Sistema',
     items: [
-      { href: '/dashboard', icon: '📊', label: 'Visao Geral', roles: ['admin', 'cs', 'closer', 'cmo', 'sdr'] },
+      { href: '/visao-geral', icon: '📊', label: 'Visao Geral', roles: ['admin'] },
+      { href: '/dashboard', icon: '🏠', label: 'Dashboard', roles: ['admin', 'cs', 'closer', 'cmo', 'sdr'] },
       { href: '/admin/usuarios', icon: '🔐', label: 'Usuarios', roles: ['admin'] },
     ],
   },

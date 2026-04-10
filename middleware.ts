@@ -18,6 +18,7 @@ const ROUTE_ROLES: Record<string, string[]> = {
   '/operacao/financeiro': ['admin'],
   '/operacao/colaboradores': ['admin'],
   '/cs/calendario': ['admin', 'cs'],
+  '/visao-geral': ['admin'],
   '/admin': ['admin'],
   '/ceo': ['admin'],
   '/coo': ['admin'],
