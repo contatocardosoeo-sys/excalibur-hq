@@ -178,7 +178,7 @@ export default function CEODashboard() {
                 key={p}
                 size="sm"
                 variant={periodo === p ? 'default' : 'ghost'}
-                className={`h-7 text-xs ${periodo === p ? 'bg-amber-500 text-gray-950 hover:bg-amber-400' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}
+                className={`min-h-[44px] md:min-h-[28px] px-3 md:px-2 text-xs ${periodo === p ? 'bg-amber-500 text-gray-950 hover:bg-amber-400' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}
                 onClick={() => setPeriodo(p)}
               >
                 {p.charAt(0).toUpperCase() + p.slice(1)}

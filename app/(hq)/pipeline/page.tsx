@@ -67,7 +67,7 @@ export default function PipelinePage() {
       <Sidebar />
       <div className="flex-1 p-4 md:p-8 overflow-auto">
         <div className="mb-6">
-          <h1 className="text-white text-xl md:text-2xl font-bold">Pipeline D0-D90</h1>
+          <h1 className="text-white text-xl md:text-2xl font-bold truncate">Pipeline D0-D90</h1>
           <p className="text-gray-400 text-sm mt-1">Jornada de sucesso dos clientes</p>
         </div>
 

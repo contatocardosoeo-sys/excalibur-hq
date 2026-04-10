@@ -149,7 +149,7 @@ export default function ComercialPage() {
 
         {aba === 'pipeline' && <>
         {/* KPIs */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10, marginBottom: 16 }}>
           {[{ l: 'Reunioes (semana)', v: kpis.reunioesSemana, c: '#3b82f6' }, { l: 'Propostas enviadas', v: kpis.propostasEnviadas, c: '#f59e0b' }, { l: 'Fechamentos', v: kpis.fechamentos, c: '#22c55e' }, { l: 'MRR gerado', v: fmt(kpis.mrrMes), c: '#a855f7' }].map(k => (
             <div key={k.l} style={{ background: '#13131f', border: '1px solid #252535', borderRadius: 10, padding: '14px 16px' }}><div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>{k.l}</div><div style={{ fontSize: 26, fontWeight: 800, color: k.c }}>{k.v}</div></div>
           ))}
@@ -219,7 +219,8 @@ export default function ComercialPage() {
 
         {/* Kanban (pipeline tab) */}
         {loading ? <div style={{ textAlign: 'center', color: '#6b7280', padding: '60px 0' }}>Carregando...</div> : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+          <div className="overflow-x-auto -mx-4 px-4 pb-4 md:mx-0 md:px-0">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(240px, 1fr))', gap: 12, minWidth: 960 }}>
             {COLS.map(col => {
               const items = pipeline.filter(p => p.status === col.key)
               const mrr = items.reduce((s, p) => s + Number(p.mrr_proposto || 0), 0)
@@ -252,13 +253,14 @@ export default function ComercialPage() {
               )
             })}
           </div>
+          </div>
         )}
         </>}
 
         {/* =========== ABA WHATSAPP CRM =========== */}
         {aba === 'whatsapp' && (
           <div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10, marginBottom: 16 }}>
               {[{ l: 'Webhooks hoje', v: waKpis.webhooksHoje, c: '#3b82f6' }, { l: 'Leads atualizados', v: waKpis.leadsAtualizados, c: '#22c55e' }, { l: 'Etapas movidas', v: waKpis.etapasMovidas, c: '#f59e0b' }, { l: 'Usuarios ativos', v: waKpis.usersAtivos, c: '#a855f7' }].map(k => (
                 <div key={k.l} style={{ background: '#13131f', border: '1px solid #252535', borderRadius: 10, padding: '14px 16px' }}><div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>{k.l}</div><div style={{ fontSize: 26, fontWeight: 800, color: k.c }}>{k.v}</div></div>
               ))}

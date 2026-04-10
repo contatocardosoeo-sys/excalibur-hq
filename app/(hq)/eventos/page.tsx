@@ -108,7 +108,7 @@ export default function EventosPage() {
       <div className="flex-1 p-4 md:p-8 overflow-auto">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
           <div>
-            <h1 className="text-white text-xl md:text-2xl font-bold">⚡ Eventos ao vivo</h1>
+            <h1 className="text-white text-xl md:text-2xl font-bold truncate">⚡ Eventos ao vivo</h1>
             <p className="text-gray-400 text-sm mt-1">Histórico das últimas 200 notificações do sistema — refresh automático 30s</p>
           </div>
           <button onClick={exportarCSV} className="bg-gray-800 text-gray-400 border border-gray-700 rounded-lg px-3 py-1.5 text-xs hover:border-amber-500/30 hover:text-amber-400 transition">
@@ -148,7 +148,7 @@ export default function EventosPage() {
             return (
               <div key={k} className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-center">
                 <p className="text-gray-500 text-[10px] uppercase">{v.replace(/^[^ ]+ /, '')}</p>
-                <p className="text-white text-xl md:text-2xl font-bold">{qtd}</p>
+                <p className="text-white text-xl md:text-2xl font-bold truncate">{qtd}</p>
               </div>
             )
           })}

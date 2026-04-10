@@ -340,12 +340,13 @@ export default function SistemaEventos({ userRole }: { userRole?: string }) {
     privado: '👤 Só você',
   }
 
+  // Tamanhos mobile-first: maxWidth limita desktop, width assume 100vw-32px em mobile
   const tam = {
-    micro:   { p:'10px 18px', e:'30px', t:'13px', min:'260px', max:'360px' },
-    mini:    { p:'14px 22px', e:'38px', t:'15px', min:'310px', max:'430px' },
-    medio:   { p:'20px 32px', e:'50px', t:'18px', min:'410px', max:'550px' },
-    grande:  { p:'25px 40px', e:'62px', t:'22px', min:'490px', max:'630px' },
-    gigante: { p:'30px 48px', e:'78px', t:'26px', min:'550px', max:'710px' },
+    micro:   { p:'10px 14px', e:'28px', t:'13px', max:'360px' },
+    mini:    { p:'12px 16px', e:'34px', t:'14px', max:'400px' },
+    medio:   { p:'16px 20px', e:'44px', t:'16px', max:'520px' },
+    grande:  { p:'18px 24px', e:'54px', t:'19px', max:'600px' },
+    gigante: { p:'20px 28px', e:'64px', t:'22px', max:'640px' },
   }[cfg.tamanho]
 
   const fechar = () => {
@@ -373,10 +374,10 @@ export default function SistemaEventos({ userRole }: { userRole?: string }) {
           left:'50%', transform:'translateX(-50%)',
           zIndex:99999, background:cfg.grad, border:`2px solid ${cfg.borda}`,
           borderRadius:22, padding:tam.p,
-          minWidth: `min(${tam.min}, calc(100vw - 24px))`,
-          maxWidth: `min(${tam.max}, calc(100vw - 24px))`,
-          width: 'auto',
-          display:'flex', alignItems:'center', gap:16,
+          width: `min(${tam.max}, calc(100vw - 32px))`,
+          maxWidth: tam.max,
+          minWidth: 'unset',
+          display:'flex', alignItems:'center', gap:12,
           boxShadow:`0 28px 70px rgba(0,0,0,0.75), 0 0 60px ${cfg.borda}44`,
         }}
       >

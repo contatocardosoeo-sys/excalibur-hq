@@ -244,7 +244,7 @@ N8N      = AUTOMACAO (onde as rotinas rodam)`}</Code>
 function Section({ id, active, title, children }: { id: string; active: string; title: string; children: React.ReactNode }) {
   if (active !== id) return null
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+    <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4 md:p-6">
       <h2 className="text-white font-bold text-lg mb-4">{title}</h2>
       {children}
     </div>

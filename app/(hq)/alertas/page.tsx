@@ -87,7 +87,7 @@ export default function AlertasPage() {
       <div className="flex-1 p-4 md:p-8 overflow-auto">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
           <div>
-            <h1 className="text-white text-xl md:text-2xl font-bold">Alertas</h1>
+            <h1 className="text-white text-xl md:text-2xl font-bold truncate">Alertas</h1>
             <p className="text-gray-400 text-sm mt-1">{alertas.length} alertas ativos</p>
           </div>
         </div>

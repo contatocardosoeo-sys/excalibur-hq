@@ -95,12 +95,15 @@ export default function CalendarioCS() {
         </div>
 
         {loading ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 8 }}>
+          <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(130px, 1fr))', gap: 8, minWidth: 910 }}>
             {[1, 2, 3, 4, 5, 6, 7].map(i => <div key={i} style={{ background: '#111827', borderRadius: 12, height: 200, animation: 'pulse 1.5s infinite' }} />)}
             <style>{`@keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: 0.4 } }`}</style>
           </div>
+          </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 8 }}>
+          <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(130px, 1fr))', gap: 8, minWidth: 910 }}>
             {days.map(dia => {
               const items = tarefasDia(dia)
               const hoje = isToday(dia)
@@ -139,6 +142,7 @@ export default function CalendarioCS() {
                 </div>
               )
             })}
+          </div>
           </div>
         )}
 
