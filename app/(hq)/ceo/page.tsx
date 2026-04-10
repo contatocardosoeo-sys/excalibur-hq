@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Separator } from '@/components/ui/separator'
+import { NumberTicker } from '@/components/ui/number-ticker'
 
 interface Receita {
   dia: number
@@ -192,7 +193,9 @@ export default function CEODashboard() {
           <Card className={`bg-gray-900 border-gray-800 ${receita.gap_dia >= 0 ? 'border-l-2 border-l-green-500' : 'border-l-2 border-l-red-500'}`}>
             <CardContent className="p-4">
               <p className="text-[10px] uppercase tracking-wider text-gray-500">Receita Hoje</p>
-              <p className={`text-xl font-bold mt-1 ${receita.gap_dia >= 0 ? 'text-green-400' : 'text-amber-400'}`}>{fmt(receita.dia)}</p>
+              <p className={`text-xl font-bold mt-1 ${receita.gap_dia >= 0 ? 'text-green-400' : 'text-amber-400'}`}>
+                <NumberTicker value={receita.dia} prefix="R$ " className={receita.gap_dia >= 0 ? 'text-green-400' : 'text-amber-400'} />
+              </p>
               <p className="text-[10px] text-gray-500 mt-1">Meta: {fmt(receita.meta_dia)}</p>
               <Progress value={Math.min(receita.pct_dia, 100)} className={`h-1 mt-2 bg-gray-800 ${receita.gap_dia >= 0 ? '[&>div]:bg-green-500' : '[&>div]:bg-amber-500'}`} />
             </CardContent>
@@ -202,7 +205,7 @@ export default function CEODashboard() {
             <CardContent className="p-4">
               <p className="text-[10px] uppercase tracking-wider text-gray-500">Gap Hoje</p>
               <p className={`text-xl font-bold mt-1 ${receita.gap_dia >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                {receita.gap_dia >= 0 ? '+' : ''}{fmt(receita.gap_dia)}
+                {receita.gap_dia >= 0 ? '+' : ''}<NumberTicker value={receita.gap_dia} prefix="R$ " className={receita.gap_dia >= 0 ? 'text-green-400' : 'text-red-400'} />
               </p>
               <p className="text-[10px] text-gray-500 mt-1">{receita.pct_dia}% da meta</p>
               <Progress value={Math.min(receita.pct_dia, 100)} className={`h-1 mt-2 bg-gray-800 ${receita.gap_dia >= 0 ? '[&>div]:bg-green-500' : '[&>div]:bg-red-500'}`} />
@@ -212,7 +215,9 @@ export default function CEODashboard() {
           <Card className="bg-gray-900 border-gray-800 border-l-2 border-l-amber-500">
             <CardContent className="p-4">
               <p className="text-[10px] uppercase tracking-wider text-gray-500">Receita Mes</p>
-              <p className="text-xl font-bold text-amber-400 mt-1">{fmt(receita.mes)}</p>
+              <p className="text-xl font-bold text-amber-400 mt-1">
+                <NumberTicker value={receita.mes} prefix="R$ " className="text-amber-400" />
+              </p>
               <p className="text-[10px] text-gray-500 mt-1">{receita.pct_mes}% da meta</p>
               <Progress value={Math.min(receita.pct_mes, 100)} className="h-1 mt-2 bg-gray-800 [&>div]:bg-amber-500" />
             </CardContent>
@@ -221,7 +226,9 @@ export default function CEODashboard() {
           <Card className="bg-gray-900 border-gray-800">
             <CardContent className="p-4">
               <p className="text-[10px] uppercase tracking-wider text-gray-500">Meta Mes</p>
-              <p className="text-xl font-bold text-white mt-1">{fmt(receita.meta_mes)}</p>
+              <p className="text-xl font-bold text-white mt-1">
+                <NumberTicker value={receita.meta_mes} prefix="R$ " className="text-white" />
+              </p>
               <p className="text-[10px] text-gray-500 mt-1">Falta: {fmt(receita.gap_mes)}</p>
               <Progress value={Math.min(receita.pct_mes, 100)} className="h-1 mt-2 bg-gray-800 [&>div]:bg-gray-600" />
             </CardContent>
@@ -230,7 +237,9 @@ export default function CEODashboard() {
           <Card className="bg-gray-900 border-gray-800">
             <CardContent className="p-4">
               <p className="text-[10px] uppercase tracking-wider text-gray-500">Media/Dia</p>
-              <p className="text-xl font-bold text-white mt-1">{fmt(receita.media_dia)}</p>
+              <p className="text-xl font-bold text-white mt-1">
+                <NumberTicker value={receita.media_dia} prefix="R$ " className="text-white" />
+              </p>
               <p className="text-[10px] text-gray-500 mt-1">Precisa: {fmt(receita.precisa_dia)}/dia</p>
               <Progress value={receita.precisa_dia > 0 ? Math.min((receita.media_dia / receita.precisa_dia) * 100, 100) : 100} className="h-1 mt-2 bg-gray-800 [&>div]:bg-blue-500" />
             </CardContent>
@@ -239,7 +248,9 @@ export default function CEODashboard() {
           <Card className={`bg-gray-900 border-gray-800 ${receita.projecao >= receita.meta_mes ? 'border-l-2 border-l-green-500' : 'border-l-2 border-l-red-500'}`}>
             <CardContent className="p-4">
               <p className="text-[10px] uppercase tracking-wider text-gray-500">Projecao Mes</p>
-              <p className={`text-xl font-bold mt-1 ${receita.projecao >= receita.meta_mes ? 'text-green-400' : 'text-red-400'}`}>{fmt(receita.projecao)}</p>
+              <p className={`text-xl font-bold mt-1 ${receita.projecao >= receita.meta_mes ? 'text-green-400' : 'text-red-400'}`}>
+                <NumberTicker value={receita.projecao} prefix="R$ " className={receita.projecao >= receita.meta_mes ? 'text-green-400' : 'text-red-400'} />
+              </p>
               <p className="text-[10px] text-gray-500 mt-1">{receita.dias_restantes} dias restantes</p>
               <Progress value={Math.min((receita.projecao / receita.meta_mes) * 100, 100)} className={`h-1 mt-2 bg-gray-800 ${receita.projecao >= receita.meta_mes ? '[&>div]:bg-green-500' : '[&>div]:bg-red-500'}`} />
             </CardContent>
@@ -280,7 +291,9 @@ export default function CEODashboard() {
             <Card className="bg-gray-900 border-gray-800">
               <CardContent className="p-4">
                 <p className="text-[10px] uppercase tracking-wider text-gray-500">MRR Atual</p>
-                <p className="text-xl font-bold text-green-400 mt-1">{fmt(crescimento.mrr)}</p>
+                <p className="text-xl font-bold text-green-400 mt-1">
+                  <NumberTicker value={crescimento.mrr} prefix="R$ " className="text-green-400" />
+                </p>
                 <p className="text-[10px] text-green-400 mt-1">+{crescimento.crescimento_pct}% este mes</p>
                 <Progress value={75} className="h-1 mt-2 bg-gray-800 [&>div]:bg-green-500" />
               </CardContent>
@@ -288,7 +301,9 @@ export default function CEODashboard() {
             <Card className="bg-gray-900 border-gray-800">
               <CardContent className="p-4">
                 <p className="text-[10px] uppercase tracking-wider text-gray-500">LTV Medio</p>
-                <p className="text-xl font-bold text-blue-400 mt-1">{fmt(crescimento.ltv)}</p>
+                <p className="text-xl font-bold text-blue-400 mt-1">
+                  <NumberTicker value={crescimento.ltv} prefix="R$ " className="text-blue-400" />
+                </p>
                 <p className="text-[10px] text-gray-500 mt-1">Lifetime value</p>
                 <Progress value={70} className="h-1 mt-2 bg-gray-800 [&>div]:bg-blue-500" />
               </CardContent>
@@ -296,7 +311,9 @@ export default function CEODashboard() {
             <Card className={`bg-gray-900 border-gray-800 ${crescimento.cac > 3000 ? 'border-l-2 border-l-red-500' : ''}`}>
               <CardContent className="p-4">
                 <p className="text-[10px] uppercase tracking-wider text-gray-500">CAC Medio</p>
-                <p className={`text-xl font-bold mt-1 ${crescimento.cac > 3000 ? 'text-red-400' : 'text-amber-400'}`}>{fmt(crescimento.cac)}</p>
+                <p className={`text-xl font-bold mt-1 ${crescimento.cac > 3000 ? 'text-red-400' : 'text-amber-400'}`}>
+                  <NumberTicker value={crescimento.cac} prefix="R$ " className={crescimento.cac > 3000 ? 'text-red-400' : 'text-amber-400'} />
+                </p>
                 <p className="text-[10px] text-red-400 mt-1">+12% vs mes anterior</p>
                 <Progress value={60} className="h-1 mt-2 bg-gray-800 [&>div]:bg-red-500" />
               </CardContent>
@@ -354,7 +371,8 @@ export default function CEODashboard() {
                   { label: 'Fechou', value: funil.fechamentos, pct: funil.taxa_geral, color: 'bg-green-500' },
                 ].map((step, i, arr) => (
                   <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                    <span className="text-white text-sm font-bold">{step.value}</span>
+                    <NumberTicker value={step.value} delay={i * 0.15} className="text-white text-sm font-bold" />
+                    <span className="sr-only">{step.value}</span>
                     <div className="w-full rounded-t-lg relative" style={{ height: `${Math.max(step.pct * 1.5, 15)}px` }}>
                       <div className={`w-full h-full ${step.color} rounded-t-lg opacity-80`} />
                     </div>

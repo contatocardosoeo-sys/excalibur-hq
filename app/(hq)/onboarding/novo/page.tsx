@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Sidebar from '../../../components/Sidebar'
 import { useDispararEvento } from '../../../hooks/useDispararEvento'
+import { ShimmerButton } from '@/components/ui/shimmer-button'
 
 const ESTADOS = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO']
 
@@ -285,7 +286,17 @@ export default function NovoOnboarding() {
             {erro && <p style={{ color: '#ef4444', fontSize: 12, background: '#ef444415', border: '1px solid #ef444430', borderRadius: 8, padding: '8px 12px', marginTop: 12 }}>{erro}</p>}
             <div style={S.row}>
               <button onClick={() => setStep(2)} style={S.btnSec}>← Voltar</button>
-              <button onClick={salvar} disabled={saving} style={{ ...S.btn, opacity: saving ? 0.5 : 1 }}>{saving ? 'Salvando...' : 'Finalizar Cadastro →'}</button>
+              <ShimmerButton
+                shimmerColor="#f59e0b"
+                shimmerDuration="2s"
+                borderRadius="12px"
+                background="rgba(245, 158, 11, 0.15)"
+                className="w-full h-12 text-white font-bold text-base border border-amber-500/40"
+                onClick={salvar}
+                disabled={saving}
+              >
+                {saving ? '⏳ Criando clínica...' : '🚀 Finalizar Cadastro →'}
+              </ShimmerButton>
             </div>
           </div>
         )}

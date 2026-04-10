@@ -5,6 +5,7 @@ import Sidebar from '../../components/Sidebar'
 import { useToast } from '../../components/Toast'
 import { supabase } from '../../lib/supabase'
 import { useDispararEvento } from '../../hooks/useDispararEvento'
+import { NumberTicker } from '@/components/ui/number-ticker'
 
 type PipeItem = { id: string; lead_id: string; nome_clinica: string; plano: string; mrr_proposto: number; status: string; data_reuniao: string; data_fechamento: string; observacoes: string; created_at: string }
 type MetaBar = { atual: number; meta: number }
@@ -150,8 +151,16 @@ export default function ComercialPage() {
         {aba === 'pipeline' && <>
         {/* KPIs */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10, marginBottom: 16 }}>
-          {[{ l: 'Reunioes (semana)', v: kpis.reunioesSemana, c: '#3b82f6' }, { l: 'Propostas enviadas', v: kpis.propostasEnviadas, c: '#f59e0b' }, { l: 'Fechamentos', v: kpis.fechamentos, c: '#22c55e' }, { l: 'MRR gerado', v: fmt(kpis.mrrMes), c: '#a855f7' }].map(k => (
-            <div key={k.l} style={{ background: '#13131f', border: '1px solid #252535', borderRadius: 10, padding: '14px 16px' }}><div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>{k.l}</div><div style={{ fontSize: 26, fontWeight: 800, color: k.c }}>{k.v}</div></div>
+          {[
+            { l: 'Reunioes (semana)', v: kpis.reunioesSemana, c: '#3b82f6', prefix: '' },
+            { l: 'Propostas enviadas', v: kpis.propostasEnviadas, c: '#f59e0b', prefix: '' },
+            { l: 'Fechamentos', v: kpis.fechamentos, c: '#22c55e', prefix: '' },
+            { l: 'MRR gerado', v: kpis.mrrMes, c: '#a855f7', prefix: 'R$ ' },
+          ].map(k => (
+            <div key={k.l} style={{ background: '#13131f', border: '1px solid #252535', borderRadius: 10, padding: '14px 16px' }}>
+              <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>{k.l}</div>
+              <NumberTicker value={k.v} prefix={k.prefix} style={{ fontSize: 26, fontWeight: 800, color: k.c }} />
+            </div>
           ))}
         </div>
 
@@ -267,7 +276,10 @@ export default function ComercialPage() {
           <div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10, marginBottom: 16 }}>
               {[{ l: 'Webhooks hoje', v: waKpis.webhooksHoje, c: '#3b82f6' }, { l: 'Leads atualizados', v: waKpis.leadsAtualizados, c: '#22c55e' }, { l: 'Etapas movidas', v: waKpis.etapasMovidas, c: '#f59e0b' }, { l: 'Usuarios ativos', v: waKpis.usersAtivos, c: '#a855f7' }].map(k => (
-                <div key={k.l} style={{ background: '#13131f', border: '1px solid #252535', borderRadius: 10, padding: '14px 16px' }}><div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>{k.l}</div><div style={{ fontSize: 26, fontWeight: 800, color: k.c }}>{k.v}</div></div>
+                <div key={k.l} style={{ background: '#13131f', border: '1px solid #252535', borderRadius: 10, padding: '14px 16px' }}>
+                  <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>{k.l}</div>
+                  <NumberTicker value={k.v} style={{ fontSize: 26, fontWeight: 800, color: k.c }} />
+                </div>
               ))}
             </div>
             <div style={{ background: '#13131f', border: '1px solid #252535', borderRadius: 10, padding: '10px 16px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 10 }}>

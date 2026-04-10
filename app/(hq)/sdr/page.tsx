@@ -6,6 +6,7 @@ import Sidebar from '../../components/Sidebar'
 import { useToast } from '../../components/Toast'
 import { supabase } from '../../lib/supabase'
 import { useDispararEvento } from '../../hooks/useDispararEvento'
+import { NumberTicker } from '@/components/ui/number-ticker'
 
 interface Metricas {
   periodo?: string
@@ -160,7 +161,7 @@ export default function SDRPage() {
           <span style={{ fontSize: 9, color: '#6b7280', textTransform: 'uppercase', fontWeight: 600 }}>{label}</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-          <span style={{ fontSize: 22, fontWeight: 800, color: cor, fontFamily: 'monospace' }}>{fmt(atual)}</span>
+          <NumberTicker value={atual} style={{ fontSize: 22, fontWeight: 800, color: cor, fontFamily: 'monospace' }} />
           <span style={{ fontSize: 11, color: '#4b5563', fontFamily: 'monospace' }}>/ {fmt(meta)}</span>
         </div>
         <div style={{ height: 4, background: '#1f2937', borderRadius: 2, overflow: 'hidden', marginTop: 8 }}>

@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useRef, useState, useCallback } from 'react'
+import { BorderBeam } from '@/components/ui/border-beam'
 
 interface Evento {
   id: string
@@ -379,8 +380,10 @@ export default function SistemaEventos({ userRole }: { userRole?: string }) {
           minWidth: 'unset',
           display:'flex', alignItems:'center', gap:12,
           boxShadow:`0 28px 70px rgba(0,0,0,0.75), 0 0 60px ${cfg.borda}44`,
+          overflow: 'hidden',
         }}
       >
+        <BorderBeam size={250} duration={8} colorFrom={cfg.borda} colorTo="#ffffff" borderWidth={2} />
         <div className="xb-float" style={{ fontSize:tam.e, lineHeight:1, filter:'drop-shadow(0 4px 12px rgba(0,0,0,0.6))' }}>
           {cfg.emoji}
         </div>

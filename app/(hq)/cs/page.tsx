@@ -6,6 +6,7 @@ import Sidebar from '../../components/Sidebar'
 import { useToast } from '../../components/Toast'
 import Modal, { ModalButton } from '../../components/Modal'
 import { supabase } from '../../lib/supabase'
+import { NumberTicker } from '@/components/ui/number-ticker'
 
 /* ── Types ── */
 interface Cliente {
@@ -169,7 +170,7 @@ export default function CSPainel() {
   })
 
   /* ── Card ── */
-  const KPICard = ({ icon, label, valor, sub, cor, onClick }: { icon: string; label: string; valor: string | number; sub?: string; cor: string; onClick?: () => void }) => (
+  const KPICard = ({ icon, label, valor, sub, cor, onClick }: { icon: string; label: string; valor: React.ReactNode; sub?: string; cor: string; onClick?: () => void }) => (
     <div onClick={onClick} style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 12, padding: '12px 14px', cursor: onClick ? 'pointer' : 'default', transition: 'border 0.2s' }}
       onMouseEnter={e => { if (onClick) (e.currentTarget as HTMLDivElement).style.borderColor = cor + '60' }}
       onMouseLeave={e => { if (onClick) (e.currentTarget as HTMLDivElement).style.borderColor = '#1f2937' }}>
@@ -201,12 +202,12 @@ export default function CSPainel() {
 
         {/* ── KPIs principais ── */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 10, marginBottom: 12 }}>
-          <KPICard icon="👥" label="Clientes ativos" valor={kpis.total_ativos} sub={`MRR ${fmt(kpis.mrr_total)}`} cor="#60a5fa" />
-          <KPICard icon="💚" label="Saudaveis" valor={kpis.saudaveis} sub="score >= 80" cor="#4ade80" onClick={() => { setAba('clientes'); setFiltroScore('saudavel') }} />
-          <KPICard icon="⚠️" label="Em atencao" valor={kpis.em_atencao} sub="60-79" cor="#fbbf24" onClick={() => { setAba('clientes'); setFiltroScore('atencao') }} />
-          <KPICard icon="🔴" label="Em risco" valor={kpis.em_risco} sub="< 60" cor="#f87171" onClick={() => { setAba('clientes'); setFiltroScore('risco') }} />
-          <KPICard icon="🚨" label="Alertas criticos" valor={kpis.alertas_criticos} sub={`${kpis.alertas_total} totais`} cor={kpis.alertas_criticos > 0 ? '#f87171' : '#4ade80'} />
-          <KPICard icon="📅" label="Tarefas semana" valor={kpis.tarefas_semana} sub={`${kpis.tarefas_bloqueantes} bloqueantes`} cor={kpis.tarefas_bloqueantes > 0 ? '#fbbf24' : '#9ca3af'} onClick={() => router.push('/cs/calendario')} />
+          <KPICard icon="👥" label="Clientes ativos" valor={<NumberTicker value={kpis.total_ativos} style={{ color: '#60a5fa' }} />} sub={`MRR ${fmt(kpis.mrr_total)}`} cor="#60a5fa" />
+          <KPICard icon="💚" label="Saudaveis" valor={<NumberTicker value={kpis.saudaveis} style={{ color: '#4ade80' }} />} sub="score >= 80" cor="#4ade80" onClick={() => { setAba('clientes'); setFiltroScore('saudavel') }} />
+          <KPICard icon="⚠️" label="Em atencao" valor={<NumberTicker value={kpis.em_atencao} style={{ color: '#fbbf24' }} />} sub="60-79" cor="#fbbf24" onClick={() => { setAba('clientes'); setFiltroScore('atencao') }} />
+          <KPICard icon="🔴" label="Em risco" valor={<NumberTicker value={kpis.em_risco} style={{ color: '#f87171' }} />} sub="< 60" cor="#f87171" onClick={() => { setAba('clientes'); setFiltroScore('risco') }} />
+          <KPICard icon="🚨" label="Alertas criticos" valor={<NumberTicker value={kpis.alertas_criticos} style={{ color: kpis.alertas_criticos > 0 ? '#f87171' : '#4ade80' }} />} sub={`${kpis.alertas_total} totais`} cor={kpis.alertas_criticos > 0 ? '#f87171' : '#4ade80'} />
+          <KPICard icon="📅" label="Tarefas semana" valor={<NumberTicker value={kpis.tarefas_semana} style={{ color: kpis.tarefas_bloqueantes > 0 ? '#fbbf24' : '#9ca3af' }} />} sub={`${kpis.tarefas_bloqueantes} bloqueantes`} cor={kpis.tarefas_bloqueantes > 0 ? '#fbbf24' : '#9ca3af'} onClick={() => router.push('/cs/calendario')} />
         </div>
 
         {/* ── KPIs secundarios ── */}

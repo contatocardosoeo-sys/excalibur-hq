@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Sidebar from '../../components/Sidebar'
 import { etapaLabel } from '../../lib/etapas'
+import { BlurFade } from '@/components/ui/blur-fade'
+import { AnimatedShinyText } from '@/components/ui/animated-shiny-text'
 
 type Cliente = {
   id: string; nome: string; data_inicio: string
@@ -175,17 +177,22 @@ export default function JornadaPage() {
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {filtrados.map(c => {
+                {filtrados.map((c, idx) => {
                   const scor = STATUS_COR[c.status]
                   const gCor = GARGALO_COR[c.gargalo] || '#374151'
                   return (
-                    <div key={c.id} style={{ background: '#13131f', border: `1px solid ${scor.borda}40`, borderLeft: `3px solid ${scor.borda}`, borderRadius: 10, padding: '14px 16px', transition: 'all 0.15s' }}>
+                    <BlurFade key={c.id} delay={0.05 + Math.min(idx, 10) * 0.02} inView>
+                    <div style={{ background: '#13131f', border: `1px solid ${scor.borda}40`, borderLeft: `3px solid ${scor.borda}`, borderRadius: 10, padding: '14px 16px', transition: 'all 0.15s' }}>
                       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr auto', gap: 12, alignItems: 'center' }}>
                         {/* Nome */}
                         <div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                             <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{c.nome}</span>
-                            <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 999, background: scor.bg, color: scor.texto, border: `1px solid ${scor.borda}40`, fontWeight: 600 }}>{scor.label}</span>
+                            <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 999, background: scor.bg, border: `1px solid ${scor.borda}40` }}>
+                              <AnimatedShinyText className="!text-[10px] font-semibold" style={{ color: scor.texto }}>
+                                {scor.label}
+                              </AnimatedShinyText>
+                            </span>
                             {c.alertasCriticos > 0 && <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 999, background: '#8b5cf620', color: '#8b5cf6', border: '1px solid #8b5cf640' }}>🚨 {c.alertasCriticos}</span>}
                           </div>
                           <div style={{ display: 'flex', gap: 10, fontSize: 11, color: '#6b7280' }}>
@@ -231,6 +238,7 @@ export default function JornadaPage() {
                         </div>
                       </div>
                     </div>
+                    </BlurFade>
                   )
                 })}
               </div>
