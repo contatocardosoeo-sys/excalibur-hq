@@ -19,7 +19,11 @@ export async function GET(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  const items = data || []
+  const hoje = new Date().toISOString().split('T')[0]
+  const items = (data || []).map(i => {
+    if (i.status === 'pendente' && i.data_vencimento < hoje) return { ...i, status: 'atrasado' }
+    return i
+  })
   const total_previsto = items.reduce((s, i) => s + Number(i.valor), 0)
   const total_recebido = items.filter(i => i.status === 'pago').reduce((s, i) => s + Number(i.valor), 0)
   const total_pendente = items.filter(i => i.status === 'pendente').reduce((s, i) => s + Number(i.valor), 0)
