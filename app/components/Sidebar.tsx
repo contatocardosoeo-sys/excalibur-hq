@@ -36,7 +36,7 @@ const allSections: MenuSection[] = [
       { href: '/onboarding', icon: '🚀', label: 'Novo Cliente', roles: ['admin', 'cs'] },
       { href: '/clientes', icon: '👥', label: 'Clientes', roles: ['admin', 'cs'] },
       { href: '/jornada', icon: '📈', label: 'Jornada D0-D90', roles: ['admin', 'cs'] },
-      { href: '/planos', icon: '💳', label: 'Planos & Cobranca', roles: ['admin'] },
+      { href: '/operacao/financeiro', icon: '💰', label: 'Financeiro', roles: ['admin'] },
       { href: '/alertas', icon: '🚨', label: 'Alertas', roles: ['admin', 'cs'] },
     ],
   },
