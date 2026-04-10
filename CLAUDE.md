@@ -338,3 +338,8 @@ Quando surgir um novo tema técnico:
 1. Criar `docs/[nivel]/[tema].md`
 2. Adicionar ao `docs/INDEX.md`
 3. Referenciar no CLAUDE.md
+
+### Sessão encerrada: 10/04/2026 01:38
+- Branch: main
+- Último commit: 4e399ab chore(automation): aliases windows — hq, hq-build, hq-deploy, hq-fim, hq-status + auto-init via cd override
+- Arquivos alterados: .bashrc.excalibur
