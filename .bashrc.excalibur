@@ -1,0 +1,35 @@
+#!/bin/bash
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ⚔️  Excalibur HQ — Atalhos e automação (Windows/Git Bash)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#
+# INSTALAÇÃO (uma vez só):
+#   echo 'source ~/Desktop/excalibur/excalibur-hq/.bashrc.excalibur' >> ~/.bashrc
+#   source ~/.bashrc
+#
+# USO:
+#   hq          → entra no diretorio
+#   hq-status   → git status + ultimos commits
+#   hq-build    → npm run build
+#   hq-deploy   → deploy producao
+#   hq-fim      → fim de sessao (atualiza CLAUDE.md + commit + push)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+alias hq='cd ~/Desktop/excalibur/excalibur-hq'
+alias hq-fim='cd ~/Desktop/excalibur/excalibur-hq && ./fim-sessao.sh'
+alias hq-build='cd ~/Desktop/excalibur/excalibur-hq && npm run build'
+alias hq-deploy='cd ~/Desktop/excalibur/excalibur-hq && npx vercel --prod --token $VERCEL_TOKEN'
+alias hq-status='cd ~/Desktop/excalibur/excalibur-hq && git status -s && git log --oneline -5'
+
+# Auto-init ao entrar no diretorio do excalibur-hq (substitui o direnv no Windows)
+cd() {
+  builtin cd "$@" || return
+  if [[ "$PWD" == *"/excalibur-hq"* ]] && [[ "$PWD" != *"/excalibur-hq/"*"/"* ]]; then
+    if [ -f .envrc ] && [ -z "$EXCALIBUR_LOADED" ]; then
+      export EXCALIBUR_LOADED=1
+      bash .envrc
+    fi
+  else
+    unset EXCALIBUR_LOADED
+  fi
+}
