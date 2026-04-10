@@ -6,34 +6,69 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 )
 
+type AlertaRow = {
+  id: string
+  clinica_id: string
+  tipo: string
+  nivel: number | null
+  titulo: string | null
+  descricao: string | null
+  resolvido: boolean | null
+  created_at: string
+}
+
+function nivelToPrioridade(nivel: number | null): 'critica' | 'alta' | 'media' | 'baixa' {
+  const n = nivel ?? 5
+  if (n <= 2) return 'critica'
+  if (n <= 4) return 'alta'
+  if (n <= 6) return 'media'
+  return 'baixa'
+}
+
+function statusFromResolvido(resolvido: boolean | null): string {
+  return resolvido ? 'resolvido' : 'aberto'
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const prioridade = searchParams.get('prioridade')
-    const status = searchParams.get('status')
-    const responsavel = searchParams.get('responsavel')
-    const tipo = searchParams.get('tipo')
+    const prioridadeFilter = searchParams.get('prioridade')
+    const statusFilter = searchParams.get('status')
+    const tipoFilter = searchParams.get('tipo')
 
-    let query = supabase
-      .from('alertas_sistema')
-      .select('*')
-      .order('criado_em', { ascending: false })
-
-    if (prioridade) query = query.eq('prioridade', prioridade)
-    if (status) query = query.eq('status', status)
-    if (responsavel) query = query.eq('responsavel', responsavel)
-    if (tipo) query = query.eq('tipo', tipo)
-
-    const { data: alertas, error } = await query
+    const [{ data: alertas, error }, { data: clinicas }] = await Promise.all([
+      supabase
+        .from('alertas_clinica')
+        .select('id, clinica_id, tipo, nivel, titulo, descricao, resolvido, created_at')
+        .order('created_at', { ascending: false }),
+      supabase.from('clinicas').select('id, nome'),
+    ])
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    // Map criado_em to created_at for frontend compatibility
-    const mapped = (alertas || []).map(a => ({ ...a, created_at: a.criado_em }))
+    const nomeMap = new Map((clinicas || []).map(c => [c.id, c.nome]))
+
+    const mapped = ((alertas as AlertaRow[]) || [])
+      .map(a => ({
+        id: a.id,
+        cliente_id: a.clinica_id,
+        cliente_nome: nomeMap.get(a.clinica_id) || 'Clinica sem nome',
+        tipo: a.tipo || 'geral',
+        prioridade: nivelToPrioridade(a.nivel),
+        descricao: a.descricao || a.titulo || '',
+        acao_sugerida: a.titulo || 'Verificar cliente',
+        status: statusFromResolvido(a.resolvido),
+        responsavel: '',
+        created_at: a.created_at,
+      }))
+      .filter(a => !prioridadeFilter || a.prioridade === prioridadeFilter)
+      .filter(a => !statusFilter || a.status === statusFilter)
+      .filter(a => !tipoFilter || a.tipo === tipoFilter)
+
     return NextResponse.json({ alertas: mapped, total: mapped.length })
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
 }
@@ -41,18 +76,18 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json()
-    const { id, status, responsavel } = body
+    const { id, status } = body
 
     if (!id || !status) {
       return NextResponse.json({ error: 'id e status sao obrigatorios' }, { status: 400 })
     }
 
-    const updateData: Record<string, string> = { status }
-    if (responsavel) updateData.responsavel = responsavel
-    if (status === 'resolvido') updateData.resolved_at = new Date().toISOString()
+    const resolvido = status === 'resolvido'
+    const updateData: Record<string, unknown> = { resolvido }
+    if (resolvido) updateData.resolvido_em = new Date().toISOString()
 
     const { data, error } = await supabase
-      .from('alertas_sistema')
+      .from('alertas_clinica')
       .update(updateData)
       .eq('id', id)
       .select()
@@ -63,7 +98,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     return NextResponse.json({ alerta: data })
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
 }
