@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import Sidebar from '../../components/Sidebar'
 import { Badge } from '@/components/ui/badge'
 import React from 'react'
@@ -36,6 +37,7 @@ function tempoDesde(dateStr: string): string {
 }
 
 export default function AlertasPage() {
+  const router = useRouter()
   const [alertas, setAlertas] = useState<Alerta[]>([])
   const [loading, setLoading] = useState(true)
   const [prioridadeFilter, setPrioridadeFilter] = useState('')
@@ -150,7 +152,8 @@ export default function AlertasPage() {
               return (
                 <div
                   key={alerta.id}
-                  className={`bg-gray-900 border ${config.border} rounded-xl p-5 transition hover:bg-gray-800/50`}
+                  onClick={() => alerta.cliente_id && router.push(`/clientes/${alerta.cliente_id}`)}
+                  className={`bg-gray-900 border ${config.border} rounded-xl p-5 transition hover:bg-gray-800/50 cursor-pointer`}
                 >
                   <div className="flex items-start gap-4">
                     <div className="flex flex-col gap-2 shrink-0">
@@ -164,7 +167,7 @@ export default function AlertasPage() {
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-white text-sm font-semibold">{alerta.cliente_nome}</span>
+                        <span className="text-white text-sm font-semibold hover:text-amber-400 transition">{alerta.cliente_nome}</span>
                         <span className="text-gray-600 text-[10px]">ha {tempoDesde(alerta.created_at)}</span>
                       </div>
                       <p className="text-gray-300 text-sm mb-1">{alerta.descricao}</p>
@@ -174,17 +177,17 @@ export default function AlertasPage() {
                       )}
                     </div>
 
-                    <div className="flex gap-2 shrink-0">
+                    <div className="flex gap-2 shrink-0" onClick={e => e.stopPropagation()}>
                       {alerta.status === 'aberto' && (
                         <React.Fragment>
                           <button
-                            onClick={() => handleAction(alerta.id, 'assumir')}
+                            onClick={e => { e.stopPropagation(); handleAction(alerta.id, 'assumir') }}
                             className="bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg px-3 py-1.5 text-[11px] font-medium hover:bg-amber-500/30 transition"
                           >
                             Assumir
                           </button>
                           <button
-                            onClick={() => handleAction(alerta.id, 'escalar')}
+                            onClick={e => { e.stopPropagation(); handleAction(alerta.id, 'escalar') }}
                             className="bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg px-3 py-1.5 text-[11px] font-medium hover:bg-red-500/30 transition"
                           >
                             Escalar
@@ -193,7 +196,7 @@ export default function AlertasPage() {
                       )}
                       {alerta.status === 'em_andamento' && (
                         <button
-                          onClick={() => handleAction(alerta.id, 'resolver')}
+                          onClick={e => { e.stopPropagation(); handleAction(alerta.id, 'resolver') }}
                           className="bg-green-500/20 text-green-400 border border-green-500/30 rounded-lg px-3 py-1.5 text-[11px] font-medium hover:bg-green-500/30 transition"
                         >
                           Resolver

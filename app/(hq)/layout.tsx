@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { supabase } from '../lib/supabase'
-import AlertaPreenchimento from '../components/AlertaPreenchimento'
+import AlertaCentral from '../components/AlertaCentral'
 import { ToastProvider } from '../components/Toast'
 
 const TITULOS: Record<string, string> = {
@@ -59,7 +59,7 @@ export default function HQLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <ToastProvider>
-      {ready && email && <AlertaPreenchimento userEmail={email} isAdmin={isAdmin} />}
+      {ready && email && <AlertaCentral userEmail={email} isAdmin={isAdmin} />}
       <div key={pathname} className="page-transition">
         {children}
       </div>
