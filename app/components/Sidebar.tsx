@@ -28,7 +28,9 @@ const allSections: MenuSection[] = [
       { href: '/onboarding', icon: '🚀', label: 'Novo Cliente', roles: ['admin', 'cs'] },
       { href: '/clientes', icon: '👥', label: 'Clientes', roles: ['admin', 'cs'] },
       { href: '/jornada', icon: '📈', label: 'Jornada D0-D90', roles: ['admin', 'cs'] },
+      { href: '/cs/calendario', icon: '📅', label: 'Calendario', roles: ['admin', 'cs'] },
       { href: '/operacao/financeiro', icon: '💰', label: 'Financeiro', roles: ['admin'] },
+      { href: '/operacao/colaboradores', icon: '👥', label: 'Colaboradores', roles: ['admin'] },
       { href: '/alertas', icon: '🚨', label: 'Alertas', roles: ['admin', 'cs'] },
     ],
   },
@@ -36,7 +38,7 @@ const allSections: MenuSection[] = [
     label: 'Sistema',
     items: [
       { href: '/dashboard', icon: '📊', label: 'Visao Geral', roles: ['admin', 'cs', 'closer', 'cmo', 'sdr'] },
-      { href: '/admin/usuarios', icon: '🔐', label: 'Colaboradores', roles: ['admin'] },
+      { href: '/admin/usuarios', icon: '🔐', label: 'Usuarios', roles: ['admin'] },
     ],
   },
 ]

@@ -32,11 +32,17 @@ export async function GET() {
   // Funil comercial
   const totalLeadsTrafego = cp.reduce((s, c) => s + (c.leads || 0), 0)
   const leadsSDRAtivos = ld.filter(l => !['perdido', 'convertido'].includes(l.status)).length
-  // Reuniões: leads em reuniao_feita (ainda no SDR) + todos do pipeline (já passaram da reunião)
-  // Não contar 'convertido' em leads_sdr para evitar double-counting com pipeline
   const reunioes = ld.filter(l => l.status === 'reuniao_feita').length + pl.length
   const fechamentos = pl.filter(p => p.status === 'fechado').length
-  const mrrTotal = pl.filter(p => p.status === 'fechado').reduce((s, p) => s + Number(p.mrr_proposto || 0), 0)
+  const mrrPipeline = pl.filter(p => p.status === 'fechado').reduce((s, p) => s + Number(p.mrr_proposto || 0), 0)
+
+  // MRR: buscar do financeiro_receber (receita prevista do mês atual) como fonte real
+  const now = new Date()
+  const inicioMes = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+  const fimMes = now.getMonth() === 11 ? `${now.getFullYear() + 1}-01-01` : `${now.getFullYear()}-${String(now.getMonth() + 2).padStart(2, '0')}-01`
+  const { data: receberMes } = await supabase.from('financeiro_receber').select('valor').gte('data_vencimento', inicioMes).lt('data_vencimento', fimMes)
+  const mrrFinanceiro = (receberMes || []).reduce((s, r) => s + Number(r.valor || 0), 0)
+  const mrrTotal = mrrFinanceiro > 0 ? mrrFinanceiro : mrrPipeline
 
   // Saúde CS
   const clinicasAtivas = cl.length
