@@ -40,29 +40,49 @@ export default function AlertaPreenchimento({ userEmail, isAdmin }: { userEmail:
   // Se nada precisa de atencao, nao mostra nada
   if (!meuPendente && !adminPendente) return null
 
-  // Botao flutuante minimalista no canto inferior direito
-  const cor = meuPendente ? '#ef4444' : '#f59e0b'
   const totalAlertas = (meuPendente ? 1 : 0) + (adminPendente ? faltando.length : 0)
+  const nomesFaltando = faltando.map(f => f.nome).join(', ')
 
   return (
     <>
-      {/* Botao flutuante */}
+      <style>{`
+        @keyframes alertaPulse {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7), 0 8px 30px rgba(239, 68, 68, 0.6); }
+          50% { box-shadow: 0 0 0 16px rgba(239, 68, 68, 0), 0 8px 40px rgba(239, 68, 68, 0.9); }
+        }
+        @keyframes alertaShake {
+          0%, 100% { transform: rotate(0deg); }
+          25% { transform: rotate(-8deg); }
+          75% { transform: rotate(8deg); }
+        }
+        .alerta-pulsante { animation: alertaPulse 1.2s infinite; }
+        .alerta-icon { display: inline-block; animation: alertaShake 0.6s infinite; }
+      `}</style>
+
+      {/* Botao flutuante MUITO chamativo */}
       <button onClick={() => setOpen(!open)}
+        className={open ? '' : 'alerta-pulsante'}
         style={{
-          position: 'fixed', bottom: 20, right: 20, zIndex: 60,
-          background: cor, color: meuPendente ? '#fff' : '#030712',
-          border: 'none', borderRadius: '50%', width: 48, height: 48,
-          cursor: 'pointer', fontSize: 18, fontWeight: 700,
-          boxShadow: `0 4px 12px ${cor}50`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          position: 'fixed', bottom: 24, right: 24, zIndex: 60,
+          background: open ? '#1f2937' : 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)',
+          color: '#fff',
+          border: '3px solid #fff',
+          borderRadius: open ? 12 : 999,
+          padding: open ? '12px 16px' : '14px 22px',
+          cursor: 'pointer',
+          fontSize: 14, fontWeight: 800,
+          display: 'flex', alignItems: 'center', gap: 10,
+          letterSpacing: '0.02em',
+          textTransform: 'uppercase',
         }}>
-        {open ? '✕' : '⚠️'}
-        {!open && (
-          <span style={{
-            position: 'absolute', top: -4, right: -4, background: '#fff', color: cor,
-            borderRadius: '50%', width: 18, height: 18, fontSize: 10, fontWeight: 800,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', border: `2px solid ${cor}`,
-          }}>{totalAlertas}</span>
+        {open ? (
+          <>✕ FECHAR</>
+        ) : (
+          <>
+            <span className="alerta-icon" style={{ fontSize: 22 }}>🚨</span>
+            <span>{totalAlertas} ALERTA{totalAlertas > 1 ? 'S' : ''}</span>
+            {nomesFaltando && <span style={{ fontSize: 11, opacity: 0.95, fontWeight: 600, textTransform: 'none' }}>· {nomesFaltando}</span>}
+          </>
         )}
       </button>
 
