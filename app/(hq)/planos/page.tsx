@@ -317,7 +317,7 @@ function PlanosContent() {
       </div>
 
       {/* Plan cards */}
-      <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-3">
+      <div className="mx-auto grid max-w-5xl grid-cols-1 gap-4 md:gap-6 md:grid-cols-3">
         {plans.map((plan) => (
           <PlanCard key={plan.name} plan={plan} annual={annual} />
         ))}

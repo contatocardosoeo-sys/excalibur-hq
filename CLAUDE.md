@@ -326,6 +326,20 @@ Webhooks para automações complexas (integrado em excalibur-app)
 
 ---
 
+## ⚠️ BUGS CONHECIDOS PENDENTES
+
+1. **Inconsistência tráfego vs comercial** — `/api/comercial/stats` agora tem fallback pra `funil_trafego` quando `pipeline_closer` está vazio (Guilherme ainda preenche fechamentos no funil mensal, não no kanban). Quando o closer começar a usar o kanban interno, pipeline_closer vai ter dados e o fallback perde efeito naturalmente.
+
+2. **adocao_clinica vazia** — Health scores de todas as clínicas reais aparecem como 0 porque `adocao_clinica` não tem registros populados. A coluna `clinicas.score_total` é usada como fonte primária em /clientes desde o fix do filtro de risco. Para preencher adocao_clinica é preciso processo manual ou seed.
+
+3. **SDR leads = 0** — Wascript/Prospecta CRM não configurado por Trindade. A tabela `leads_sdr` está vazia (0 rows). O funil mostra dados via `funil_trafego` (manual). Pendente: Trindade gerar tokens Wascript para integrar webhook automático.
+
+4. **Cardoso continua no histórico** — Luana é COO mas os 5 commits fantasma do loop do `.envrc` (resolvido em 2c2bb1f) ficaram no histórico principal. Não removidos pra evitar force-push em main.
+
+5. **Token Vercel exposto** — Token `vcp_...` foi compartilhado em sessões de chat. Recomendação persistente: rotacionar em vercel.com/account/tokens e atualizar `.env.local`.
+
+---
+
 ## 🔄 PROTOCOLO DE SESSÃO
 
 ### Início

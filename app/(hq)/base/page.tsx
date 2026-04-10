@@ -23,7 +23,7 @@ export default function BasePage() {
   return (
     <div className="flex h-screen bg-gray-950">
       <Sidebar />
-      <main className="flex-1 overflow-auto p-6">
+      <main className="flex-1 overflow-auto p-4 md:p-6">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="mb-6">
@@ -33,7 +33,7 @@ export default function BasePage() {
             <p className="text-gray-400 text-sm mt-1">Fonte unica da verdade do projeto | v2.0 | 08/04/2026</p>
           </div>
 
-          <div className="flex gap-6">
+          <div className="flex gap-4 md:gap-6">
             {/* Nav lateral */}
             <nav className="w-48 shrink-0 sticky top-0">
               <div className="space-y-0.5">

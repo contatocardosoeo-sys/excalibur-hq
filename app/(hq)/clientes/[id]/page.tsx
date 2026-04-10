@@ -260,7 +260,7 @@ export default function ClientePerfilPage() {
         )}
 
         {/* Header + ações */}
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4 md:p-4 md:p-6 mb-6">
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4 md:p-6 mb-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-3 flex-wrap mb-2">

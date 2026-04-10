@@ -158,7 +158,7 @@ export default function CEODashboard() {
   return (
     <div className="min-h-screen bg-gray-950 flex">
       <Sidebar />
-      <div className="flex-1 p-6 overflow-auto">
+      <div className="flex-1 p-4 md:p-6 overflow-auto">
 
         {/* ━━━ HEADER ━━━ */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">

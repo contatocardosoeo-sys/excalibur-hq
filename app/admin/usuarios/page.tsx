@@ -50,8 +50,9 @@ export default function AdminUsuarios() {
     ;(async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
-        const { data: interno } = await supabase.from('usuarios_internos').select('role').eq('email', user.email).single()
-        if (interno?.role === 'admin') {
+        const { data: interno } = await supabase.from('usuarios_internos').select('role, roles').eq('email', user.email).single()
+        const userRoles: string[] = (interno?.roles && Array.isArray(interno.roles) && interno.roles.length > 0) ? interno.roles : [interno?.role || '']
+        if (userRoles.includes('admin')) {
           setIsAdmin(true)
           load()
         } else {
@@ -116,17 +117,17 @@ export default function AdminUsuarios() {
   if (!isAdmin) return null
 
   return (
-    <div style={{ minHeight: '100vh', background: '#030712', display: 'flex' }}>
+    <div className="min-h-screen bg-gray-950 flex overflow-x-hidden">
       <Sidebar />
-      <div style={{ flex: 1, padding: '24px 32px', overflowY: 'auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-          <div>
-            <h1 style={{ fontSize: 22, fontWeight: 700, color: '#fff', margin: 0 }}>Colaboradores</h1>
-            <p style={{ color: '#6b7280', fontSize: 13, margin: '4px 0 0' }}>Gerencie usuarios internos da Excalibur</p>
+      <div className="flex-1 p-4 md:p-8 overflow-x-hidden overflow-y-auto min-w-0 max-w-full">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
+          <div className="min-w-0">
+            <h1 className="text-xl md:text-2xl font-bold text-white truncate">Colaboradores</h1>
+            <p className="text-gray-500 text-xs md:text-sm mt-1">Gerencie usuarios internos da Excalibur</p>
           </div>
           <button
             onClick={() => setShowModal(true)}
-            style={{ background: '#f59e0b', color: '#030712', fontWeight: 700, fontSize: 13, border: 'none', borderRadius: 10, padding: '10px 20px', cursor: 'pointer' }}
+            className="bg-amber-500 hover:bg-amber-400 text-gray-950 font-bold text-sm rounded-xl px-5 min-h-[44px] transition whitespace-nowrap"
           >
             + Novo Colaborador
           </button>
@@ -140,9 +141,9 @@ export default function AdminUsuarios() {
 
         {/* Modal */}
         {showModal && (
-          <div style={{ background: '#111827', border: '1px solid #374151', borderRadius: 16, padding: 24, marginBottom: 24 }}>
-            <h3 style={{ color: '#fff', fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Novo Colaborador</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div className="bg-gray-900 border border-gray-700 rounded-2xl p-4 md:p-6 mb-6">
+            <h3 className="text-white text-base font-semibold mb-4">Novo Colaborador</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label style={{ color: '#9ca3af', fontSize: 11, display: 'block', marginBottom: 4 }}>Nome</label>
                 <input value={form.nome} onChange={e => setForm({ ...form, nome: e.target.value })}
@@ -183,8 +184,8 @@ export default function AdminUsuarios() {
         {loading ? (
           <p style={{ color: '#6b7280', textAlign: 'center', padding: 40 }}>Carregando...</p>
         ) : (
-          <div style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 16, overflow: 'hidden' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-x-auto">
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 760 }}>
               <thead>
                 <tr>
                   {['', 'Nome', 'Email', 'Role', 'Status', 'Criado em', 'Acao'].map(h => (
@@ -213,13 +214,13 @@ export default function AdminUsuarios() {
                     </td>
                     <td style={{ padding: '10px 16px', color: '#6b7280', fontSize: 12 }}>{new Date(u.created_at).toLocaleDateString('pt-BR')}</td>
                     <td style={{ padding: '10px 16px' }}>
-                      <div style={{ display: 'flex', gap: 6 }}>
+                      <div className="flex gap-1.5">
                         <button onClick={() => { setSenhaModal(u); setNovaSenha(''); setConfirmaSenha(''); setMsg('') }}
-                          style={{ background: '#3b82f620', color: '#60a5fa', border: '1px solid #3b82f640', borderRadius: 6, padding: '4px 10px', fontSize: 11, cursor: 'pointer', fontWeight: 500 }}>
+                          className="bg-blue-500/20 text-blue-400 border border-blue-500/40 rounded-md px-2.5 min-h-[36px] text-[11px] font-medium hover:bg-blue-500/30 transition whitespace-nowrap">
                           🔑 Senha
                         </button>
                         <button onClick={() => toggleAtivo(u)}
-                          style={{ background: u.ativo ? '#ef444420' : '#22c55e20', color: u.ativo ? '#ef4444' : '#22c55e', border: `1px solid ${u.ativo ? '#ef4444' : '#22c55e'}40`, borderRadius: 6, padding: '4px 12px', fontSize: 11, cursor: 'pointer', fontWeight: 500 }}>
+                          className={`rounded-md px-3 min-h-[36px] text-[11px] font-medium transition whitespace-nowrap ${u.ativo ? 'bg-red-500/20 text-red-400 border border-red-500/40 hover:bg-red-500/30' : 'bg-green-500/20 text-green-400 border border-green-500/40 hover:bg-green-500/30'}`}>
                           {u.ativo ? 'Desativar' : 'Ativar'}
                         </button>
                       </div>
