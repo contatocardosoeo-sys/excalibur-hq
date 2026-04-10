@@ -26,7 +26,7 @@ export async function GET() {
   const endSemana = dom.toISOString().split('T')[0]
 
   const [clinicasR, jornadaR, adocaoR, alertasR, funilR, tarefasR, logR, receberR] = await Promise.all([
-    supabase.from('clinicas').select('id, nome, plano, valor_contrato, data_inicio, cs_responsavel, ativo, cidade, estado, responsavel, whatsapp, email, foco').eq('ativo', true),
+    supabase.from('clinicas').select('id, nome, plano, valor_contrato, data_inicio, cs_responsavel, ativo, cidade, estado, responsavel, whatsapp, email, foco, fase, score_total, status_execucao, mrr, dias_na_etapa').eq('ativo', true),
     supabase.from('jornada_clinica').select('clinica_id, etapa, dias_na_plataforma, data_inicio, notas, updated_at, cs_responsavel'),
     supabase.from('adocao_clinica').select('clinica_id, score, classificacao').eq('semana', semana),
     supabase.from('alertas_clinica').select('id, clinica_id, tipo, titulo, nivel, descricao, resolvido, created_at').eq('resolvido', false),
@@ -56,7 +56,8 @@ export async function GET() {
     const tarefasBloqueantes = tarefasPendentes.filter(t => t.bloqueante)
     const ultimaAcao = j?.updated_at || null
     const diasSemAcao = ultimaAcao ? Math.floor((now.getTime() - new Date(ultimaAcao).getTime()) / 86400000) : 999
-    const score = a?.score || 0
+    // Score: usar primeiro de adocao_clinica (semanal), fallback para clinicas.score_total
+    const score = a?.score || (c as { score_total?: number }).score_total || 0
 
     return {
       id: c.id,
@@ -70,8 +71,8 @@ export async function GET() {
       email: c.email,
       foco: c.foco,
       cs_responsavel: j?.cs_responsavel || c.cs_responsavel || 'Bruno Medina',
-      etapa: j?.etapa || 'N/A',
-      dias_na_plataforma: j?.dias_na_plataforma || 0,
+      etapa: j?.etapa || (c as { fase?: string }).fase || 'N/A',
+      dias_na_plataforma: j?.dias_na_plataforma || (c as { dias_na_etapa?: number }).dias_na_etapa || 0,
       data_inicio: j?.data_inicio || c.data_inicio,
       score,
       classificacao: a?.classificacao || (score >= 80 ? 'SAUDAVEL' : score >= 60 ? 'ATENCAO' : 'RISCO'),
