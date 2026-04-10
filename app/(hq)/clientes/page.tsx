@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import Sidebar from '../../components/Sidebar'
+import Skeleton from '../../components/Skeleton'
+import EmptyState from '../../components/EmptyState'
 import { Badge } from '@/components/ui/badge'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -163,9 +165,9 @@ export default function ClientesPage() {
         </div>
 
         {loading ? (
-          <p className="text-gray-500 text-center py-20">Carregando...</p>
+          <Skeleton variant="rect" height={60} count={6} />
         ) : filtered.length === 0 ? (
-          <p className="text-gray-500 text-center py-20">Nenhum cliente encontrado</p>
+          <EmptyState icon="🏥" title="Nenhum cliente encontrado" description="Ajuste os filtros ou cadastre novos clientes em /onboarding/novo" />
         ) : (
           <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
             <Table>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Sidebar from '../../components/Sidebar'
 import { Badge } from '@/components/ui/badge'
 import React from 'react'
@@ -43,7 +43,7 @@ export default function AlertasPage() {
   const [responsavelFilter, setResponsavelFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
 
-  const fetchAlertas = () => {
+  const fetchAlertas = useCallback(() => {
     const params = new URLSearchParams()
     if (prioridadeFilter) params.set('prioridade', prioridadeFilter)
     if (tipoFilter) params.set('tipo', tipoFilter)
@@ -54,11 +54,11 @@ export default function AlertasPage() {
       .then(r => r.json())
       .then(data => { setAlertas(data.alertas || []); setLoading(false) })
       .catch(() => setLoading(false))
-  }
+  }, [prioridadeFilter, tipoFilter, responsavelFilter, statusFilter])
 
   useEffect(() => {
     fetchAlertas()
-  }, [prioridadeFilter, tipoFilter, responsavelFilter, statusFilter])
+  }, [fetchAlertas])
 
   const handleAction = async (id: string, action: 'assumir' | 'resolver' | 'escalar') => {
     const statusMap: Record<string, string> = {

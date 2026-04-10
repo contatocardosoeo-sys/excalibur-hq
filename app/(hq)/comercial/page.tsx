@@ -49,9 +49,16 @@ export default function ComercialPage() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const d = await (await fetch('/api/comercial/pipeline')).json()
-      setPipeline(d.pipeline || []); setKpis(d.kpis || { reunioesSemana: 0, propostasEnviadas: 0, fechamentos: 0, mrrMes: 0 }); setMetas(d.metas || null)
-    } catch { /* network error */ }
+      const res = await fetch('/api/comercial/pipeline')
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const d = await res.json()
+      setPipeline(d.pipeline || [])
+      setKpis(d.kpis || { reunioesSemana: 0, propostasEnviadas: 0, fechamentos: 0, mrrMes: 0 })
+      setMetas(d.metas || null)
+    } catch (err) {
+      console.error('Erro ao carregar pipeline comercial:', err)
+      setMsg('Erro ao carregar pipeline. Tente novamente.')
+    }
     setLoading(false)
   }, [])
   useEffect(() => { load() }, [load])
