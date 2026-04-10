@@ -11,6 +11,7 @@ const ROUTE_ROLES: Record<string, string[]> = {
   '/onboarding': ['admin', 'cs'],
   '/dashboard': ['admin', 'cs', 'closer', 'cmo', 'sdr'],
   '/sdr': ['admin', 'sdr', 'closer'],
+  '/sdr/feedbacks': ['admin', 'sdr', 'closer'],
   '/comercial': ['admin', 'closer'],
   '/trafego': ['admin', 'cmo'],
   '/planos': ['admin'],
