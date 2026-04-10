@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import Sidebar from '../../../components/Sidebar'
 import { supabase } from '../../../lib/supabase'
 
@@ -87,6 +87,9 @@ function fmtDate(v: string | number | null | undefined) {
 export default function ClientePerfilPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const alertaParam = searchParams.get('alerta')
+  const [alertaDestaque, setAlertaDestaque] = useState<{ tipo: string; titulo: string; descricao: string; acao: string; prioridade: string } | null>(null)
   const [dados, setDados] = useState<PerfilData | null>(null)
   const [loading, setLoading] = useState(true)
   const [editando, setEditando] = useState(false)
@@ -108,6 +111,27 @@ export default function ClientePerfilPage() {
   }, [id])
 
   useEffect(() => { carregar() }, [carregar])
+
+  // Carrega alerta destacado pela URL (?alerta=xxx)
+  useEffect(() => {
+    if (!alertaParam || !id) return
+    ;(async () => {
+      try {
+        const r = await fetch(`/api/hq/alertas?limit=200`)
+        const j = await r.json()
+        const alerta = (j.alertas || []).find((a: { id: string; cliente_id: string }) => a.id === alertaParam && a.cliente_id === id)
+        if (alerta) {
+          setAlertaDestaque({
+            tipo: alerta.tipo,
+            titulo: alerta.acao_sugerida || 'Alerta ativo',
+            descricao: alerta.descricao || '',
+            acao: alerta.acao_sugerida || 'Verificar cliente',
+            prioridade: alerta.prioridade || 'media',
+          })
+        }
+      } catch { /* */ }
+    })()
+  }, [alertaParam, id])
 
   useEffect(() => {
     ;(async () => {
@@ -199,6 +223,41 @@ export default function ClientePerfilPage() {
         <button onClick={() => router.push('/clientes')} className="text-gray-500 text-sm mb-4 hover:text-amber-400 transition">
           ← Voltar para clientes
         </button>
+
+        {/* Banner destacado do alerta clicado */}
+        {alertaDestaque && (
+          <div className={`mb-6 rounded-2xl p-6 border-2 ${
+            alertaDestaque.prioridade === 'critica' ? 'bg-red-950/40 border-red-500/60 animate-pulse' :
+            alertaDestaque.prioridade === 'alta' ? 'bg-orange-950/40 border-orange-500/60' :
+            'bg-amber-950/40 border-amber-500/60'
+          }`}>
+            <div className="flex items-start gap-4">
+              <div className="text-4xl">
+                {alertaDestaque.prioridade === 'critica' ? '🚨' : alertaDestaque.prioridade === 'alta' ? '⚠️' : '📢'}
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full uppercase font-bold ${
+                    alertaDestaque.prioridade === 'critica' ? 'bg-red-500/30 text-red-300' :
+                    alertaDestaque.prioridade === 'alta' ? 'bg-orange-500/30 text-orange-300' :
+                    'bg-amber-500/30 text-amber-300'
+                  }`}>
+                    {alertaDestaque.prioridade}
+                  </span>
+                  <span className="text-gray-400 text-xs uppercase">{alertaDestaque.tipo.replace(/_/g, ' ')}</span>
+                </div>
+                <div className="text-white text-lg font-bold mb-1">Alerta: {alertaDestaque.descricao}</div>
+                <div className="text-gray-300 text-sm">
+                  <span className="text-amber-400 font-semibold">→ Ação recomendada:</span> {alertaDestaque.acao}
+                </div>
+              </div>
+              <button onClick={() => { setAlertaDestaque(null); router.replace(`/clientes/${id}`) }}
+                className="text-gray-500 hover:text-white text-xl p-2 rounded hover:bg-white/10 transition">
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Header + ações */}
         <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-6">

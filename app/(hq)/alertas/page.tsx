@@ -152,7 +152,7 @@ export default function AlertasPage() {
               return (
                 <div
                   key={alerta.id}
-                  onClick={() => alerta.cliente_id && router.push(`/clientes/${alerta.cliente_id}`)}
+                  onClick={() => alerta.cliente_id && router.push(`/clientes/${alerta.cliente_id}?alerta=${alerta.id}`)}
                   className={`bg-gray-900 border ${config.border} rounded-xl p-5 transition hover:bg-gray-800/50 cursor-pointer`}
                 >
                   <div className="flex items-start gap-4">

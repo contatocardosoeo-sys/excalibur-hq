@@ -59,9 +59,9 @@ export default function AlertaCentral({ userEmail, isAdmin }: { userEmail: strin
     load()
   }
 
-  const irParaCliente = (id: string) => {
+  const irParaCliente = (clienteId: string, alertaId?: string) => {
     setOpen(false)
-    router.push(`/clientes/${id}`)
+    router.push(alertaId ? `/clientes/${clienteId}?alerta=${alertaId}` : `/clientes/${clienteId}`)
   }
 
   if (!meuStatus) return null
@@ -134,7 +134,7 @@ export default function AlertaCentral({ userEmail, isAdmin }: { userEmail: strin
                 {alertasClientes.slice(0, 8).map(a => (
                   <button
                     key={a.id}
-                    onClick={() => irParaCliente(a.cliente_id)}
+                    onClick={() => irParaCliente(a.cliente_id, a.id)}
                     style={{
                       textAlign: 'left',
                       background: '#1a1a2e',

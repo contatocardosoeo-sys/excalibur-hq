@@ -22,10 +22,26 @@ interface ClienteCompleto {
   faturamento_mes: number
   cs_responsavel: string
   aviso_previo_dias: number | null
+  em_risco: boolean
+  motivo_risco: string | null
+}
+
+interface ClinicaRaw {
+  id: string
+  nome: string
+  aviso_previo_inicio?: string | null
+  score_total?: number | null
+  sla_estourado?: boolean | null
+  dias_sem_venda?: number | null
+  problema_detectado?: string | null
+  proxima_acao?: string | null
+  cs_responsavel?: string | null
+  fase?: string | null
+  status_execucao?: string | null
 }
 
 interface ListaData {
-  clinicas: { id: string; nome: string; aviso_previo_inicio?: string | null }[]
+  clinicas: ClinicaRaw[]
   jornada: { clinica_id: string; etapa: string; dias_na_plataforma: number; cs_responsavel: string }[]
   adocao: { clinica_id: string; score: number; classificacao: string }[]
   alertas: { clinica_id: string }[]
@@ -37,6 +53,19 @@ function calcAvisoDias(inicio: string | null | undefined): number | null {
   const fim = new Date(inicio + 'T12:00:00')
   fim.setDate(fim.getDate() + 30)
   return Math.ceil((fim.getTime() - Date.now()) / 86400000)
+}
+
+function calcMotivoRisco(c: ClinicaRaw, avisoDias: number | null): string | null {
+  if (avisoDias != null) {
+    return avisoDias > 0 ? `⚠️ Aviso prévio — ${avisoDias}d restantes` : '⚠️ Aviso prévio expirado'
+  }
+  if (c.sla_estourado) return '🚨 SLA estourado'
+  if (c.score_total != null && c.score_total < 40) return `💥 Score crítico (${c.score_total}/100)`
+  if ((c.dias_sem_venda || 0) > 30) return `📉 ${c.dias_sem_venda}d sem vendas`
+  if (c.score_total != null && c.score_total < 60) return `⚠️ Score baixo (${c.score_total}/100)`
+  if ((c.dias_sem_venda || 0) > 15) return `📉 ${c.dias_sem_venda}d sem vendas`
+  if (c.problema_detectado) return `⚠️ ${c.problema_detectado.slice(0, 60)}`
+  return null
 }
 
 function getInitials(nome: string): string {
@@ -95,17 +124,25 @@ export default function ClientesPage() {
       const alertasCount = alertasData.filter(a => a.clinica_id === c.id).length
       const fat = funilData.filter(f => f.clinica_id === c.id).reduce((s, d) => s + Number(d.faturamento || 0), 0)
 
+      // Score real vem de clinicas.score_total; adocao_clinica eh fallback
+      const score = c.score_total ?? adocao?.score ?? 0
+      const avisoDias = calcAvisoDias(c.aviso_previo_inicio)
+      const motivo = calcMotivoRisco(c, avisoDias)
+      const emRisco = motivo != null
+
       return {
         id: c.id,
         nome: c.nome,
-        etapa: jornada?.etapa ?? 'N/A',
+        etapa: jornada?.etapa ?? c.fase ?? 'N/A',
         dias_na_plataforma: jornada?.dias_na_plataforma ?? 0,
-        score: adocao?.score ?? 0,
-        classificacao: adocao?.classificacao ?? 'RISCO',
+        score,
+        classificacao: score >= 80 ? 'SAUDAVEL' : score >= 60 ? 'ATENCAO' : 'RISCO',
         alertas_ativos: alertasCount,
         faturamento_mes: fat,
-        cs_responsavel: jornada?.cs_responsavel ?? '-',
-        aviso_previo_dias: calcAvisoDias(c.aviso_previo_inicio),
+        cs_responsavel: jornada?.cs_responsavel ?? c.cs_responsavel ?? '-',
+        aviso_previo_dias: avisoDias,
+        em_risco: emRisco,
+        motivo_risco: motivo,
       }
     })
 
@@ -140,16 +177,16 @@ export default function ClientesPage() {
 
   const filtered = clientes.filter(c => {
     if (search && !c.nome.toLowerCase().includes(search.toLowerCase())) return false
-    if (scoreFilter === 'saudavel' && c.score < 80) return false
-    if (scoreFilter === 'atencao' && (c.score < 60 || c.score >= 80)) return false
-    if (scoreFilter === 'risco' && c.score >= 60) return false
+    if (scoreFilter === 'saudavel' && (c.score < 80 || c.em_risco)) return false
+    if (scoreFilter === 'atencao' && (c.score < 60 || c.score >= 80 || c.em_risco)) return false
+    if (scoreFilter === 'risco' && !c.em_risco) return false
     if (scoreFilter === 'aviso_previo' && c.aviso_previo_dias == null) return false
     return true
   })
 
-  const totalSaudavel = clientes.filter(c => c.score >= 80).length
-  const totalAtencao = clientes.filter(c => c.score >= 60 && c.score < 80).length
-  const totalRisco = clientes.filter(c => c.score < 60).length
+  const totalSaudavel = clientes.filter(c => c.score >= 80 && !c.em_risco).length
+  const totalAtencao = clientes.filter(c => c.score >= 60 && c.score < 80 && !c.em_risco).length
+  const totalRisco = clientes.filter(c => c.em_risco).length
   const totalAvisoPrevio = clientes.filter(c => c.aviso_previo_dias != null).length
 
   return (
@@ -237,7 +274,14 @@ export default function ClientesPage() {
                         <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-[10px] font-bold text-amber-400">
                           {getInitials(c.nome)}
                         </div>
-                        <span className="text-white text-sm font-medium hover:text-amber-400 transition">{c.nome}</span>
+                        <div className="min-w-0">
+                          <div className="text-white text-sm font-medium hover:text-amber-400 transition truncate">{c.nome}</div>
+                          {c.motivo_risco && (
+                            <div className="text-red-400 text-[10px] mt-0.5 font-medium truncate" title={c.motivo_risco}>
+                              {c.motivo_risco}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>
