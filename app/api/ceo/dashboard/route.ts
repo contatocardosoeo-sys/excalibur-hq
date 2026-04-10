@@ -20,7 +20,7 @@ export async function GET() {
   const anoAnt = mesAtual === 1 ? anoAtual - 1 : anoAtual
   const inicioMesAnt = `${anoAnt}-${String(mesAnt).padStart(2, '0')}-01`
 
-  const [receber, pagar, receberAnt, pagarAnt, clinicas, leads, pipeline, metas_sdr, metas_closer, adocao, alertas, inputDiario, funilTrafego] = await Promise.all([
+  const [receber, pagar, receberAnt, pagarAnt, clinicas, leads, pipeline, metas_sdr, metas_closer, adocao, alertas, inputDiario, funilTrafego, funilMensal] = await Promise.all([
     supabase.from('financeiro_receber').select('valor, status, data_vencimento').gte('data_vencimento', inicioMes).lt('data_vencimento', fimMes),
     supabase.from('financeiro_pagar').select('valor, status').gte('data_vencimento', inicioMes).lt('data_vencimento', fimMes),
     supabase.from('financeiro_receber').select('valor, status').gte('data_vencimento', inicioMesAnt).lt('data_vencimento', inicioMes),
@@ -34,8 +34,10 @@ export async function GET() {
     supabase.from('alertas_clinica').select('id, nivel, resolvido').eq('resolvido', false),
     // Fonte principal do funil: input_diario (igual /api/trafego/funil)
     supabase.from('input_diario').select('*').gte('data', inicioMes).lt('data', fimMes),
-    // Fallback legado
+    // Fallback legado (diário)
     supabase.from('funil_trafego_diario').select('*').gte('data', inicioMes).lt('data', fimMes),
+    // Fallback mensal agregado (ultima fonte da verdade)
+    supabase.from('funil_trafego').select('*').eq('mes', mesAtual).eq('ano', anoAtual).maybeSingle(),
   ])
 
   const r = receber.data || []
@@ -105,12 +107,16 @@ export async function GET() {
   const faturamentoKanban = pl.filter(x => x.status === 'fechado').reduce((s, x) => s + Number(x.mrr_proposto || 0), 0)
 
   const temInput = inputs.length > 0
-  const totalLeads = temInput ? inputAgregado.leads : (legadoAgregado.leads || ld.length)
-  const agendamentos = temInput ? (inputAgregado.agendamentos || agendadosKanban) : agendadosKanban
-  const reunioes = temInput ? (inputAgregado.reunioes_realizadas || reunioesKanban) : reunioesKanban
-  const fechamentos = temInput ? (inputAgregado.fechamentos || fechamentosKanban) : fechamentosKanban
-  const investimentoAds = temInput ? inputAgregado.investimento : legadoAgregado.investimento
-  const receitaGerada = temInput ? (inputAgregado.faturamento || faturamentoKanban) : faturamentoKanban
+  const temLegadoDiario = legadoDiario.length > 0
+  const fm = funilMensal.data // fonte agregada mensal (funil_trafego) — ultimo fallback
+
+  // Prioridade: input_diario > funil_trafego_diario > funil_trafego (mensal) > kanbans
+  const totalLeads = temInput ? inputAgregado.leads : (temLegadoDiario ? legadoAgregado.leads : (fm?.leads ?? ld.length))
+  const agendamentos = temInput ? (inputAgregado.agendamentos || agendadosKanban) : (fm?.agendamentos ?? agendadosKanban)
+  const reunioes = temInput ? (inputAgregado.reunioes_realizadas || reunioesKanban) : (fm?.reunioes_realizadas ?? reunioesKanban)
+  const fechamentos = temInput ? (inputAgregado.fechamentos || fechamentosKanban) : (fm?.fechamentos ?? fechamentosKanban)
+  const investimentoAds = temInput ? inputAgregado.investimento : (temLegadoDiario ? legadoAgregado.investimento : Number(fm?.investimento_total || 0))
+  const receitaGerada = temInput ? (inputAgregado.faturamento || faturamentoKanban) : (Number(fm?.faturamento || 0) || faturamentoKanban)
 
   const cpl = totalLeads > 0 ? investimentoAds / totalLeads : 0
   const cacReal = fechamentos > 0 ? investimentoAds / fechamentos : 0
