@@ -3,6 +3,12 @@ echo "🏁 Encerrando sessão Excalibur HQ..."
 
 cd ~/Desktop/excalibur/excalibur-hq
 
+# Abortar se não houver nada real pra salvar (evita commits fantasma).
+if git diff --quiet && git diff --staged --quiet && [ -z "$(git ls-files --others --exclude-standard)" ]; then
+  echo "✅ Nada a salvar — sessão encerrada sem commit"
+  exit 0
+fi
+
 DATE=$(date '+%d/%m/%Y %H:%M')
 BRANCH=$(git branch --show-current)
 LAST_COMMIT=$(git log --oneline -1)
