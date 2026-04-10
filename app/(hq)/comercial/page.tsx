@@ -219,14 +219,18 @@ export default function ComercialPage() {
 
         {/* Kanban (pipeline tab) */}
         {loading ? <div style={{ textAlign: 'center', color: '#6b7280', padding: '60px 0' }}>Carregando...</div> : (
-          <div className="overflow-x-auto -mx-4 px-4 pb-4 md:mx-0 md:px-0">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(240px, 1fr))', gap: 12, minWidth: 960 }}>
+          <>
+          <div className="md:hidden text-[10px] text-gray-500 mb-2 flex items-center gap-1">
+            <span>👉 Arraste para ver todas as etapas</span>
+          </div>
+          <div className="overflow-x-auto -mx-4 px-4 pb-4 md:mx-0 md:px-0" style={{ WebkitOverflowScrolling: 'touch', scrollSnapType: 'x mandatory' }}>
+          <div style={{ display: 'flex', gap: 12, minWidth: 960 }}>
             {COLS.map(col => {
               const items = pipeline.filter(p => p.status === col.key)
               const mrr = items.reduce((s, p) => s + Number(p.mrr_proposto || 0), 0)
               const idx = ORDER.indexOf(col.key)
               return (
-                <div key={col.key}>
+                <div key={col.key} style={{ flex: '0 0 240px', scrollSnapAlign: 'start' }}>
                   <div style={{ background: `${col.cor}15`, border: `1px solid ${col.cor}30`, borderRadius: 10, padding: '10px 12px', marginBottom: 8 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ fontSize: 12, fontWeight: 700, color: col.cor }}>{col.label}</span><span style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>{items.length}</span></div>
                     {mrr > 0 && <div style={{ fontSize: 10, color: col.cor, marginTop: 2 }}>{fmt(mrr)} MRR</div>}
@@ -254,6 +258,7 @@ export default function ComercialPage() {
             })}
           </div>
           </div>
+          </>
         )}
         </>}
 
