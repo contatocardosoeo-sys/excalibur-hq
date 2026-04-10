@@ -82,3 +82,8 @@ warning: in the working copy of 'app/api/sdr/stats/route.ts', LF will be replace
 To https://github.com/contatocardosoeo-sys/excalibur-hq.git
    b091be8..acf0e4d  main -> main
 ✅ Auto-save: 2026-04-09 22:56
+warning: in the working copy of 'auto-save.log', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/api/cs/painel/route.ts', LF will be replaced by CRLF the next time Git touches it
+[main d14e58c] auto-save: 2026-04-09 23:26 — app/api/cs/painel/route.ts,auto-save.log,
+ 2 files changed, 185 insertions(+), 7 deletions(-)
+ create mode 100644 app/api/cs/painel/route.ts
