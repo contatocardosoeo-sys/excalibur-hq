@@ -61,7 +61,7 @@ export default function ComercialPage() {
     }
     setLoading(false)
   }, [])
-  useEffect(() => { load() }, [load])
+  useEffect(() => { load(); const iv = setInterval(load, 120000); return () => clearInterval(iv) }, [load])
 
   const loadWA = useCallback(async () => {
     setWaLoading(true)

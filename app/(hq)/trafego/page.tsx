@@ -89,7 +89,7 @@ export default function TrafegoBI() {
     } catch { /* */ }
   }, [periodoInfo.de, periodoInfo.ate, filtroPessoa])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => { load(); const iv = setInterval(load, 120000); return () => clearInterval(iv) }, [load])
   useEffect(() => { if (abaAtiva === 'diario') loadDiario() }, [abaAtiva, loadDiario])
   useEffect(() => {
     ;(async () => {

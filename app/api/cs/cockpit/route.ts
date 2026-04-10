@@ -1,19 +1,11 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { getWeekString } from '../../../lib/utils'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
-
-function getWeekString(date: Date): string {
-  const d = new Date(date)
-  d.setHours(0, 0, 0, 0)
-  d.setDate(d.getDate() + 3 - (d.getDay() + 6) % 7)
-  const week1 = new Date(d.getFullYear(), 0, 4)
-  const weekNum = 1 + Math.round(((d.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7)
-  return `${d.getFullYear()}-W${weekNum.toString().padStart(2, '0')}`
-}
 
 export async function GET() {
   const semana = getWeekString(new Date())

@@ -96,7 +96,7 @@ export default function SDRPage() {
     setLoading(false)
   }, [periodo, dataInicio, dataFim])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => { load(); const iv = setInterval(load, 120000); return () => clearInterval(iv) }, [load])
 
   const salvarMetricas = async () => {
     setSalvando(true)
