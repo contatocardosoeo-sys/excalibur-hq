@@ -9,7 +9,6 @@ const ROUTE_ROLES: Record<string, string[]> = {
   '/alertas': ['admin', 'cs'],
   '/adocao': ['admin', 'cs'],
   '/onboarding': ['admin', 'cs'],
-  '/dashboard': ['admin', 'cs', 'closer', 'cmo', 'sdr'],
   '/sdr': ['admin', 'sdr', 'closer'],
   '/sdr/feedbacks': ['admin', 'sdr', 'closer'],
   '/comercial': ['admin', 'closer'],
@@ -99,10 +98,18 @@ export async function middleware(request: NextRequest) {
 
   const userRoles = getUserRoles(interno)
 
+  // Pagina /dashboard foi removida — redirecionar para rota padrao do role
+  if (pathname === '/dashboard' || pathname === '/dashboard/') {
+    const defaultRoute = DEFAULT_ROUTE[userRoles[0]] || '/ceo'
+    const url = request.nextUrl.clone()
+    url.pathname = defaultRoute
+    return NextResponse.redirect(url)
+  }
+
   if (hasAccess(userRoles, pathname)) return supabaseResponse
 
   // Sem acesso → redirecionar para rota padrão do primeiro role
-  const defaultRoute = DEFAULT_ROUTE[userRoles[0]] || '/dashboard'
+  const defaultRoute = DEFAULT_ROUTE[userRoles[0]] || '/ceo'
   const url = request.nextUrl.clone()
   url.pathname = defaultRoute
   return NextResponse.redirect(url)

@@ -23,7 +23,6 @@ const TITULOS: Record<string, string> = {
   '/onboarding': 'Onboarding',
   '/onboarding/novo': 'Novo Cliente',
   '/alertas': 'Alertas',
-  '/dashboard': 'Dashboard',
   '/visao-geral': 'Visão Geral',
 }
 

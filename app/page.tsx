@@ -32,12 +32,12 @@ export default function LoginHQ() {
     const roles = (interno?.roles && interno.roles.length > 0) ? interno.roles : [interno?.role || 'cs']
     const primaryRole = roles[0]
 
-    // Aguardar sessão ser persistida nos cookies antes de redirecionar
+    // Cada role vai direto para sua tela especifica
     const destino: Record<string, string> = {
-      admin: '/dashboard', cs: '/cs', sdr: '/sdr',
+      admin: '/ceo', cs: '/cs', sdr: '/sdr',
       closer: '/comercial', cmo: '/trafego', financeiro: '/financeiro',
     }
-    const target = destino[primaryRole] || '/dashboard'
+    const target = destino[primaryRole] || '/ceo'
 
     // Verificar que a sessão está realmente salva
     await new Promise(resolve => setTimeout(resolve, 200))

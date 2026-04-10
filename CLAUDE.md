@@ -66,7 +66,7 @@ Estas telas foram validadas e aprovadas. Qualquer alteração visual ou estrutur
 
 | Tela | O que tem | Status |
 |---|---|---|
-| /ceo | Dashboard CEO — receita, MRR, metas, projeção, caixa, comparativo | ✅ APROVADO |
+| /ceo | Dashboard CEO — receita, MRR, metas, projeção, caixa, comparativo (TELA INICIAL ADMIN) | ✅ APROVADO |
 | /coo | Visão operacional — pipeline, gargalos, SLAs | ✅ APROVADO |
 | /sdr | Métricas SDR + filtros período + valor vendas + 10 etapas ACL + rotina + feedback | ✅ APROVADO |
 | /sdr/feedbacks | Feedback diário do Trindade (humor + 4 campos) | ✅ APROVADO |
@@ -84,7 +84,15 @@ Estas telas foram validadas e aprovadas. Qualquer alteração visual ou estrutur
 | /onboarding/novo | Novo cliente 3 etapas | ✅ APROVADO |
 | /admin/usuarios | CRUD usuarios + alterar senha | ✅ APROVADO |
 
-**Telas removidas da sidebar (existem mas não no menu):** /dashboard, /visao-geral
+**Telas removidas:** /dashboard (deletada — cada role vai direto pra sua tela), /visao-geral (não no menu)
+
+### Rotas padrão por role (login)
+- admin → /ceo
+- cs → /cs
+- sdr → /sdr
+- closer → /comercial
+- cmo → /trafego
+- financeiro → /financeiro
 
 ---
 
@@ -292,5 +300,40 @@ cd ~/Desktop/excalibur/excalibur-hq && ./fim-sessao.sh
 - [ ] Tokens Wascript — Trindade e Guilherme (pendente deles)
 - [ ] Automatizar `sdr_metricas_diarias` (parar input manual, usar leads_sdr)
 - [ ] Integrar Meta Ads + Google Ads APIs
-- [ ] Otimizações UX — títulos abas, favicon, scrollbar, toast, transições
 - [ ] Sistema de alterar senha do próprio usuário (não admin)
+
+---
+
+## 📚 BASE DE CONHECIMENTO — /docs/
+
+Roadmaps técnicos organizados em 4 níveis. O Claude Code DEVE ler o arquivo relevante antes de executar qualquer tarefa.
+
+### Estrutura
+```
+docs/
+├── INDEX.md              — índice geral
+├── critico/ (14 arquivos) — leitura obrigatória por tarefa
+├── alto/    (13 arquivos) — leitura quando relevante
+├── medio/   README.md    — referência futura
+└── futuro/  README.md    — base expandida
+```
+
+### Regra de leitura
+- Tarefa de frontend/página → `docs/critico/nextjs.md` + `docs/critico/react.md`
+- Tarefa de banco → `docs/critico/postgresql.md` + `docs/critico/supabase.md`
+- Tarefa de API → `docs/critico/api-design.md`
+- Tarefa de UX/visual → `docs/critico/ux-design.md` + `docs/critico/design-system.md`
+- Qualquer tarefa → ler `docs/INDEX.md` primeiro
+
+### Auto-evolução
+1. Claude Code lê CLAUDE.md + docs/ relevante
+2. Executa com nível técnico superior
+3. `fim-sessao.sh` atualiza CLAUDE.md com o que aconteceu
+4. Próxima sessão começa mais inteligente
+5. Ao longo do tempo: docs/ pode ser expandido com novos aprendizados
+
+### Como expandir a base
+Quando surgir um novo tema técnico:
+1. Criar `docs/[nivel]/[tema].md`
+2. Adicionar ao `docs/INDEX.md`
+3. Referenciar no CLAUDE.md
