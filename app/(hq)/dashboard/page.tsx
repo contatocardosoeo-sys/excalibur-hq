@@ -26,7 +26,7 @@ export default function DashboardHQ() {
     setLoading(false)
   }, [])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => { load(); const iv = setInterval(load, 120000); return () => clearInterval(iv) }, [load])
 
   const kpiCard = (label: string, valor: string | number, cor: string, sub?: string) => (
     <div style={{ background: '#13131f', border: '1px solid #252535', borderRadius: 10, padding: '14px 16px' }}>

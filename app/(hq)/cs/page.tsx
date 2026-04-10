@@ -170,9 +170,17 @@ export default function CSCockpit() {
       <Sidebar />
       <div style={{ flex: 1, padding: '24px 32px', overflowY: 'auto' }}>
         {/* Header */}
-        <div style={{ marginBottom: 24 }}>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#fff', margin: 0 }}>Cockpit CS</h1>
-          <p style={{ color: '#6b7280', fontSize: 13, margin: '4px 0 0' }}>Visao acionavel de todas as clinicas — atualiza a cada 60s</p>
+        <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h1 style={{ fontSize: 22, fontWeight: 700, color: '#fff', margin: 0 }}>Cockpit CS</h1>
+            <p style={{ color: '#6b7280', fontSize: 13, margin: '4px 0 0' }}>Visao acionavel de todas as clinicas — atualiza a cada 60s</p>
+          </div>
+          <button onClick={() => {
+            const bom = '\uFEFF'
+            const csv = bom + ['Clinica;Etapa;Dias;Score;Alertas;Ultima Acao', ...clinicas.map(c => [c.nome, c.etapa, c.dias_na_plataforma, c.score, c.alertas_count, c.ultima_acao || '-'].join(';'))].join('\n')
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+            const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'cs_clinicas.csv'; a.click(); URL.revokeObjectURL(url)
+          }} style={{ background: '#1f2937', color: '#9ca3af', border: '1px solid #374151', borderRadius: 8, padding: '6px 14px', fontSize: 11, cursor: 'pointer' }}>📥 CSV</button>
         </div>
 
         {/* KPIs */}

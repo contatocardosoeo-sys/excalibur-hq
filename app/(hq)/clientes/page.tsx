@@ -118,6 +118,12 @@ export default function ClientesPage() {
             <h1 className="text-white text-2xl font-bold">Clientes</h1>
             <p className="text-gray-400 text-sm mt-1">Visao de todas as clinicas com dados reais</p>
           </div>
+          <button onClick={() => {
+            const bom = '\uFEFF'
+            const csv = bom + ['Nome;Etapa;Dias;Score;Alertas;Faturamento;CS', ...clientes.map(c => [c.nome, c.etapa, c.dias_na_plataforma, c.score, c.alertas_ativos, c.faturamento_mes, c.cs_responsavel].join(';'))].join('\n')
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+            const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'clientes.csv'; a.click(); URL.revokeObjectURL(url)
+          }} className="bg-gray-800 text-gray-400 border border-gray-700 rounded-lg px-3 py-1.5 text-xs cursor-pointer hover:border-gray-600">📥 CSV</button>
         </div>
 
         {/* KPIs rapidos */}
