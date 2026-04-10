@@ -1,5 +1,5 @@
-# ⚔️ EXCALIBUR OS v4.0 — DOCUMENTO MASTER
-# Versão: 4.0 | CEO: Matheus Cardoso | Atualizado: 09/04/2026
+# ⚔️ EXCALIBUR OS v5.0 — DOCUMENTO MASTER
+# Versão: 5.0 | CEO: Matheus Cardoso | Atualizado: 10/04/2026
 
 ---
 
@@ -25,7 +25,7 @@ Stack: Next.js 16 + React 19 + Supabase + Claude API + Tailwind 4
 
 ---
 
-## USUÁRIOS DO HQ — SENHAS DEFINITIVAS
+## USUÁRIOS DO HQ
 
 | Nome | Email | Senha | Role | Tela padrão |
 |---|---|---|---|---|
@@ -35,104 +35,141 @@ Stack: Next.js 16 + React 19 + Supabase + Claude API + Tailwind 4
 | Guilherme | guilherme.excalibur@gmail.com | 123456 | closer+cmo | /comercial |
 | Trindade | trindade.excalibur@gmail.com | 123456 | sdr | /sdr |
 
-IMPORTANTE: Supabase exige mínimo 6 caracteres. Senha padrão = 123456
+---
+
+## PACOTES COMERCIAIS (vendidos pelo Guilherme)
+
+| Pacote | Valor mensal | Fidelidade |
+|---|---|---|
+| Completo (sem fidelidade) | R$3.500 | Sem |
+| Completo (90 dias garantia) | R$3.000 | 90 dias |
+| Apenas Financeira | R$1.000 | - |
+| Apenas Marketing | R$1.500 | - |
 
 ---
 
-## 🔵 EXCALIBUR HQ — TELAS APROVADAS (NÃO TOCAR)
+## 🔵 EXCALIBUR HQ — TODAS AS TELAS (30+ páginas)
 
-### Dashboards
-- /dashboard — Funil consolidado Tráfego→SDR→Closer→CS com KPIs reais
-- /ceo — Receita, funil, crescimento, MRR, gargalos, status dos times
-- /coo — Visão operacional
-- /financeiro — Receita, MRR, cobrança
+### Dashboards (admin)
+- /visao-geral — Painel consolidado: Financeiro + CS + SDR + Comercial + Tráfego + Operação (ADMIN ONLY)
+- /dashboard — Funil comercial + saúde CS + financeiro resumido (todos os roles)
+- /ceo — Receita dia/mês, funil, crescimento, MRR, status times (dados reais do financeiro_receber)
+- /coo — Visão operacional: pipeline, gargalos, SLAs, performance times
+- /financeiro — Dashboard financeiro: MRR, breakdown por plano, churn, projeção
 
 ### SDR — Trindade ✅
-- /sdr — Kanban 5 colunas + metas (30 leads/10 reuniões/3 conversões) + modal + badges WA
-- Metas do mês com barras de progresso
-- Botão "Enviar p/ Comercial" → pipeline_closer + notifica Guilherme
+- /sdr — Kanban 5 colunas + metas (30/10/3) + modal + badges WA
 - Integração Prospecta CRM via webhook
 
 ### Comercial — Guilherme (Closer) ✅
-- /comercial — Pipeline 4 colunas + metas + comissão dourada (10%)
-- Planos: Starter R$997 / Pro R$1.997 / Enterprise R$3.997
-- Metas: 20 reuniões / 5 fechamentos / MRR R$10k
-- "Ativar como cliente" → cria clínica + notifica Medina
+- /comercial — Pipeline 4 colunas + metas (20/5/10k) + comissão 10%
+- 4 pacotes: Completo s/ fidelidade R$3.500 / Completo 90d R$3.000 / Financeira R$1.000 / Marketing R$1.500
 
-### Tráfego — Guilherme (CMO) ✅ RECÉM ATUALIZADO
-- /trafego — BI Comercial completo
-- Funil horizontal: Leads→Agend→Reuniões→Qualif→Fechamentos→Faturamento
-- Cores automáticas por regra (verde/amarelo/vermelho)
-- Diagnóstico automático de gargalo + ações prescritas
-- 3 metas operacionais: Mínima R$74k / Normal R$90k / Super Meta R$106k
-- Métricas diárias com meta fixa 10 reuniões/dia
-- Filtro período estilo Meta Ads (Hoje/7d/14d/30d/Mês/Personalizado)
-- Dados automáticos puxam do SDR + Closer (Guilherme só insere invest+leads)
-- 2 abas: 📊 BI Comercial | 📋 Planilha Diária
-- Banner alerta: "Preencha sua planilha diária!"
-- Aviso CEO: quem não preencheu hoje
+### Tráfego — Guilherme (CMO) ✅
+- /trafego — BI Comercial + Planilha Diária
+- Funil horizontal + diagnóstico automático de gargalo
+- 3 metas: Mínima R$74k / Normal R$90k / Super R$106k
+- Baseline imutável: CPL R$10,68 | Agendamento 35,25% | Comparecimento 71,30%
 
-Baseline histórico (imutável):
-- CPL: R$10,68 | Agendamento: 35,25% | Comparecimento: 71,30%
-- Qualificação: 82,56% | Conversão: 24,09% | CAC: R$188,94
-
-Regras de cores:
-- Agendamento: ≥35% verde / 30-34% amarelo / <30% vermelho
-- Comparecimento: ≥70% verde / 65-69% amarelo / <65% vermelho
-- Qualificação: ≥75% verde / 65-74% amarelo / <65% vermelho
-- Conversão: ≥24% verde / 20-23% amarelo / <20% vermelho
-- CAC: ≤200 verde / 201-300 amarelo / >300 vermelho
-- CPL: ≤12 verde / 13-15 amarelo / >15 vermelho
-
-### CS — Medina ✅ (MAIS IMPORTANTE — NÃO MEXER)
-- /cs — Cockpit lista acionável por prioridade
-- /clientes — Base completa com filtros e visão de gestão
-- /jornada — Painel macro de TODOS os clientes (4 fases clicáveis)
+### CS — Medina ✅ (NÃO MEXER)
+- /cs — Cockpit lista acionável por prioridade + exportar CSV
+- /clientes — Base completa com filtros + exportar CSV
+- /jornada — Painel macro 4 fases clicáveis
 - /jornada/[id] — Kanban individual D0-D90
+- /cs/calendario — Visão semanal de tarefas da jornada (NOVO)
 - /alertas — Alertas que geram obrigação de ação
 
-Jornada D0-D30 (aprovada):
-- D1-D7: Setup + alinhamento (onboarding, briefing, campanha)
-- D7-D15: Início operação + primeiros dados (funil, gargalo)
-- D15-D30: Ajuste + validação + valor (reunião D15, consolidação)
-Marcos: D7, D15, D30 — reuniões obrigatórias
-Gargalos: Marketing / Atendimento / Conversão / Adoção
+### Operação (admin)
+- /onboarding — Lista de clientes em onboarding
+- /onboarding/novo — Cadastro novo cliente (3 etapas, pacotes reais)
+- /operacao/financeiro — A Receber + A Pagar + Resumo do Mês (COMPLETO)
+- /operacao/colaboradores — CRUD colaboradores com custos mensais (NOVO)
 
-### Sistema ✅
-- /dashboard — Funil consolidado real
-- Notificações cross-setor (badge 🔔)
-- /crm (Prospecta CRM) — webhook receptor + log
-- /ia/supervisor — Agente Claude que analisa dados
+### Sistema
+- /admin/usuarios — Gestão de usuários internos
+- /ia/supervisor — Agente Claude supervisor
 - /ia/reactions — Event reactions automáticas
 - /observabilidade — Monitoramento
-- /admin/usuarios — Gestão de colaboradores
+- /crm — Webhook receptor Prospecta CRM
+
+### Sidebar v1.3
+- Busca global integrada (pesquisa clinicas, leads, pipeline, financeiro)
+- Mobile responsivo (drawer com hamburger < 768px)
+- Notificações cross-setor (badge 🔔)
+- Alerta preenchimento planilha (só Guilherme e Trindade — admin excluído)
 
 ---
 
 ## 🔵 BANCO DE DADOS (Supabase)
 
 ### Usuários
-- usuarios_internos — roles text[], nome, email, role, ativo
+- usuarios_internos — roles[], nome, email, ativo
 
 ### CS
-- clinicas, tarefas_jornada, jornada_clinica
+- clinicas — id, nome, plano, valor_contrato, cs_responsavel, especialidade, instagram, meta_faturamento, meta_leads, notas_cs
+- tarefas_jornada — 22 tarefas D0-D30 por clínica (fase, titulo, bloqueante, data_prazo)
+- jornada_clinica — etapa, dias_na_plataforma, data_inicio
 - alertas_clinica, adocao_clinica, funil_diario
+- log_atividades_cs — tipo, descricao, clinica_id, responsavel (NOVO)
 
 ### Comercial B2B
-- leads_sdr — com campanha_id, historico_wa, etiqueta_wa, usuario_wa
+- leads_sdr — com campanha_id, historico_wa, etiqueta_wa
 - pipeline_closer — com historico_wa, ultimo_contato_wa
-- metas_sdr, metas_closer
-- campanhas_trafego, leads_trafego_diario
+- metas_sdr (30/10/3), metas_closer (20/5/10k comissão 10%)
+- campanhas_trafego, funil_trafego_diario
 
-### BI Tráfego (NOVO)
-- funil_comercial — dados mensais do funil (inserção manual)
-- funil_trafego_diario — dados diários por pessoa
-- metas_comercial — 3 tiers (mínima/normal/super)
-- baseline_comercial — histórico imutável
+### Financeiro (NOVO — dados reais Jan-Abr 2026)
+- financeiro_receber — 200+ lançamentos, data_vencimento, cliente_nome, plano, valor, status
+- financeiro_pagar — 236+ lançamentos, descricao, tipo normalizado, valor, status
+- financeiro_colaboradores — nome, cargo, tipo, valor_mensal, dia_pagamento, ativo (NOVO)
+- financeiro_mensal — mrr, receita_total, custo_total por mês (4 meses)
+- clientes_hq — 47 clientes com fase, score, mrr, plano (dados reais)
+
+### Tipos normalizados (financeiro_pagar)
+- colaborador (78), marketing (48), ferramenta (42), prolabore (32), outro (32), aluguel (4)
 
 ### Sistema
-- notificacoes_hq — notificações cross-setor
-- prospecta_webhooks_log — log webhooks Prospecta CRM
+- notificacoes_hq, prospecta_webhooks_log
+- event_reactions (8 regras de automação)
+- sessoes_ia, sugestoes_ia, eventos_sistema, logs_sistema
+
+---
+
+## 🔵 APIs (50+ endpoints)
+
+### Dashboard/CEO
+- /api/dashboard — Funil + saúde CS + financeiro (MRR real do financeiro_receber)
+- /api/ceo/dashboard — Receita, crescimento, funil, times, financeiro (dados reais)
+- /api/hq/coo — Pipeline, gargalos, SLAs, performance
+- /api/hq/financeiro — MRR, breakdown planos, churn, projeção
+
+### SDR/Comercial
+- /api/sdr/leads — CRUD leads + metas
+- /api/sdr/stats — Stats resumidas SDR (NOVO)
+- /api/comercial/pipeline — CRUD pipeline + metas
+- /api/comercial/stats — Stats resumidas comercial + esfriando (NOVO)
+- /api/comercial/ativar — Fechar → criar clínica
+
+### CS
+- /api/cs/cockpit — Dados do cockpit CS (service role, bypass RLS)
+- /api/cs/lista — Dados da lista clientes (service role)
+- /api/cs/log — CRUD log atividades CS (NOVO)
+- /api/cs/registrar-contato — Registrar interação
+- /api/jornada — Tarefas da jornada
+
+### Financeiro
+- /api/financeiro/receber — CRUD + auto-atrasado
+- /api/financeiro/pagar — CRUD + auto-atrasado
+- /api/financeiro/resumo — Caixa, taxas, inadimplentes, comparativo
+- /api/financeiro/colaboradores — CRUD colaboradores (NOVO)
+
+### Sistema
+- /api/busca — Busca global (clinicas, leads, pipeline, financeiro) (NOVO)
+- /api/preenchimento — Planilha diária (exclui admin do alerta)
+- /api/notificacoes — Cross-setor
+- /api/crm/webhook — Receptor Prospecta CRM
+- /api/wascript/send — Envio WhatsApp
+- /api/ia/supervisor — Agente IA
 
 ---
 
@@ -140,59 +177,32 @@ Gargalos: Marketing / Atendimento / Conversão / Adoção
 
 ### Supabase
 URL: https://hluhlsnodndpskrkbjuw.supabase.co
-DB: (connection string em .env.local — não commitar)
-Vercel token: (em .env.local — não commitar)
+Credenciais: em .env.local (não commitar)
 
 ### Wascript API (Prospecta CRM white label)
 Base: https://api-whatsapp.wascript.com.br
-Docs: https://api-whatsapp.wascript.com.br/api-docs/
-Endpoints:
-- POST /api/enviar-texto/{token}
-- POST /api/modificar-etiquetas/{token}
-- POST /api/criar-nota/{token}
-- GET /api/listar-etiquetas/{token}
-- POST /api/enviar-audio/{token}
-- POST /api/enviar-imagem/{token}
-- POST /api/enviar-video/{token}
-- POST /api/enviar-documento/{token}
 PENDENTE: tokens Trindade + Guilherme
 
 ### Webhook Prospecta CRM
 URL: https://excalibur-hq.vercel.app/api/crm/webhook
-Configurar no Prospecta: URL + Dados do Evento + Numero + Nome + Etiqueta + Usuario Logado
-
-### N8N
-Webhooks para automações complexas (integrado)
 
 ### Claude API
 Modelo: claude-sonnet-4-20250514
-Usado em: /ia/supervisor + análise de conversa na extension
+Usado em: /ia/supervisor + extensão
 
 ---
 
-## 🟢 EXCALIBUR WEB — STATUS
+## DADOS FINANCEIROS REAIS (Jan-Abr 2026)
 
-Telas funcionais: Login, Dashboard, CRM, Pacientes, Agenda, Financeiro,
-Oportunidades, Propostas, Vendas, Funil, Jornada, CRM WhatsApp, Integrações
+| Mês | A Receber | Recebido | A Pagar | Pago | Caixa |
+|---|---|---|---|---|---|
+| Jan | R$84.500 | R$84.500 | R$81.604 | R$80.372 | R$4.128 |
+| Fev | R$95.350 | R$87.050 | R$94.113 | R$92.221 | -R$5.171 |
+| Mar | R$80.550 | R$70.550 | R$85.870 | R$69.070 | R$1.480 |
+| Abr | R$81.800 | R$12.900 | R$73.520 | R$11.060 | R$1.840 |
 
-Pendências críticas:
-- Middleware de auth inexistente
-- RLS Supabase ainda permissivo (MVP)
-- Páginas placeholder: Marketing, Academia, BI completo
-
----
-
-## 🟡 EXCALIBUR EXTENSION — STATUS
-
-Extensão Chrome injetada no WhatsApp Web
-- 89 respostas rápidas em 15 categorias
-- Motor de fluxos automático
-- Análise IA via Claude
-- Sync Supabase a cada 5min
-
-Pendências:
-- Credenciais hardcoded (segurança)
-- Sem sistema de login próprio
+Clientes ativos: 47 (32 Completo, 13 Financeira, 2 Marketing)
+MRR: R$81.800
 
 ---
 
@@ -200,11 +210,11 @@ Pendências:
 
 Tráfego (campanha) → lead WhatsApp Trindade (Prospecta CRM)
 → Webhook → lead criado no /sdr automaticamente
-→ Trindade trabalha no /sdr
+→ Trindade trabalha no /sdr (meta: 30 leads/10 reuniões/3 conversões)
 → "Enviar p/ Comercial" → pipeline_closer + notifica Guilherme
-→ Guilherme fecha no /comercial
-→ "Ativar como cliente" → clinica criada + notifica Medina
-→ Medina gerencia jornada D0-D90
+→ Guilherme fecha no /comercial (meta: 20 reuniões/5 fechamentos/MRR R$10k)
+→ "Ativar como cliente" → clínica criada + notifica Medina
+→ Medina gerencia jornada D0-D90 no /cs + /jornada
 
 ---
 
@@ -215,6 +225,8 @@ Tráfego (campanha) → lead WhatsApp Trindade (Prospecta CRM)
 3. [ ] Web — adicionar middleware de auth
 4. [ ] Web — RLS Supabase
 5. [ ] Web — páginas placeholder (Marketing, Academia, BI)
+6. [ ] Inserir colaboradores reais no /operacao/colaboradores
+7. [ ] Dados de Abril completos (planilha detalhada no Google Sheets)
 
 ---
 
@@ -224,7 +236,7 @@ Tráfego (campanha) → lead WhatsApp Trindade (Prospecta CRM)
 Cole o conteúdo deste arquivo no chat antes de qualquer ação.
 
 ### DURANTE
-Auto-save roda a cada 30min em background (auto-save.sh).
+Auto-save roda a cada 30min em background.
 
 ### FIM
 cd ~/Desktop/excalibur/excalibur-hq && ./fim-sessao.sh
