@@ -87,9 +87,26 @@ export default function JornadaDetalhePage() {
           ← Voltar para carteira
         </button>
 
-        {loading ? (
-          <div style={{ textAlign: 'center', color: '#6b7280', padding: '80px 0' }}>Carregando jornada...</div>
-        ) : !dados?.clinica ? (
+        {loading || !dados ? (
+          <div>
+            {/* Skeleton do header */}
+            <div style={{ background: '#13131f', border: '1px solid #252535', borderRadius: 12, padding: 20, marginBottom: 24 }}>
+              <div style={{ height: 18, width: '40%', background: '#252535', borderRadius: 4, marginBottom: 12 }} />
+              <div style={{ height: 8, background: '#252535', borderRadius: 4 }} />
+            </div>
+            {/* Skeleton das 3 colunas Kanban */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+              {[0, 1, 2].map(i => (
+                <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div style={{ height: 48, background: '#13131f', border: '1px solid #252535', borderRadius: 10 }} />
+                  {[0, 1, 2, 3].map(j => (
+                    <div key={j} style={{ height: 96, background: '#13131f', border: '1px solid #252535', borderRadius: 10, opacity: 1 - j * 0.15 }} />
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : !dados.clinica ? (
           <div style={{ textAlign: 'center', color: '#6b7280', padding: '80px 0' }}>Clinica nao encontrada</div>
         ) : (
           <>
@@ -202,6 +219,12 @@ export default function JornadaDetalhePage() {
                             <button onClick={() => mudarStatus(t, 'em_andamento')}
                               style={{ marginTop: 8, width: '100%', background: 'transparent', border: '1px solid #252535', color: '#6b7280', borderRadius: 6, padding: '4px 0', cursor: 'pointer', fontSize: 11 }}>
                               → Iniciar tarefa
+                            </button>
+                          )}
+                          {t.status === 'em_andamento' && !isAtt && (
+                            <button onClick={() => mudarStatus(t, 'concluida')}
+                              style={{ marginTop: 8, width: '100%', background: '#22c55e20', border: '1px solid #22c55e60', color: '#22c55e', borderRadius: 6, padding: '5px 0', cursor: 'pointer', fontSize: 11, fontWeight: 600 }}>
+                              ✅ Concluir tarefa
                             </button>
                           )}
                         </div>
