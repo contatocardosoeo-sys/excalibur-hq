@@ -55,10 +55,13 @@ warning: in the working copy of 'app/(hq)/visao-geral/page.tsx', LF will be repl
 To https://github.com/contatocardosoeo-sys/excalibur-hq.git
    acf0e4d..1928885  main -> main
 ✅ Auto-save: 2026-04-09 22:57
-e: 2026-04-09 21:26
 warning: in the working copy of 'auto-save.log', LF will be replaced by CRLF the next time Git touches it
-warning: in the working copy of 'scripts/import-financeiro.js', LF will be replaced by CRLF the next time Git touches it
-[main 73c32e5] auto-save: 2026-04-09 21:56 — auto-save.log,scripts/import-financeiro.js,
+[main 981fab5] auto-save: 2026-04-09 23:27
+ 1 file changed, 5 insertions(+)
+To https://github.com/contatocardosoeo-sys/excalibur-hq.git
+   d14e58c..981fab5  main -> main
+✅ Auto-save: 2026-04-09 23:27
+scripts/import-financeiro.js,
  2 files changed, 228 insertions(+), 4 deletions(-)
  create mode 100644 scripts/import-financeiro.js
 To https://github.com/contatocardosoeo-sys/excalibur-hq.git
@@ -87,3 +90,6 @@ warning: in the working copy of 'app/api/cs/painel/route.ts', LF will be replace
 [main d14e58c] auto-save: 2026-04-09 23:26 — app/api/cs/painel/route.ts,auto-save.log,
  2 files changed, 185 insertions(+), 7 deletions(-)
  create mode 100644 app/api/cs/painel/route.ts
+To https://github.com/contatocardosoeo-sys/excalibur-hq.git
+   bf171a3..d14e58c  main -> main
+✅ Auto-save: 2026-04-09 23:26
