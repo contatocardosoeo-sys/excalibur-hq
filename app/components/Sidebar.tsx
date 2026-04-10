@@ -154,7 +154,7 @@ export default function Sidebar() {
         <div className="flex items-center justify-between">
           <h1 className="text-white font-bold text-lg">⚔️ Excalibur HQ</h1>
           <div style={{ position: 'relative' }}>
-            <button onClick={() => setShowNotifs(!showNotifs)} style={{ fontSize: 16, background: 'none', border: 'none', cursor: 'pointer', position: 'relative', color: '#9ca3af' }}>
+            <button onClick={() => setShowNotifs(!showNotifs)} aria-label="Notificacoes" title="Notificacoes" style={{ fontSize: 16, background: 'none', border: 'none', cursor: 'pointer', position: 'relative', color: '#9ca3af' }}>
               🔔
               {notifs > 0 && <span style={{ position: 'absolute', top: -4, right: -6, background: '#ef4444', color: '#fff', fontSize: 9, fontWeight: 700, borderRadius: '50%', width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{notifs}</span>}
             </button>
@@ -207,17 +207,24 @@ export default function Sidebar() {
       </div>
 
       <nav className="p-3 flex flex-col gap-0.5 flex-1 overflow-auto">
-        {filteredSections.map((section) => (
+        {filteredSections.map((section, sectionIdx) => (
           <div key={section.label} className="mb-3">
-            <p className="text-[9px] uppercase tracking-widest text-gray-600 font-semibold px-2 mb-1">{section.label}</p>
-            {section.items.map(({ href, icon, label }) => (
-              <Link key={href} href={href} onClick={() => setMobileOpen(false)}
-                className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs transition ${
-                  pathname === href || pathname.startsWith(href + '/') ? 'bg-amber-500 text-gray-950 font-semibold' : 'text-gray-400 hover:bg-gray-800'
-                }`}>
-                <span className="text-sm">{icon}</span> {label}
-              </Link>
-            ))}
+            {sectionIdx > 0 && <div className="border-t border-gray-800/60 mb-3 -mx-1" />}
+            <p className="text-[9px] uppercase tracking-widest text-gray-600 font-semibold px-2 mb-1.5">{section.label}</p>
+            {section.items.map(({ href, icon, label }) => {
+              const active = pathname === href || pathname.startsWith(href + '/')
+              return (
+                <Link key={href} href={href} onClick={() => setMobileOpen(false)}
+                  aria-current={active ? 'page' : undefined}
+                  className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs transition ${
+                    active
+                      ? 'bg-amber-500 text-gray-950 font-semibold border-l-2 border-amber-300'
+                      : 'text-gray-400 hover:bg-gray-800 hover:text-white border-l-2 border-transparent'
+                  }`}>
+                  <span className="text-sm">{icon}</span> {label}
+                </Link>
+              )
+            })}
           </div>
         ))}
       </nav>
