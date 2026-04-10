@@ -117,13 +117,17 @@ export default function JornadaDetalhePage() {
   const diasR = (d: string) => Math.ceil((new Date(d).getTime() - Date.now()) / 86400000)
   const contar = (ts: Tarefa[], s: string) => ts.filter(t => t.status === s).length
 
+  // stats = null ate as tarefas carregarem → evita flash de "0/22" durante fetch
   const stats = useMemo(() => {
-    const ts = dados?.tarefas || []
+    if (!dados?.tarefas || dados.tarefas.length === 0) return null
+    const ts = dados.tarefas
+    const total = ts.length
     const pendentes = ts.filter(t => t.status === 'pendente').length
     const concluidas = ts.filter(t => t.status === 'concluida').length
     const emAndamento = ts.filter(t => t.status === 'em_andamento').length
     const atrasadas = ts.filter(t => t.status !== 'concluida' && t.data_prazo && diasR(t.data_prazo) < 0).length
-    return { pendentes, concluidas, emAndamento, atrasadas }
+    const progresso = total > 0 ? Math.round((concluidas / total) * 100) : 0
+    return { total, pendentes, concluidas, emAndamento, atrasadas, progresso }
   }, [dados])
 
   return (
@@ -171,21 +175,34 @@ export default function JornadaDetalhePage() {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{ flex: 1, height: 8, background: '#252535', borderRadius: 4, overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${dados.progresso}%`, background: dados.progresso >= 80 ? '#22c55e' : dados.progresso >= 40 ? '#f59e0b' : '#3b82f6', borderRadius: 4, transition: 'width 0.5s' }} />
+                    <div style={{ height: '100%', width: `${stats?.progresso ?? 0}%`, background: (stats?.progresso ?? 0) >= 80 ? '#22c55e' : (stats?.progresso ?? 0) >= 40 ? '#f59e0b' : '#3b82f6', borderRadius: 4, transition: 'width 0.5s' }} />
                   </div>
-                  <span style={{ fontSize: 13, color: '#fff', fontWeight: 700 }}>{dados.progresso}%</span>
-                  <span style={{ fontSize: 12, color: '#6b7280' }}>{dados.concluidas}/{dados.total} tarefas</span>
+                  {stats ? (
+                    <>
+                      <span style={{ fontSize: 13, color: '#fff', fontWeight: 700 }}>{stats.progresso}%</span>
+                      <span style={{ fontSize: 12, color: '#6b7280' }}>{stats.pendentes}/{stats.total} tarefas pendentes</span>
+                    </>
+                  ) : (
+                    <>
+                      <span style={{ display: 'inline-block', width: 38, height: 14, background: '#252535', borderRadius: 4 }} className="animate-pulse" />
+                      <span style={{ display: 'inline-block', width: 120, height: 12, background: '#252535', borderRadius: 4 }} className="animate-pulse" />
+                    </>
+                  )}
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 12 }}>
                 {[
-                  { l: 'Pendentes', v: stats.pendentes, c: '#6b7280' },
-                  { l: 'Em andamento', v: stats.emAndamento, c: '#f59e0b' },
-                  { l: 'Atrasadas', v: stats.atrasadas, c: '#ef4444' },
-                  { l: 'Concluidas', v: stats.concluidas, c: '#22c55e' },
+                  { l: 'Pendentes', v: stats?.pendentes, c: '#6b7280' },
+                  { l: 'Em andamento', v: stats?.emAndamento, c: '#f59e0b' },
+                  { l: 'Atrasadas', v: stats?.atrasadas, c: '#ef4444' },
+                  { l: 'Concluidas', v: stats?.concluidas, c: '#22c55e' },
                 ].map(s => (
                   <div key={s.l} style={{ textAlign: 'center', padding: '8px 16px', background: '#09090f', borderRadius: 8 }}>
-                    <div style={{ fontSize: 20, fontWeight: 800, color: s.c }}>{s.v}</div>
+                    {stats ? (
+                      <div style={{ fontSize: 20, fontWeight: 800, color: s.c }}>{s.v}</div>
+                    ) : (
+                      <div style={{ width: 24, height: 24, background: '#252535', borderRadius: 4, margin: '0 auto' }} className="animate-pulse" />
+                    )}
                     <div style={{ fontSize: 10, color: '#6b7280' }}>{s.l}</div>
                   </div>
                 ))}
