@@ -40,8 +40,8 @@ warning: in the working copy of 'auto-save.log', LF will be replaced by CRLF the
 To https://github.com/contatocardosoeo-sys/excalibur-hq.git
    73c32e5..98b4979  main -> main
 ✅ Auto-save: 2026-04-09 21:57
-ll be replaced by CRLF the next time Git touches it
-warning: in the working copy of 'app/api/financeiro/pagar/route.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/(hq)/operacao/financeiro/page.tsx', LF will be replaced by CRLF the next time Git touches it
+e replaced by CRLF the next time Git touches it
 warning: in the working copy of 'app/api/financeiro/receber/route.ts', LF will be replaced by CRLF the next time Git touches it
 warning: in the working copy of 'app/api/financeiro/resumo/route.ts', LF will be replaced by CRLF the next time Git touches it
 [main 795c901] auto-save: 2026-04-09 21:26 — app/api/financeiro/pagar/route.ts,app/api/financeiro/receber/route.ts,app/api/financeiro/resumo/route.ts,auto-save.log,package-lock.json,
@@ -60,3 +60,8 @@ warning: in the working copy of 'scripts/import-financeiro.js', LF will be repla
 To https://github.com/contatocardosoeo-sys/excalibur-hq.git
    99b4cd2..73c32e5  main -> main
 ✅ Auto-save: 2026-04-09 21:56
+warning: in the working copy of 'app/api/financeiro/pagar/route.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/api/financeiro/receber/route.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'auto-save.log', LF will be replaced by CRLF the next time Git touches it
+[main 41fdea3] auto-save: 2026-04-09 22:26 — app/api/financeiro/pagar/route.ts,app/api/financeiro/receber/route.ts,auto-save.log,
+ 3 files changed, 19 insertions(+), 6 deletions(-)

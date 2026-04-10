@@ -32,15 +32,62 @@ function fmtShort(v: number) { return 'R$ ' + v.toLocaleString('pt-BR', { minimu
 function fmtDate(d: string) { if (!d) return '-'; const dt = new Date(d + 'T12:00:00'); return `${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}` }
 function pct(a: number, b: number) { return b > 0 ? Math.round((a / b) * 100) : 0 }
 
+function normalizarPlano(p: string): string {
+  const l = (p || '').toLowerCase().trim()
+  if (l.includes('completo') || l === '') return 'Completo'
+  if (l.includes('financeira') || l.includes('solucao') || l.includes('solução')) return 'Financeira'
+  if (l.includes('trafego') || l.includes('tráfego') || l.includes('marketing')) return 'Marketing'
+  if (l.includes('aviso') || l.includes('previo') || l.includes('prévio')) return 'Aviso Previo'
+  if (l.includes('crm') || l.includes('whatsapp')) return 'CRM'
+  if (l.includes('saida') || l.includes('saída')) return 'Saida'
+  return p || 'Outro'
+}
+
+function diasAteVencimento(d: string): number {
+  if (!d) return 999
+  const venc = new Date(d + 'T12:00:00')
+  const hoje = new Date(); hoje.setHours(12, 0, 0, 0)
+  return Math.ceil((venc.getTime() - hoje.getTime()) / 86400000)
+}
+
+function semanaDoMes(d: string): number {
+  if (!d) return 1
+  const dia = new Date(d + 'T12:00:00').getDate()
+  if (dia <= 7) return 1
+  if (dia <= 14) return 2
+  if (dia <= 21) return 3
+  return 4
+}
+
+function exportCSV(filename: string, headers: string[], rows: string[][]) {
+  const bom = '\uFEFF'
+  const csv = bom + [headers.join(';'), ...rows.map(r => r.join(';'))].join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a'); a.href = url; a.download = filename; a.click()
+  URL.revokeObjectURL(url)
+}
+
 function planoBadge(p: string) {
-  const l = (p || '').toLowerCase()
-  let bg = '#37415120', cor = '#9ca3af'
-  if (l.includes('completo')) { bg = '#3b82f620'; cor = '#60a5fa' }
-  else if (l.includes('financeira') || l.includes('solucao') || l.includes('solução')) { bg = '#8b5cf620'; cor = '#a78bfa' }
-  else if (l.includes('aviso') || l.includes('previo')) { bg = '#f9731620'; cor = '#fb923c' }
-  else if (l.includes('trafego') || l.includes('tráfego') || l.includes('marketing')) { bg = '#22c55e20'; cor = '#4ade80' }
-  else if (l.includes('crm') || l.includes('whatsapp')) { bg = '#6b728020'; cor = '#9ca3af' }
-  return <span style={{ background: bg, color: cor, padding: '2px 10px', borderRadius: 6, fontSize: 10, fontWeight: 600, whiteSpace: 'nowrap' }}>{p || 'Outro'}</span>
+  const norm = normalizarPlano(p)
+  const map: Record<string, { bg: string; cor: string }> = {
+    'Completo': { bg: '#3b82f620', cor: '#60a5fa' },
+    'Financeira': { bg: '#8b5cf620', cor: '#a78bfa' },
+    'Marketing': { bg: '#22c55e20', cor: '#4ade80' },
+    'Aviso Previo': { bg: '#f9731620', cor: '#fb923c' },
+    'CRM': { bg: '#6b728020', cor: '#9ca3af' },
+    'Saida': { bg: '#ef444420', cor: '#f87171' },
+  }
+  const s = map[norm] || { bg: '#37415120', cor: '#9ca3af' }
+  return <span style={{ background: s.bg, color: s.cor, padding: '2px 10px', borderRadius: 6, fontSize: 10, fontWeight: 600, whiteSpace: 'nowrap' }}>{norm}</span>
+}
+
+function vencimentoBadge(d: string, status: string) {
+  if (status === 'pago') return null
+  const dias = diasAteVencimento(d)
+  if (dias < 0) return <span style={{ color: '#f87171', fontSize: 9, fontWeight: 600 }}>vencido ha {Math.abs(dias)}d</span>
+  if (dias <= 3) return <span style={{ color: '#fbbf24', fontSize: 9, fontWeight: 600 }}>vence em {dias}d</span>
+  return null
 }
 
 function statusBadge(s: string) {
@@ -107,9 +154,12 @@ export default function FinanceiroOperacao() {
 
   const [modalReceber, setModalReceber] = useState(false)
   const [modalPagar, setModalPagar] = useState(false)
+  const [editItem, setEditItem] = useState<{ tabela: 'receber' | 'pagar'; item: Receber | Pagar } | null>(null)
   const [formR, setFormR] = useState({ data_vencimento: '', cliente_nome: '', clinica_id: '', plano: 'Completo (90 dias garantia)', valor: '3000', observacao: '' })
   const [formP, setFormP] = useState({ data_vencimento: '', descricao: '', tipo: 'outro', valor: '', observacao: '' })
   const [saving, setSaving] = useState(false)
+  const [busca, setBusca] = useState('')
+  const [historico, setHistorico] = useState<{ mes: string; recebido: number; pago: number }[]>([])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -124,6 +174,18 @@ export default function FinanceiroOperacao() {
     setPagar(pRes.items || []); setTotaisP(pRes.totais || {})
     setResumo(sRes)
     setClinicas(cRes.clinicas || [])
+    // Historico ultimos 4 meses para mini-grafico
+    const meses4 = []
+    for (let i = 3; i >= 0; i--) {
+      let m = mes - i, a = ano
+      if (m <= 0) { m += 12; a-- }
+      meses4.push({ m, a })
+    }
+    const hist = await Promise.all(meses4.map(async ({ m, a }) => {
+      const r = await fetch(`/api/financeiro/resumo?mes=${m}&ano=${a}`).then(x => x.json())
+      return { mes: MESES[m - 1]?.substring(0, 3) || '', recebido: r.recebido || 0, pago: r.pago || 0 }
+    }))
+    setHistorico(hist)
     setLoading(false)
   }, [mes, ano])
 
@@ -153,14 +215,46 @@ export default function FinanceiroOperacao() {
   const onPlanoChange = (plano: string) => { const p = PLANOS.find(x => x.nome === plano); setFormR({ ...formR, plano, valor: String(p?.valor || 0) }) }
   const onClinicaSelect = (nome: string) => { const c = clinicas.find(x => x.nome === nome); setFormR({ ...formR, cliente_nome: nome, clinica_id: c?.id || '' }) }
 
-  /* ── Derived data ── */
-  const atrasados = receber.filter(r => r.status === 'atrasado')
-  const pendentes = receber.filter(r => r.status === 'pendente')
-  const pagosR = receber.filter(r => r.status === 'pago')
+  const salvarEdicao = async () => {
+    if (!editItem) return
+    setSaving(true)
+    const { tabela, item } = editItem
+    await fetch(`/api/financeiro/${tabela}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(item) })
+    setEditItem(null); setSaving(false); load()
+  }
 
-  const pagarByTipo = (tipo: string) => pagar.filter(p => p.tipo === tipo)
+  const exportarReceber = () => {
+    exportCSV(`receber_${MESES[mes-1]}_${ano}.csv`,
+      ['Data', 'Cliente', 'Plano', 'Valor', 'Status'],
+      receber.map(r => [fmtDate(r.data_vencimento), r.cliente_nome, normalizarPlano(r.plano), String(Number(r.valor)), r.status])
+    )
+  }
+  const exportarPagar = () => {
+    exportCSV(`pagar_${MESES[mes-1]}_${ano}.csv`,
+      ['Data', 'Descricao', 'Tipo', 'Valor', 'Status'],
+      pagar.map(p => [fmtDate(p.data_vencimento), p.descricao, p.tipo, String(Number(p.valor)), p.status])
+    )
+  }
+
+  /* ── Derived data ── */
+  const buscaLower = busca.toLowerCase()
+  const receberFiltrado = busca ? receber.filter(r => r.cliente_nome.toLowerCase().includes(buscaLower) || (r.plano || '').toLowerCase().includes(buscaLower) || (r.observacao || '').toLowerCase().includes(buscaLower)) : receber
+  const pagarFiltrado = busca ? pagar.filter(p => p.descricao.toLowerCase().includes(buscaLower) || p.tipo.toLowerCase().includes(buscaLower) || (p.observacao || '').toLowerCase().includes(buscaLower)) : pagar
+
+  const atrasados = receberFiltrado.filter(r => r.status === 'atrasado')
+  const pendentes = receberFiltrado.filter(r => r.status === 'pendente')
+  const pagosR = receberFiltrado.filter(r => r.status === 'pago')
+
+  const pagarByTipo = (tipo: string) => pagarFiltrado.filter(p => p.tipo === tipo)
   const tipoSoma = (tipo: string) => pagarByTipo(tipo).reduce((s, p) => s + Number(p.valor), 0)
   const tiposAtivos = TIPOS_DESPESA.filter(t => pagarByTipo(t.key).length > 0)
+
+  // Semanas para A Pagar
+  const pagarBySemana = [1, 2, 3, 4].map(s => ({
+    semana: s,
+    items: pagarFiltrado.filter(p => semanaDoMes(p.data_vencimento) === s),
+    total: pagarFiltrado.filter(p => semanaDoMes(p.data_vencimento) === s).reduce((sum, p) => sum + Number(p.valor), 0),
+  })).filter(s => s.items.length > 0)
 
   /* ── Cards component ── */
   const Card = ({ icon, label, valor, valorStr, sub, cor, border }: { icon: string; label: string; valor?: number; valorStr?: string; sub?: string; cor: string; border?: string }) => (
