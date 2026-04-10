@@ -12,7 +12,7 @@ export async function GET() {
   const semana = getWeekString(new Date())
 
   const [clinicasRes, jornadaRes, adocaoRes, alertasRes, funilRes] = await Promise.all([
-    supabase.from('clinicas').select('id, nome'),
+    supabase.from('clinicas').select('id, nome, aviso_previo_inicio'),
     supabase.from('jornada_clinica').select('clinica_id, etapa, dias_na_plataforma, cs_responsavel'),
     supabase.from('adocao_clinica').select('clinica_id, score, classificacao').eq('semana', semana),
     supabase.from('alertas_clinica').select('clinica_id').eq('resolvido', false),

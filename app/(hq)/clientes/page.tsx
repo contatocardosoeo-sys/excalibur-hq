@@ -1,9 +1,11 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import Sidebar from '../../components/Sidebar'
 import Skeleton from '../../components/Skeleton'
 import EmptyState from '../../components/EmptyState'
+import { supabase } from '../../lib/supabase'
 import { Badge } from '@/components/ui/badge'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -19,14 +21,22 @@ interface ClienteCompleto {
   alertas_ativos: number
   faturamento_mes: number
   cs_responsavel: string
+  aviso_previo_dias: number | null
 }
 
 interface ListaData {
-  clinicas: { id: string; nome: string }[]
+  clinicas: { id: string; nome: string; aviso_previo_inicio?: string | null }[]
   jornada: { clinica_id: string; etapa: string; dias_na_plataforma: number; cs_responsavel: string }[]
   adocao: { clinica_id: string; score: number; classificacao: string }[]
   alertas: { clinica_id: string }[]
   funil: { clinica_id: string; faturamento: number }[]
+}
+
+function calcAvisoDias(inicio: string | null | undefined): number | null {
+  if (!inicio) return null
+  const fim = new Date(inicio + 'T12:00:00')
+  fim.setDate(fim.getDate() + 30)
+  return Math.ceil((fim.getTime() - Date.now()) / 86400000)
 }
 
 function getInitials(nome: string): string {
@@ -48,10 +58,24 @@ function getScoreBg(score: number): string {
 function fmt(v: number) { return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v) }
 
 export default function ClientesPage() {
+  const router = useRouter()
   const [clientes, setClientes] = useState<ClienteCompleto[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [scoreFilter, setScoreFilter] = useState('')
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [deletando, setDeletando] = useState<string | null>(null)
+
+  useEffect(() => {
+    ;(async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user?.email) {
+        const { data: u } = await supabase.from('usuarios_internos').select('roles, role').eq('email', session.user.email).single()
+        const roles: string[] = (u?.roles && Array.isArray(u.roles) && u.roles.length > 0) ? u.roles : [u?.role || '']
+        setIsAdmin(roles.includes('admin'))
+      }
+    })()
+  }, [])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -81,6 +105,7 @@ export default function ClientesPage() {
         alertas_ativos: alertasCount,
         faturamento_mes: fat,
         cs_responsavel: jornada?.cs_responsavel ?? '-',
+        aviso_previo_dias: calcAvisoDias(c.aviso_previo_inicio),
       }
     })
 
@@ -98,6 +123,20 @@ export default function ClientesPage() {
   }, [])
 
   useEffect(() => { load() }, [load])
+
+  const deletarCliente = async (e: React.MouseEvent, id: string, nome: string) => {
+    e.stopPropagation()
+    if (!confirm(`Deletar permanentemente a clinica "${nome}"? Todos os dados relacionados (jornada, tarefas, alertas, funil) serao apagados.`)) return
+    setDeletando(id)
+    const res = await fetch(`/api/clientes/${id}`, { method: 'DELETE' })
+    if (res.ok) {
+      await load()
+    } else {
+      const err = await res.json().catch(() => ({}))
+      alert('Erro ao deletar: ' + (err.error || 'desconhecido'))
+    }
+    setDeletando(null)
+  }
 
   const filtered = clientes.filter(c => {
     if (search && !c.nome.toLowerCase().includes(search.toLowerCase())) return false
@@ -177,20 +216,22 @@ export default function ClientesPage() {
                   <TableHead className="text-gray-400 text-xs">Etapa D0-D90</TableHead>
                   <TableHead className="text-gray-400 text-xs">Dias</TableHead>
                   <TableHead className="text-gray-400 text-xs">Health Score</TableHead>
+                  <TableHead className="text-gray-400 text-xs">Aviso prévio</TableHead>
                   <TableHead className="text-gray-400 text-xs">Alertas</TableHead>
                   <TableHead className="text-gray-400 text-xs">Faturamento Mes</TableHead>
                   <TableHead className="text-gray-400 text-xs">CS</TableHead>
+                  <TableHead className="text-gray-400 text-xs text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.map(c => (
-                  <TableRow key={c.id} className="border-gray-800 hover:bg-gray-800/50 transition">
+                  <TableRow key={c.id} onClick={() => router.push(`/clientes/${c.id}`)} className="border-gray-800 hover:bg-gray-800/50 transition cursor-pointer">
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-[10px] font-bold text-amber-400">
                           {getInitials(c.nome)}
                         </div>
-                        <span className="text-white text-sm font-medium">{c.nome}</span>
+                        <span className="text-white text-sm font-medium hover:text-amber-400 transition">{c.nome}</span>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -218,6 +259,15 @@ export default function ClientesPage() {
                       </div>
                     </TableCell>
                     <TableCell>
+                      {c.aviso_previo_dias != null ? (
+                        <Badge className="bg-red-500/20 text-red-400 border-red-500/40 text-[10px] animate-pulse">
+                          ⚠️ {c.aviso_previo_dias > 0 ? `${c.aviso_previo_dias}d` : 'expirado'}
+                        </Badge>
+                      ) : (
+                        <span className="text-gray-700 text-[10px]">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
                       {c.alertas_ativos > 0 ? (
                         <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-[10px]">
                           {c.alertas_ativos} alerta{c.alertas_ativos > 1 ? 's' : ''}
@@ -228,6 +278,28 @@ export default function ClientesPage() {
                     </TableCell>
                     <TableCell className="text-amber-400 text-sm font-mono">{fmt(c.faturamento_mes)}</TableCell>
                     <TableCell className="text-gray-400 text-sm">{c.cs_responsavel}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <button onClick={e => { e.stopPropagation(); router.push(`/clientes/${c.id}`) }}
+                          title="Editar"
+                          className="p-1.5 rounded hover:bg-gray-800 text-gray-500 hover:text-amber-400 transition">
+                          ✏️
+                        </button>
+                        <button onClick={e => { e.stopPropagation(); router.push(`/jornada/${c.id}`) }}
+                          title="Ver jornada"
+                          className="p-1.5 rounded hover:bg-gray-800 text-gray-500 hover:text-amber-400 transition">
+                          📋
+                        </button>
+                        {isAdmin && (
+                          <button onClick={e => deletarCliente(e, c.id, c.nome)}
+                            disabled={deletando === c.id}
+                            title="Deletar"
+                            className="p-1.5 rounded hover:bg-red-500/20 text-gray-500 hover:text-red-400 transition disabled:opacity-50">
+                            {deletando === c.id ? '⏳' : '🗑️'}
+                          </button>
+                        )}
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
