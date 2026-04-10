@@ -143,12 +143,14 @@ export default function ClientesPage() {
     if (scoreFilter === 'saudavel' && c.score < 80) return false
     if (scoreFilter === 'atencao' && (c.score < 60 || c.score >= 80)) return false
     if (scoreFilter === 'risco' && c.score >= 60) return false
+    if (scoreFilter === 'aviso_previo' && c.aviso_previo_dias == null) return false
     return true
   })
 
   const totalSaudavel = clientes.filter(c => c.score >= 80).length
   const totalAtencao = clientes.filter(c => c.score >= 60 && c.score < 80).length
   const totalRisco = clientes.filter(c => c.score < 60).length
+  const totalAvisoPrevio = clientes.filter(c => c.aviso_previo_dias != null).length
 
   return (
     <div className="min-h-screen bg-gray-950 flex">
@@ -168,7 +170,7 @@ export default function ClientesPage() {
         </div>
 
         {/* KPIs rapidos */}
-        <div className="grid grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-5 gap-4 mb-6">
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-center">
             <p className="text-gray-500 text-[10px] uppercase">Total Ativas</p>
             <p className="text-white text-2xl font-bold">{clientes.length}</p>
@@ -184,6 +186,10 @@ export default function ClientesPage() {
           <div className="bg-gray-900 border border-red-900/30 rounded-xl p-4 text-center cursor-pointer" onClick={() => setScoreFilter(scoreFilter === 'risco' ? '' : 'risco')}>
             <p className="text-gray-500 text-[10px] uppercase">Risco (&lt;60)</p>
             <p className="text-red-400 text-2xl font-bold">{totalRisco}</p>
+          </div>
+          <div className={`bg-gray-900 border border-red-900/40 rounded-xl p-4 text-center cursor-pointer ${totalAvisoPrevio > 0 ? 'animate-pulse' : ''}`} onClick={() => setScoreFilter(scoreFilter === 'aviso_previo' ? '' : 'aviso_previo')}>
+            <p className="text-gray-500 text-[10px] uppercase">⚠️ Aviso Prévio</p>
+            <p className="text-red-400 text-2xl font-bold">{totalAvisoPrevio}</p>
           </div>
         </div>
 
