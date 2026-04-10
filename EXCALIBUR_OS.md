@@ -123,11 +123,22 @@ Principais tabelas (NÃO recriar, NÃO dropar):
 - `funil_trafego_diario` — métricas diárias de tráfego
 
 ### Financeiro
-- `financeiro_receber` — A Receber (200+ registros Jan-Abr 2026)
-- `financeiro_pagar` — A Pagar (236+ registros Jan-Abr 2026)
+- `financeiro_receber` — A Receber (207 registros Jan-Abr 2026)
+- `financeiro_pagar` — A Pagar (236 registros Jan-Abr 2026)
 - `financeiro_colaboradores` — colaboradores fixos
 - `financeiro_mensal` — resumo mensal (4 meses populados)
-- `clientes_hq` — 47 clientes ativos com fase, score, mrr
+
+### IMPORTANTE — UNIFICACAO clinicas
+Em 10/04/2026 a tabela `clientes_hq` foi DROPADA. Os 47 clientes foram migrados para `clinicas` que agora tem 48 ativos (47 reais + 1 Demo).
+
+A tabela `clinicas` agora tem TODOS os campos:
+- Cadastro: id, nome, cnpj, email, plano, valor_contrato, cidade, especialidade
+- Operacional: fase, score_total, mrr, status_execucao, dias_na_etapa, sla_estourado
+- Adoção: adocao_crm, adocao_responde_leads, adocao_planilha, adocao_script
+- KPIs: leads_semana, total_vendas_semana, ticket_medio, roi
+- CS: cs_responsavel, ultimo_contato, dias_sem_venda, problema_detectado, proxima_acao
+
+NUNCA recriar `clientes_hq`. Sempre usar `clinicas`.
 
 ### Sistema
 - `notificacoes_hq` — notificações cross-setor
@@ -273,6 +284,8 @@ Webhooks para automações complexas (integrado em excalibur-app)
 6. **Reescrever do zero quando o usuário pediu otimização** — "otimizar" ≠ "reescrever". Manter o que funciona, melhorar o resto.
 7. **Confundir excalibur-hq com excalibur-web** — São projetos DIFERENTES com bancos diferentes. Sempre verificar o diretório.
 8. **NÃO RECRIAR /dashboard** — A página `/dashboard` foi DELETADA DEFINITIVAMENTE. Cada role tem sua tela específica (admin → /ceo, sdr → /sdr, cs → /cs, closer → /comercial, cmo → /trafego). NUNCA recriar `/dashboard`. NUNCA referenciar `/dashboard` em links, redirects ou menus. Se algum código antigo apontar pra `/dashboard`, atualizar para a tela do role correto.
+9. **NÃO RECRIAR clientes_hq** — Tabela `clientes_hq` foi DROPADA em 10/04/2026. Todos os clientes operacionais estão em `clinicas` (48 ativos). A tabela `clinicas` agora tem TODOS os campos: cadastro + operacional + adoção + KPIs.
+10. **NÃO RECRIAR tabelas órfãs vazias** — 33 tabelas vazias foram dropadas (assinaturas, atividades_lead, automacoes_execucoes, procedimentos*, estoque*, pacientes_*, etc). Eram resquícios do excalibur-web ou legacy. Se precisar criar tabela nova, verificar primeiro se já não existe algo equivalente.
 
 ---
 
