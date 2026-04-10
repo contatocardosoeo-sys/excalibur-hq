@@ -287,21 +287,30 @@ export default function FinanceiroOperacao() {
   /* ── Table Row for Receber ── */
   const RowReceber = ({ r }: { r: Receber }) => (
     <tr style={{ borderBottom: '1px solid #1f293730' }}>
-      <td style={{ padding: '8px 14px', color: '#6b7280', fontSize: 12, fontFamily: 'monospace', whiteSpace: 'nowrap' }}>{fmtDate(r.data_vencimento)}</td>
+      <td style={{ padding: '8px 14px', whiteSpace: 'nowrap' }}>
+        <div style={{ color: '#6b7280', fontSize: 12, fontFamily: 'monospace' }}>{fmtDate(r.data_vencimento)}</div>
+        {vencimentoBadge(r.data_vencimento, r.status)}
+      </td>
       <td style={{ padding: '8px 14px' }}>
         <div style={{ color: '#fff', fontSize: 13, fontWeight: 500, lineHeight: 1.3 }}>{r.cliente_nome}</div>
-        {r.observacao && <div style={{ color: '#4b5563', fontSize: 10, marginTop: 1 }}>{r.observacao}</div>}
+        {r.observacao && <div style={{ color: '#4b5563', fontSize: 10, marginTop: 2, fontStyle: 'italic' }}>{r.observacao}</div>}
       </td>
       <td style={{ padding: '8px 14px' }}>{planoBadge(r.plano)}</td>
       <td style={{ padding: '8px 14px', color: '#f59e0b', fontSize: 13, fontWeight: 700, fontFamily: 'monospace', textAlign: 'right' }}>{fmt(Number(r.valor))}</td>
       <td style={{ padding: '8px 14px' }}>{statusBadge(r.status)}</td>
-      <td style={{ padding: '8px 14px' }}>
-        {r.status !== 'pago' && (
-          <button onClick={() => marcarPago('receber', r.id)}
-            style={{ background: '#22c55e15', color: '#4ade80', border: '1px solid #22c55e30', borderRadius: 6, padding: '4px 10px', fontSize: 10, cursor: 'pointer', fontWeight: 600 }}>
-            ✓ Pago
+      <td style={{ padding: '8px 14px', whiteSpace: 'nowrap' }}>
+        <div style={{ display: 'flex', gap: 4 }}>
+          {r.status !== 'pago' && (
+            <button onClick={() => marcarPago('receber', r.id)}
+              style={{ background: '#22c55e15', color: '#4ade80', border: '1px solid #22c55e30', borderRadius: 6, padding: '4px 10px', fontSize: 10, cursor: 'pointer', fontWeight: 600 }}>
+              ✓ Pago
+            </button>
+          )}
+          <button onClick={() => setEditItem({ tabela: 'receber', item: { ...r } })}
+            style={{ background: '#3b82f615', color: '#60a5fa', border: '1px solid #3b82f630', borderRadius: 6, padding: '4px 8px', fontSize: 10, cursor: 'pointer' }}>
+            ✏️
           </button>
-        )}
+        </div>
       </td>
     </tr>
   )
@@ -309,21 +318,30 @@ export default function FinanceiroOperacao() {
   /* ── Table Row for Pagar ── */
   const RowPagar = ({ p }: { p: Pagar }) => (
     <tr style={{ borderBottom: '1px solid #1f293730' }}>
-      <td style={{ padding: '8px 14px', color: '#6b7280', fontSize: 12, fontFamily: 'monospace', whiteSpace: 'nowrap' }}>{fmtDate(p.data_vencimento)}</td>
+      <td style={{ padding: '8px 14px', whiteSpace: 'nowrap' }}>
+        <div style={{ color: '#6b7280', fontSize: 12, fontFamily: 'monospace' }}>{fmtDate(p.data_vencimento)}</div>
+        {vencimentoBadge(p.data_vencimento, p.status)}
+      </td>
       <td style={{ padding: '8px 14px' }}>
         <div style={{ color: '#fff', fontSize: 13, fontWeight: 500 }}>{p.descricao}</div>
-        {p.observacao && <div style={{ color: '#4b5563', fontSize: 10, marginTop: 1 }}>{p.observacao}</div>}
+        {p.observacao && <div style={{ color: '#4b5563', fontSize: 10, marginTop: 2, fontStyle: 'italic' }}>{p.observacao}</div>}
       </td>
       <td style={{ padding: '8px 14px' }}>{tipoBadge(p.tipo)}</td>
       <td style={{ padding: '8px 14px', color: '#f87171', fontSize: 13, fontWeight: 700, fontFamily: 'monospace', textAlign: 'right' }}>{fmt(Number(p.valor))}</td>
       <td style={{ padding: '8px 14px' }}>{statusBadge(p.status)}</td>
-      <td style={{ padding: '8px 14px' }}>
-        {p.status !== 'pago' && (
-          <button onClick={() => marcarPago('pagar', p.id)}
-            style={{ background: '#22c55e15', color: '#4ade80', border: '1px solid #22c55e30', borderRadius: 6, padding: '4px 10px', fontSize: 10, cursor: 'pointer', fontWeight: 600 }}>
-            ✓ Pago
+      <td style={{ padding: '8px 14px', whiteSpace: 'nowrap' }}>
+        <div style={{ display: 'flex', gap: 4 }}>
+          {p.status !== 'pago' && (
+            <button onClick={() => marcarPago('pagar', p.id)}
+              style={{ background: '#22c55e15', color: '#4ade80', border: '1px solid #22c55e30', borderRadius: 6, padding: '4px 10px', fontSize: 10, cursor: 'pointer', fontWeight: 600 }}>
+              ✓ Pago
+            </button>
+          )}
+          <button onClick={() => setEditItem({ tabela: 'pagar', item: { ...p } })}
+            style={{ background: '#3b82f615', color: '#60a5fa', border: '1px solid #3b82f630', borderRadius: 6, padding: '4px 8px', fontSize: 10, cursor: 'pointer' }}>
+            ✏️
           </button>
-        )}
+        </div>
       </td>
     </tr>
   )
@@ -394,9 +412,13 @@ export default function FinanceiroOperacao() {
 
                 <ProgressBar value={totaisR.total_recebido} total={totaisR.total_previsto} color="#22c55e" label="Recebimentos do mes" />
 
-                {/* Actions */}
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-                  <button onClick={() => setModalReceber(true)} style={{ background: '#f59e0b', color: '#030712', fontWeight: 700, fontSize: 12, border: 'none', borderRadius: 8, padding: '8px 18px', cursor: 'pointer' }}>+ Novo lancamento</button>
+                {/* Busca + Actions */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <input value={busca} onChange={e => setBusca(e.target.value)} placeholder="Buscar cliente, plano..." style={{ ...inp, width: 280, fontSize: 12 }} />
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button onClick={exportarReceber} style={{ background: '#1f2937', color: '#9ca3af', border: '1px solid #374151', borderRadius: 8, padding: '6px 14px', fontSize: 11, cursor: 'pointer' }}>📥 CSV</button>
+                    <button onClick={() => setModalReceber(true)} style={{ background: '#f59e0b', color: '#030712', fontWeight: 700, fontSize: 12, border: 'none', borderRadius: 8, padding: '8px 18px', cursor: 'pointer' }}>+ Novo lancamento</button>
+                  </div>
                 </div>
 
                 {receber.length === 0 ? <Empty icon="💰" text="Nenhum lancamento neste mes" /> : (
@@ -463,8 +485,12 @@ export default function FinanceiroOperacao() {
 
                 <ProgressBar value={totaisP.total_pago} total={totaisP.total_previsto} color="#ef4444" label="Pagamentos do mes" />
 
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-                  <button onClick={() => setModalPagar(true)} style={{ background: '#f59e0b', color: '#030712', fontWeight: 700, fontSize: 12, border: 'none', borderRadius: 8, padding: '8px 18px', cursor: 'pointer' }}>+ Nova despesa</button>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <input value={busca} onChange={e => setBusca(e.target.value)} placeholder="Buscar despesa, tipo..." style={{ ...inp, width: 280, fontSize: 12 }} />
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button onClick={exportarPagar} style={{ background: '#1f2937', color: '#9ca3af', border: '1px solid #374151', borderRadius: 8, padding: '6px 14px', fontSize: 11, cursor: 'pointer' }}>📥 CSV</button>
+                    <button onClick={() => setModalPagar(true)} style={{ background: '#f59e0b', color: '#030712', fontWeight: 700, fontSize: 12, border: 'none', borderRadius: 8, padding: '8px 18px', cursor: 'pointer' }}>+ Nova despesa</button>
+                  </div>
                 </div>
 
                 {pagar.length === 0 ? <Empty icon="📋" text="Nenhuma despesa neste mes" /> : (
@@ -560,6 +586,33 @@ export default function FinanceiroOperacao() {
                   </div>
                 </div>
 
+                {/* Mini-grafico historico */}
+                {historico.length > 0 && (
+                  <div style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 12, padding: 20, marginBottom: 16 }}>
+                    <h3 style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 16 }}>📈 Historico ultimos 4 meses</h3>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', height: 120 }}>
+                      {historico.map((h, i) => {
+                        const maxVal = Math.max(...historico.map(x => Math.max(x.recebido, x.pago)), 1)
+                        const hReceb = Math.max(4, (h.recebido / maxVal) * 100)
+                        const hPago = Math.max(4, (h.pago / maxVal) * 100)
+                        return (
+                          <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                            <div style={{ display: 'flex', gap: 3, alignItems: 'flex-end', height: 90 }}>
+                              <div style={{ width: 16, height: `${hReceb}%`, background: '#22c55e', borderRadius: '3px 3px 0 0', minHeight: 4 }} title={`Recebido: ${fmtShort(h.recebido)}`} />
+                              <div style={{ width: 16, height: `${hPago}%`, background: '#ef4444', borderRadius: '3px 3px 0 0', minHeight: 4 }} title={`Pago: ${fmtShort(h.pago)}`} />
+                            </div>
+                            <span style={{ fontSize: 10, color: '#6b7280', fontWeight: 600 }}>{h.mes}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                    <div style={{ display: 'flex', gap: 16, justifyContent: 'center', marginTop: 10 }}>
+                      <span style={{ fontSize: 10, color: '#4ade80', display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 8, height: 8, background: '#22c55e', borderRadius: 2, display: 'inline-block' }} /> Recebido</span>
+                      <span style={{ fontSize: 10, color: '#f87171', display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 8, height: 8, background: '#ef4444', borderRadius: 2, display: 'inline-block' }} /> Pago</span>
+                    </div>
+                  </div>
+                )}
+
                 {/* Projecao */}
                 {resumo.total_receber > 0 && (
                   <div style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 12, padding: 20 }}>
@@ -585,6 +638,31 @@ export default function FinanceiroOperacao() {
               </>
             )}
           </>
+        )}
+
+        {/* ════════════════ MODAL EDICAO ════════════════ */}
+        {editItem && (
+          <div style={{ position: 'fixed', inset: 0, background: '#000000cc', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }} onClick={() => setEditItem(null)}>
+            <div style={{ background: '#111827', border: '1px solid #374151', borderRadius: 16, padding: 28, width: 440 }} onClick={e => e.stopPropagation()}>
+              <h3 style={{ color: '#fff', fontSize: 16, fontWeight: 700, marginBottom: 20 }}>Editar lancamento</h3>
+              <div style={{ display: 'grid', gap: 14 }}>
+                <div><label style={{ color: '#6b7280', fontSize: 11, display: 'block', marginBottom: 4 }}>Data vencimento</label>
+                  <input type="date" value={(editItem.item as Receber).data_vencimento || ''} onChange={e => setEditItem({ ...editItem, item: { ...editItem.item, data_vencimento: e.target.value } })} style={inp} /></div>
+                <div><label style={{ color: '#6b7280', fontSize: 11, display: 'block', marginBottom: 4 }}>Valor (R$)</label>
+                  <input type="number" value={Number(editItem.item.valor)} onChange={e => setEditItem({ ...editItem, item: { ...editItem.item, valor: Number(e.target.value) } })} style={inp} /></div>
+                <div><label style={{ color: '#6b7280', fontSize: 11, display: 'block', marginBottom: 4 }}>Status</label>
+                  <select value={editItem.item.status} onChange={e => setEditItem({ ...editItem, item: { ...editItem.item, status: e.target.value } })} style={inp}>
+                    <option value="pendente">Pendente</option><option value="pago">Pago</option><option value="atrasado">Atrasado</option>
+                  </select></div>
+                <div><label style={{ color: '#6b7280', fontSize: 11, display: 'block', marginBottom: 4 }}>Observacao</label>
+                  <input value={editItem.item.observacao || ''} onChange={e => setEditItem({ ...editItem, item: { ...editItem.item, observacao: e.target.value } })} style={inp} placeholder="Opcional" /></div>
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
+                <button onClick={salvarEdicao} disabled={saving} style={{ background: '#3b82f6', color: '#fff', fontWeight: 700, fontSize: 13, border: 'none', borderRadius: 8, padding: '10px 24px', cursor: 'pointer', opacity: saving ? 0.5 : 1 }}>{saving ? 'Salvando...' : 'Salvar'}</button>
+                <button onClick={() => setEditItem(null)} style={{ background: 'transparent', color: '#6b7280', border: '1px solid #374151', borderRadius: 8, padding: '10px 24px', cursor: 'pointer', fontSize: 13 }}>Cancelar</button>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* ════════════════ MODAIS ════════════════ */}
