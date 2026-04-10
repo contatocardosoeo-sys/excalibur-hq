@@ -50,3 +50,8 @@ warning: in the working copy of 'app/api/financeiro/resumo/route.ts', LF will be
 To https://github.com/contatocardosoeo-sys/excalibur-hq.git
    7f979c6..795c901  main -> main
 ✅ Auto-save: 2026-04-09 21:26
+warning: in the working copy of 'auto-save.log', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'scripts/import-financeiro.js', LF will be replaced by CRLF the next time Git touches it
+[main 73c32e5] auto-save: 2026-04-09 21:56 — auto-save.log,scripts/import-financeiro.js,
+ 2 files changed, 228 insertions(+), 4 deletions(-)
+ create mode 100644 scripts/import-financeiro.js
