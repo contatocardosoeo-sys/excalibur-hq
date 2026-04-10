@@ -117,3 +117,4 @@ warning: in the working copy of 'auto-save.log', LF will be replaced by CRLF the
 To https://github.com/contatocardosoeo-sys/excalibur-hq.git
    535c5dd..5b49ddd  main -> main
 ✅ Auto-save: 2026-04-10 00:56
+warning: in the working copy of 'CLAUDE.md', LF will be replaced by CRLF the next time Git touches it
