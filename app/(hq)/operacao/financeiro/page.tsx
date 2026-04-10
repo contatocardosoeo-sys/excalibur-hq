@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import Sidebar from '../../../components/Sidebar'
 import { useToast } from '../../../components/Toast'
+import KPICard from '../../../components/KPICard'
 
 /* ── Types ── */
 type Receber = { id: string; data_vencimento: string; cliente_nome: string; clinica_id: string | null; plano: string; valor: number; status: string; data_pagamento: string | null; observacao: string | null }
@@ -292,15 +293,9 @@ export default function FinanceiroOperacao() {
   })).filter(s => s.items.length > 0)
 
   /* ── Cards component ── */
+  // Wrapper compativel — usa KPICard global
   const Card = ({ icon, label, valor, valorStr, sub, cor, border }: { icon: string; label: string; valor?: number; valorStr?: string; sub?: string; cor: string; border?: string }) => (
-    <div style={{ background: '#111827', border: `1px solid ${border || '#1f2937'}`, borderRadius: 12, padding: '14px 16px', flex: 1, minWidth: 0 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-        <span style={{ fontSize: 14 }}>{icon}</span>
-        <span style={{ fontSize: 10, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>{label}</span>
-      </div>
-      <div style={{ fontSize: 22, fontWeight: 800, color: cor, fontFamily: 'monospace' }}>{valorStr || fmtShort(valor || 0)}</div>
-      {sub && <div style={{ fontSize: 10, color: '#4b5563', marginTop: 2 }}>{sub}</div>}
-    </div>
+    <KPICard icon={icon} label={label} valor={valorStr || fmtShort(valor || 0)} sub={sub} cor={cor} border={border} />
   )
 
   /* ── Progress Bar ── */

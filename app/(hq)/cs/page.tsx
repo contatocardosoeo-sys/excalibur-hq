@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Sidebar from '../../components/Sidebar'
 import { useToast } from '../../components/Toast'
+import Modal, { ModalButton } from '../../components/Modal'
 import { supabase } from '../../lib/supabase'
 
 /* ── Types ── */
@@ -526,35 +527,33 @@ export default function CSPainel() {
           </div>
         )}
 
-        {/* ════════ MODAL CONTATO ════════ */}
-        {modalCliente && (
-          <div style={{ position: 'fixed', inset: 0, background: '#000000cc', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }} onClick={() => setModalCliente(null)}>
-            <div style={{ background: '#111827', border: '1px solid #374151', borderRadius: 16, padding: 24, width: 480 }} onClick={e => e.stopPropagation()}>
-              <h3 style={{ color: '#fff', fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Registrar contato</h3>
-              <p style={{ color: '#6b7280', fontSize: 12, marginBottom: 16 }}>{modalCliente.nome} · Score {modalCliente.score} · {modalCliente.etapa}</p>
-              <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
-                {['mensagem', 'ligacao', 'reuniao', 'ajuste'].map(t => (
-                  <button key={t} onClick={() => setContatoTipo(t)}
-                    style={{ background: contatoTipo === t ? '#f59e0b' : '#1f2937', color: contatoTipo === t ? '#030712' : '#9ca3af', border: 'none', borderRadius: 8, padding: '6px 14px', fontSize: 11, cursor: 'pointer', fontWeight: contatoTipo === t ? 700 : 500 }}>
-                    {t}
-                  </button>
-                ))}
-              </div>
-              <textarea value={contatoDesc} onChange={e => setContatoDesc(e.target.value)} placeholder="Descreva o contato realizado..."
-                style={{ width: '100%', background: '#1f2937', border: '1px solid #374151', borderRadius: 8, padding: '10px 14px', color: '#fff', fontSize: 12, outline: 'none', minHeight: 80, resize: 'vertical' }} />
-              <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-                <button onClick={registrarContato} disabled={salvando}
-                  style={{ background: '#f59e0b', color: '#030712', fontWeight: 700, fontSize: 12, border: 'none', borderRadius: 8, padding: '10px 24px', cursor: 'pointer', opacity: salvando ? 0.5 : 1 }}>
-                  {salvando ? 'Salvando...' : 'Registrar'}
-                </button>
-                <button onClick={() => setModalCliente(null)}
-                  style={{ background: 'transparent', color: '#6b7280', border: '1px solid #374151', borderRadius: 8, padding: '10px 24px', cursor: 'pointer', fontSize: 12 }}>
-                  Cancelar
-                </button>
-              </div>
-            </div>
+        {/* ════════ MODAL CONTATO (componente global) ════════ */}
+        <Modal
+          open={!!modalCliente}
+          onClose={() => setModalCliente(null)}
+          title="Registrar contato"
+          subtitle={modalCliente ? `${modalCliente.nome} · Score ${modalCliente.score} · ${modalCliente.etapa}` : ''}
+          width={480}
+          footer={
+            <>
+              <ModalButton variant="secondary" onClick={() => setModalCliente(null)}>Cancelar</ModalButton>
+              <ModalButton variant="primary" onClick={registrarContato} disabled={salvando}>
+                {salvando ? 'Salvando...' : 'Registrar'}
+              </ModalButton>
+            </>
+          }
+        >
+          <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+            {['mensagem', 'ligacao', 'reuniao', 'ajuste'].map(t => (
+              <button key={t} onClick={() => setContatoTipo(t)}
+                style={{ background: contatoTipo === t ? '#f59e0b' : '#1f2937', color: contatoTipo === t ? '#030712' : '#9ca3af', border: 'none', borderRadius: 8, padding: '6px 14px', fontSize: 11, cursor: 'pointer', fontWeight: contatoTipo === t ? 700 : 500 }}>
+                {t}
+              </button>
+            ))}
           </div>
-        )}
+          <textarea value={contatoDesc} onChange={e => setContatoDesc(e.target.value)} placeholder="Descreva o contato realizado..."
+            style={{ width: '100%', background: '#1f2937', border: '1px solid #374151', borderRadius: 8, padding: '10px 14px', color: '#fff', fontSize: 12, outline: 'none', minHeight: 80, resize: 'vertical' }} />
+        </Modal>
       </div>
     </div>
   )
