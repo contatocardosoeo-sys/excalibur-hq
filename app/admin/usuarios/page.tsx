@@ -33,6 +33,12 @@ export default function AdminUsuarios() {
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState('')
 
+  // Modal alterar senha
+  const [senhaModal, setSenhaModal] = useState<Usuario | null>(null)
+  const [novaSenha, setNovaSenha] = useState('')
+  const [confirmaSenha, setConfirmaSenha] = useState('')
+  const [salvandoSenha, setSalvandoSenha] = useState(false)
+
   const load = useCallback(async () => {
     const res = await fetch('/api/admin/usuarios')
     const json = await res.json()
@@ -84,6 +90,27 @@ export default function AdminUsuarios() {
       body: JSON.stringify({ email: u.email, ativo: !u.ativo }),
     })
     load()
+  }
+
+  const alterarSenha = async () => {
+    if (!senhaModal) return
+    setMsg('')
+    if (novaSenha.length < 6) { setMsg('Erro: Senha deve ter no minimo 6 caracteres'); return }
+    if (novaSenha !== confirmaSenha) { setMsg('Erro: As senhas nao coincidem'); return }
+    setSalvandoSenha(true)
+    const res = await fetch('/api/admin/usuarios', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: senhaModal.email, novaSenha }),
+    })
+    const json = await res.json()
+    if (json.success) {
+      setMsg(`Senha de ${senhaModal.nome} alterada com sucesso`)
+      setSenhaModal(null); setNovaSenha(''); setConfirmaSenha('')
+    } else {
+      setMsg(`Erro: ${json.error || 'falha ao alterar senha'}`)
+    }
+    setSalvandoSenha(false)
   }
 
   if (!isAdmin) return null
@@ -186,15 +213,64 @@ export default function AdminUsuarios() {
                     </td>
                     <td style={{ padding: '10px 16px', color: '#6b7280', fontSize: 12 }}>{new Date(u.created_at).toLocaleDateString('pt-BR')}</td>
                     <td style={{ padding: '10px 16px' }}>
-                      <button onClick={() => toggleAtivo(u)}
-                        style={{ background: u.ativo ? '#ef444420' : '#22c55e20', color: u.ativo ? '#ef4444' : '#22c55e', border: `1px solid ${u.ativo ? '#ef4444' : '#22c55e'}40`, borderRadius: 6, padding: '4px 12px', fontSize: 11, cursor: 'pointer', fontWeight: 500 }}>
-                        {u.ativo ? 'Desativar' : 'Ativar'}
-                      </button>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button onClick={() => { setSenhaModal(u); setNovaSenha(''); setConfirmaSenha(''); setMsg('') }}
+                          style={{ background: '#3b82f620', color: '#60a5fa', border: '1px solid #3b82f640', borderRadius: 6, padding: '4px 10px', fontSize: 11, cursor: 'pointer', fontWeight: 500 }}>
+                          🔑 Senha
+                        </button>
+                        <button onClick={() => toggleAtivo(u)}
+                          style={{ background: u.ativo ? '#ef444420' : '#22c55e20', color: u.ativo ? '#ef4444' : '#22c55e', border: `1px solid ${u.ativo ? '#ef4444' : '#22c55e'}40`, borderRadius: 6, padding: '4px 12px', fontSize: 11, cursor: 'pointer', fontWeight: 500 }}>
+                          {u.ativo ? 'Desativar' : 'Ativar'}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* Modal alterar senha */}
+        {senhaModal && (
+          <div style={{ position: 'fixed', inset: 0, background: '#000000cc', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }} onClick={() => setSenhaModal(null)}>
+            <div style={{ background: '#111827', border: '1px solid #374151', borderRadius: 16, padding: 28, width: 440 }} onClick={e => e.stopPropagation()}>
+              <h3 style={{ color: '#fff', fontSize: 16, fontWeight: 700, marginBottom: 4 }}>🔑 Alterar senha</h3>
+              <p style={{ color: '#6b7280', fontSize: 12, marginBottom: 16 }}>{senhaModal.nome} · {senhaModal.email}</p>
+              <div style={{ display: 'grid', gap: 14 }}>
+                <div>
+                  <label style={{ color: '#9ca3af', fontSize: 11, display: 'block', marginBottom: 4 }}>Nova senha *</label>
+                  <input type="password" value={novaSenha} onChange={e => setNovaSenha(e.target.value)} placeholder="Minimo 6 caracteres" autoFocus
+                    style={{ width: '100%', background: '#1f2937', border: '1px solid #374151', borderRadius: 8, padding: '10px 14px', color: '#fff', fontSize: 13, outline: 'none' }} />
+                </div>
+                <div>
+                  <label style={{ color: '#9ca3af', fontSize: 11, display: 'block', marginBottom: 4 }}>Confirme a nova senha *</label>
+                  <input type="password" value={confirmaSenha} onChange={e => setConfirmaSenha(e.target.value)} placeholder="Repita a senha"
+                    style={{ width: '100%', background: '#1f2937', border: '1px solid #374151', borderRadius: 8, padding: '10px 14px', color: '#fff', fontSize: 13, outline: 'none' }}
+                    onKeyDown={e => { if (e.key === 'Enter') alterarSenha() }} />
+                </div>
+                {novaSenha && confirmaSenha && novaSenha !== confirmaSenha && (
+                  <div style={{ background: '#ef444420', border: '1px solid #ef444440', borderRadius: 8, padding: '8px 12px', color: '#ef4444', fontSize: 11 }}>
+                    As senhas nao coincidem
+                  </div>
+                )}
+                {novaSenha && novaSenha.length > 0 && novaSenha.length < 6 && (
+                  <div style={{ background: '#f59e0b20', border: '1px solid #f59e0b40', borderRadius: 8, padding: '8px 12px', color: '#f59e0b', fontSize: 11 }}>
+                    Senha muito curta — minimo 6 caracteres
+                  </div>
+                )}
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
+                <button onClick={alterarSenha} disabled={salvandoSenha || !novaSenha || novaSenha.length < 6 || novaSenha !== confirmaSenha}
+                  style={{ background: '#f59e0b', color: '#030712', fontWeight: 700, fontSize: 13, border: 'none', borderRadius: 8, padding: '10px 24px', cursor: 'pointer', opacity: (salvandoSenha || !novaSenha || novaSenha.length < 6 || novaSenha !== confirmaSenha) ? 0.4 : 1 }}>
+                  {salvandoSenha ? 'Alterando...' : '✅ Confirmar'}
+                </button>
+                <button onClick={() => setSenhaModal(null)}
+                  style={{ background: 'transparent', color: '#6b7280', border: '1px solid #374151', borderRadius: 8, padding: '10px 24px', cursor: 'pointer', fontSize: 13 }}>
+                  Cancelar
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

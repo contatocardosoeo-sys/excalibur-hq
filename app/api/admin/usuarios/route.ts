@@ -39,7 +39,32 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  const { email, ativo, role } = await req.json()
+  const body = await req.json()
+  const { email, ativo, role, novaSenha } = body
+
+  // Alterar senha — usa Supabase Auth Admin API
+  if (novaSenha) {
+    if (novaSenha.length < 6) {
+      return NextResponse.json({ error: 'Senha deve ter no minimo 6 caracteres' }, { status: 400 })
+    }
+    // Buscar o usuario auth pelo email
+    const { data: usersList, error: listErr } = await supabase.auth.admin.listUsers()
+    if (listErr) return NextResponse.json({ error: listErr.message }, { status: 500 })
+
+    const authUser = usersList.users.find(u => u.email === email)
+    if (!authUser) {
+      return NextResponse.json({ error: 'Usuario nao encontrado no auth' }, { status: 404 })
+    }
+
+    const { error: updateErr } = await supabase.auth.admin.updateUserById(authUser.id, {
+      password: novaSenha,
+    })
+    if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 500 })
+
+    return NextResponse.json({ success: true, message: 'Senha alterada com sucesso' })
+  }
+
+  // Update padrao (ativo, role)
   const updates: Record<string, unknown> = {}
   if (ativo !== undefined) updates.ativo = ativo
   if (role) updates.role = role
