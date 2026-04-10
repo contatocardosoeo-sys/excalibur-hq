@@ -11,7 +11,7 @@ export async function GET() {
     const { data: clientes } = await supabase.from('clientes_hq').select('*')
     const { data: historicoRaw } = await supabase
       .from('financeiro_mensal').select('*')
-      .order('mes_referencia', { ascending: true })
+      .order('mes', { ascending: true })
 
     const clientesList = clientes || []
     const historicoList = historicoRaw || []
@@ -20,11 +20,11 @@ export async function GET() {
     const mrr = activeClients.reduce((sum, c) => sum + (Number(c.mrr) || 0), 0)
 
     const sortedHistorico = [...historicoList].sort(
-      (a, b) => new Date(b.mes_referencia).getTime() - new Date(a.mes_referencia).getTime()
+      (a, b) => new Date(b.mes).getTime() - new Date(a.mes).getTime()
     )
     const currentMonth = sortedHistorico[0]
     const previousMonth = sortedHistorico[1]
-    const mrrAnterior = previousMonth ? Number(previousMonth.mrr_total) || 0 : 0
+    const mrrAnterior = previousMonth ? Number(previousMonth.mrr) || 0 : 0
     const mrrVariacao = mrrAnterior > 0 ? ((mrr - mrrAnterior) / mrrAnterior) * 100 : 0
 
     const receitaMes = currentMonth ? Number(currentMonth.receita_total) || 0 : 0
@@ -39,7 +39,7 @@ export async function GET() {
     const inadimplentes = activeClients.filter((c) => c.inadimplente === true || c.status_pagamento === 'atrasado')
     const inadimplencia = activeClients.length > 0 ? (inadimplentes.length / activeClients.length) * 100 : 0
 
-    const custos = currentMonth ? Number(currentMonth.custos_total) || 0 : 0
+    const custos = currentMonth ? Number(currentMonth.custo_total) || 0 : 0
     const margem = receitaMes > 0 ? ((receitaMes - custos) / receitaMes) * 100 : 0
 
     const growthRate = mrrVariacao / 100
@@ -59,12 +59,12 @@ export async function GET() {
 
     const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
     const historico_mrr = historicoList.map((h) => {
-      const d = new Date(h.mes_referencia)
+      const d = new Date(h.mes)
       return {
         mes: meses[d.getMonth()] || d.toISOString().slice(0, 7),
-        mrr: Number(h.mrr_total) || 0,
+        mrr: Number(h.mrr) || 0,
         receita: Number(h.receita_total) || 0,
-        clientes: Number(h.total_clientes) || 0,
+        clientes: Number(h.novos_clientes) || 0,
       }
     })
 
