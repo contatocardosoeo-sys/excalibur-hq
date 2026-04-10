@@ -218,12 +218,16 @@ function resolverTipo(tipo: string): string {
 
 type EventoResolvido = Evento & { tipoResolvido: string }
 
+// Guard global para impedir multiplas instancias (React Strict Mode + transicoes)
+let POLL_GLOBAL_ATIVO = false
+
 export default function SistemaEventos({ userRole }: { userRole?: string }) {
   const [eventoAtivo, setEventoAtivo] = useState<EventoResolvido | null>(null)
   const filaRef = useRef<EventoResolvido[]>([])
   const ultimosIdsRef = useRef<Set<string>>(new Set())
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const channelRef = useRef<BroadcastChannel | null>(null)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const podeVer = useCallback((evento: Evento) => {
     if (!userRole) return false
@@ -280,6 +284,9 @@ export default function SistemaEventos({ userRole }: { userRole?: string }) {
 
   useEffect(() => {
     if (typeof window === 'undefined') return
+    // Guard: impede multiplas instancias (React Strict Mode, remounts transitorios)
+    if (POLL_GLOBAL_ATIVO) return
+    POLL_GLOBAL_ATIVO = true
 
     try {
       channelRef.current = new BroadcastChannel('excalibur-eventos')
@@ -303,16 +310,18 @@ export default function SistemaEventos({ userRole }: { userRole?: string }) {
     }
 
     poll()
-    const intervalo = setInterval(poll, 10000)
+    intervalRef.current = setInterval(poll, 10000)
 
     if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
       try { Notification.requestPermission() } catch { /* */ }
     }
 
     return () => {
+      POLL_GLOBAL_ATIVO = false
       channelRef.current?.close()
-      clearInterval(intervalo)
-      if (timerRef.current) clearTimeout(timerRef.current)
+      channelRef.current = null
+      if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null }
+      if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])

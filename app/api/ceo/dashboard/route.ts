@@ -20,7 +20,7 @@ export async function GET() {
   const anoAnt = mesAtual === 1 ? anoAtual - 1 : anoAtual
   const inicioMesAnt = `${anoAnt}-${String(mesAnt).padStart(2, '0')}-01`
 
-  const [receber, pagar, receberAnt, pagarAnt, clinicas, leads, pipeline, metas_sdr, metas_closer, adocao, alertas] = await Promise.all([
+  const [receber, pagar, receberAnt, pagarAnt, clinicas, leads, pipeline, metas_sdr, metas_closer, adocao, alertas, inputDiario, funilTrafego] = await Promise.all([
     supabase.from('financeiro_receber').select('valor, status, data_vencimento').gte('data_vencimento', inicioMes).lt('data_vencimento', fimMes),
     supabase.from('financeiro_pagar').select('valor, status').gte('data_vencimento', inicioMes).lt('data_vencimento', fimMes),
     supabase.from('financeiro_receber').select('valor, status').gte('data_vencimento', inicioMesAnt).lt('data_vencimento', inicioMes),
@@ -28,10 +28,14 @@ export async function GET() {
     supabase.from('clinicas').select('id, nome, valor_contrato, ativo').eq('ativo', true),
     supabase.from('leads_sdr').select('id, status, created_at'),
     supabase.from('pipeline_closer').select('id, status, mrr_proposto, updated_at'),
-    supabase.from('metas_sdr').select('*').eq('mes', mesAtual).eq('ano', anoAtual).single(),
-    supabase.from('metas_closer').select('*').eq('mes', mesAtual).eq('ano', anoAtual).single(),
+    supabase.from('metas_sdr').select('*').eq('mes', mesAtual).eq('ano', anoAtual).maybeSingle(),
+    supabase.from('metas_closer').select('*').eq('mes', mesAtual).eq('ano', anoAtual).maybeSingle(),
     supabase.from('adocao_clinica').select('clinica_id, score').order('created_at', { ascending: false }),
     supabase.from('alertas_clinica').select('id, nivel, resolvido').eq('resolvido', false),
+    // Fonte principal do funil: input_diario (igual /api/trafego/funil)
+    supabase.from('input_diario').select('*').gte('data', inicioMes).lt('data', fimMes),
+    // Fallback legado
+    supabase.from('funil_trafego_diario').select('*').gte('data', inicioMes).lt('data', fimMes),
   ])
 
   const r = receber.data || []
@@ -74,11 +78,43 @@ export async function GET() {
     precisa_dia: Math.round(precisaDia),
   }
 
-  // Funil
-  const totalLeads = ld.length
-  const agendamentos = ld.filter(l => ['agendado', 'reuniao_feita', 'convertido'].includes(l.status)).length
-  const reunioes = ld.filter(l => ['reuniao_feita', 'convertido'].includes(l.status)).length + pl.length
-  const fechamentos = pl.filter(x => x.status === 'fechado').length
+  // Funil — fonte primaria: input_diario (agregado por todas as pessoas no mes)
+  //         fallback: funil_trafego_diario → senao kanbans SDR/Closer
+  const inputs = inputDiario.data || []
+  const legadoDiario = funilTrafego.data || []
+
+  const inputAgregado = inputs.reduce((acc, d) => ({
+    investimento: acc.investimento + Number(d.investimento || 0),
+    leads: acc.leads + (d.leads || 0),
+    agendamentos: acc.agendamentos + (d.agendamentos || 0),
+    reunioes_realizadas: acc.reunioes_realizadas + (d.reunioes_realizadas || 0),
+    reunioes_qualificadas: acc.reunioes_qualificadas + (d.reunioes_qualificadas || 0),
+    fechamentos: acc.fechamentos + (d.fechamentos || 0),
+    faturamento: acc.faturamento + Number(d.faturamento || 0),
+  }), { investimento: 0, leads: 0, agendamentos: 0, reunioes_realizadas: 0, reunioes_qualificadas: 0, fechamentos: 0, faturamento: 0 })
+
+  const legadoAgregado = legadoDiario.reduce((acc, d) => ({
+    investimento: acc.investimento + Number(d.investimento || 0),
+    leads: acc.leads + (d.leads || 0),
+  }), { investimento: 0, leads: 0 })
+
+  // Contagens dos kanbans (fallback se nao tiver input)
+  const agendadosKanban = ld.filter(l => ['agendado', 'reuniao_feita', 'convertido'].includes(l.status)).length
+  const reunioesKanban = ld.filter(l => ['reuniao_feita', 'convertido'].includes(l.status)).length + pl.length
+  const fechamentosKanban = pl.filter(x => x.status === 'fechado').length
+  const faturamentoKanban = pl.filter(x => x.status === 'fechado').reduce((s, x) => s + Number(x.mrr_proposto || 0), 0)
+
+  const temInput = inputs.length > 0
+  const totalLeads = temInput ? inputAgregado.leads : (legadoAgregado.leads || ld.length)
+  const agendamentos = temInput ? (inputAgregado.agendamentos || agendadosKanban) : agendadosKanban
+  const reunioes = temInput ? (inputAgregado.reunioes_realizadas || reunioesKanban) : reunioesKanban
+  const fechamentos = temInput ? (inputAgregado.fechamentos || fechamentosKanban) : fechamentosKanban
+  const investimentoAds = temInput ? inputAgregado.investimento : legadoAgregado.investimento
+  const receitaGerada = temInput ? (inputAgregado.faturamento || faturamentoKanban) : faturamentoKanban
+
+  const cpl = totalLeads > 0 ? investimentoAds / totalLeads : 0
+  const cacReal = fechamentos > 0 ? investimentoAds / fechamentos : 0
+  const ticketMedio = fechamentos > 0 ? receitaGerada / fechamentos : 0
 
   const funil = {
     leads: totalLeads,
@@ -89,7 +125,11 @@ export async function GET() {
     taxa_comparecimento: agendamentos > 0 ? Math.round((reunioes / agendamentos) * 1000) / 10 : 0,
     taxa_fechamento: reunioes > 0 ? Math.round((fechamentos / reunioes) * 1000) / 10 : 0,
     taxa_geral: totalLeads > 0 ? Math.round((fechamentos / totalLeads) * 1000) / 10 : 0,
-    cpl: 0, cac_real: 0, ticket_medio: 0, receita_gerada: 0, investimento_ads: 0,
+    cpl: Math.round(cpl * 100) / 100,
+    cac_real: Math.round(cacReal),
+    ticket_medio: Math.round(ticketMedio),
+    receita_gerada: Math.round(receitaGerada),
+    investimento_ads: Math.round(investimentoAds),
   }
 
   // Crescimento
@@ -100,8 +140,8 @@ export async function GET() {
   const crescimento = {
     mrr,
     ltv: cl.length > 0 ? Math.round(mrr / cl.length * 12) : 0,
-    cac: 0,
-    payback: 0,
+    cac: Math.round(cacReal),
+    payback: cacReal > 0 && ticketMedio > 0 ? Math.round((cacReal / ticketMedio) * 10) / 10 : 0,
     novos_clientes: cl.length,
     churn: 0,
     crescimento_pct: crescimentoPct,
@@ -114,12 +154,12 @@ export async function GET() {
   const scoreMedio = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0
 
   const times = {
-    trafego: { status: 'ok', leads: totalLeads, cpl: 0, investimento: 0 },
+    trafego: { status: cpl > 15 ? 'atencao' : 'ok', leads: totalLeads, cpl: Math.round(cpl * 100) / 100, investimento: Math.round(investimentoAds) },
     comercial: {
       status: fechamentos === 0 && pl.length > 0 ? 'atencao' : 'ok',
       vendas: fechamentos,
       conversao: funil.taxa_fechamento,
-      ticket_medio: 0,
+      ticket_medio: Math.round(ticketMedio),
     },
     cs: {
       status: emRisco > 0 ? 'atencao' : 'ok',
@@ -141,10 +181,12 @@ export async function GET() {
     mes_anterior: { recebido: recebidoAnt, pago: pagoAntVal, caixa: recebidoAnt - pagoAntVal },
   }
 
-  // Metas SDR/Closer
+  // Metas SDR/Closer (maybeSingle → pode retornar null se nao houver meta cadastrada)
+  const ms = metas_sdr.data || null
+  const mc = metas_closer.data || null
   const metas = {
-    sdr: { leads: { atual: totalLeads, meta: metas_sdr.data?.meta_leads || 30 }, reunioes: { atual: reunioes, meta: metas_sdr.data?.meta_reunioes || 10 } },
-    closer: { reunioes: { atual: pl.length, meta: metas_closer.data?.meta_reunioes || 20 }, fechamentos: { atual: fechamentos, meta: metas_closer.data?.meta_fechamentos || 5 }, mrr: { atual: mrr, meta: metas_closer.data?.meta_mrr || 10000 } },
+    sdr: { leads: { atual: totalLeads, meta: ms?.meta_leads || 30 }, reunioes: { atual: reunioes, meta: ms?.meta_reunioes || 10 } },
+    closer: { reunioes: { atual: pl.length, meta: mc?.meta_reunioes || 20 }, fechamentos: { atual: fechamentos, meta: mc?.meta_fechamentos || 5 }, mrr: { atual: mrr, meta: mc?.meta_mrr || 10000 } },
   }
 
   return NextResponse.json({

@@ -114,7 +114,7 @@ export default function SDRPage() {
         body: JSON.stringify({ ...form, sdr_email: userEmail }),
       })
       if (!r.ok) throw new Error('falha')
-      toast('success', 'Metricas do dia salvas')
+      toast('success', '✅ Métricas do dia salvas com sucesso!')
 
       // Disparar um evento por novo agendamento registrado na sessao
       for (let i = 0; i < delta; i++) {

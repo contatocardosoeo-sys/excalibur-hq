@@ -13,11 +13,13 @@ export async function GET(req: NextRequest) {
   const email = req.nextUrl.searchParams.get('email')
   const hoje = new Date().toISOString().split('T')[0]
 
-  // Status do usuário logado
-  let meuStatus = { preenchido: false, data: hoje }
-  if (email) {
+  // Status do usuário logado.
+  // Admin/CEO e quem nao esta em OBRIGATORIOS nao precisa preencher → sempre "preenchido".
+  let meuStatus = { preenchido: true, data: hoje }
+  const precisaPreencher = email ? OBRIGATORIOS.some(u => u.email === email) : false
+  if (email && precisaPreencher) {
     const { data } = await supabase.from('preenchimento_diario')
-      .select('*').eq('email', email).eq('data', hoje).single()
+      .select('*').eq('email', email).eq('data', hoje).maybeSingle()
     meuStatus = { preenchido: !!data, data: hoje }
   }
 
