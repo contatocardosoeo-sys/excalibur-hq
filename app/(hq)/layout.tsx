@@ -15,7 +15,7 @@ const TITULOS: Record<string, string> = {
   '/comercial': 'Comercial',
   '/trafego': 'Tráfego',
   '/cs': 'CS',
-  '/cs/calendario': 'Calendário CS',
+  '/cs/calendario': 'Calendário',
   '/clientes': 'Clientes',
   '/jornada': 'Jornada',
   '/financeiro': 'Financeiro',
@@ -25,6 +25,15 @@ const TITULOS: Record<string, string> = {
   '/onboarding/novo': 'Novo Cliente',
   '/alertas': 'Alertas',
   '/visao-geral': 'Visão Geral',
+  '/eventos': 'Eventos',
+  '/pipeline': 'Pipeline',
+  '/planos': 'Planos',
+  '/automacoes': 'Automações',
+  '/observabilidade': 'Observabilidade',
+  '/base': 'Base do Projeto',
+  '/ia/supervisor': 'Supervisor IA',
+  '/ia/reactions': 'Event Reactions',
+  '/admin/usuarios': 'Usuários',
 }
 
 export default function HQLayout({ children }: { children: React.ReactNode }) {
@@ -40,7 +49,7 @@ export default function HQLayout({ children }: { children: React.ReactNode }) {
       .filter(([k]) => pathname === k || pathname.startsWith(k + '/'))
       .sort((a, b) => b[0].length - a[0].length)[0]
     const titulo = match ? match[1] : 'HQ'
-    document.title = `${titulo} — Excalibur HQ`
+    document.title = `${titulo} | Excalibur HQ`
   }, [pathname])
 
   useEffect(() => {

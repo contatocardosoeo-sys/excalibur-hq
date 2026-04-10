@@ -31,6 +31,35 @@ export default function AlertaCentral({ userEmail, isAdmin }: { userEmail: strin
   const [alertasClientes, setAlertasClientes] = useState<AlertaCliente[]>([])
   const [open, setOpen] = useState(false)
   const [marcando, setMarcando] = useState(false)
+  const [minimizado, setMinimizado] = useState(false)
+
+  // Verifica sessionStorage ao montar — minimizado persiste por 30 minutos
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const min = sessionStorage.getItem('alertas_minimizado')
+    const ts = sessionStorage.getItem('alertas_ts')
+    if (min && ts && Date.now() - Number(ts) < 30 * 60 * 1000) {
+      setMinimizado(true)
+    }
+  }, [])
+
+  const minimizar = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setMinimizado(true)
+    setOpen(false)
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('alertas_minimizado', '1')
+      sessionStorage.setItem('alertas_ts', String(Date.now()))
+    }
+  }
+
+  const restaurar = () => {
+    setMinimizado(false)
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('alertas_minimizado')
+      sessionStorage.removeItem('alertas_ts')
+    }
+  }
 
   const load = useCallback(async () => {
     if (!userEmail) return
@@ -75,6 +104,21 @@ export default function AlertaCentral({ userEmail, isAdmin }: { userEmail: strin
   if (!meuPendente && !adminPendente && qtdClientes === 0) return null
 
   const totalBadge = (meuPendente ? 1 : 0) + (adminPendente ? faltando.length : 0) + qtdClientes
+
+  // Modo minimizado — badge compacta no canto superior direito, sem animacao
+  if (minimizado) {
+    return (
+      <button
+        onClick={restaurar}
+        title="Restaurar alertas"
+        aria-label={`${totalBadge} alertas - clique para restaurar`}
+        className="fixed z-50 bg-red-900/80 hover:bg-red-800 text-red-200 text-xs font-bold px-3 py-1.5 rounded-full border border-red-700 shadow-lg transition"
+        style={{ top: `calc(64px + env(safe-area-inset-top, 0))`, right: 16 }}
+      >
+        🚨 {totalBadge}
+      </button>
+    )
+  }
 
   return (
     <>
@@ -137,6 +181,16 @@ export default function AlertaCentral({ userEmail, isAdmin }: { userEmail: strin
           background: '#13131f', border: '1px solid #252535', borderRadius: 12,
           padding: 16, boxShadow: '0 8px 24px #00000080',
         }}>
+          {/* Botao Minimizar (suspende pulsante por 30min nesta sessao) */}
+          <div className="flex justify-end mb-3">
+            <button
+              onClick={minimizar}
+              className="text-[10px] text-gray-500 hover:text-gray-300 bg-gray-800 border border-gray-700 rounded-md px-2 py-1 transition"
+              title="Minimizar por 30 minutos"
+            >
+              — Minimizar 30min
+            </button>
+          </div>
           {/* Alertas de clientes */}
           {qtdClientes > 0 && (
             <div style={{ marginBottom: 16 }}>

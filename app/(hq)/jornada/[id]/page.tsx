@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Sidebar from '../../../components/Sidebar'
 import { useDispararEvento } from '../../../hooks/useDispararEvento'
+import { etapaLabel } from '../../../lib/etapas'
 
 type Tarefa = {
   id: string; fase: string; titulo: string; descricao: string
@@ -169,7 +170,7 @@ export default function JornadaDetalhePage() {
                 <div className="flex items-center gap-2 md:gap-3 flex-wrap mb-2">
                   <span className="text-base md:text-lg font-bold text-white break-words">{dados.clinica.nome}</span>
                   <span className="text-[11px] bg-amber-500/10 text-amber-500 border border-amber-500/30 rounded-full px-2.5 py-0.5">
-                    {dados.jornada?.etapa?.replace(/_/g, ' ') || 'D0'}
+                    {etapaLabel(dados.jornada?.etapa) || 'Início'}
                   </span>
                   <span className="text-[11px] text-gray-500">Dia {dados.jornada?.dias_na_plataforma || 0}</span>
                 </div>

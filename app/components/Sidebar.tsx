@@ -256,7 +256,8 @@ export default function Sidebar() {
         {filteredSections.map(section => section.items.map(({ href, icon, label }) => {
           const active = pathname === href || pathname.startsWith(href + '/')
           return (
-            <Link key={href} href={href} title={label}
+            <Link key={href} href={href} title={label} aria-label={label} data-tooltip={label}
+              className="sidebar-collapsed-link"
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 width: 44, height: 44, borderRadius: 8,

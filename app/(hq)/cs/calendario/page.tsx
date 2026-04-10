@@ -109,8 +109,16 @@ export default function CalendarioCS() {
               const hoje = isToday(dia)
               const fimSemana = dia.getDay() === 0 || dia.getDay() === 6
               return (
-                <div key={toISO(dia)} style={{ background: hoje ? '#111827' : fimSemana ? '#080c14' : '#0a0f1a', border: `1px solid ${hoje ? '#f59e0b40' : '#1f2937'}`, borderRadius: 12, minHeight: 180, display: 'flex', flexDirection: 'column' }}>
-                  <div style={{ padding: '8px 10px', borderBottom: '1px solid #1f2937', textAlign: 'center' }}>
+                <div key={toISO(dia)} style={{
+                  background: hoje ? 'linear-gradient(180deg, #1f140820 0%, #0a0f1a 100%)' : fimSemana ? '#080c14' : '#0a0f1a',
+                  border: `1px solid ${hoje ? '#f59e0b' : '#1f2937'}`,
+                  borderRadius: 12, minHeight: 180, display: 'flex', flexDirection: 'column',
+                  boxShadow: hoje ? '0 0 0 2px #f59e0b20, 0 8px 24px #f59e0b15' : 'none',
+                }}>
+                  <div style={{ padding: '8px 10px', borderBottom: '1px solid #1f2937', textAlign: 'center', position: 'relative' }}>
+                    {hoje && (
+                      <div style={{ fontSize: 8, fontWeight: 800, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 2 }}>HOJE</div>
+                    )}
                     <span style={{ fontSize: 11, fontWeight: 700, color: hoje ? '#f59e0b' : fimSemana ? '#374151' : '#9ca3af' }}>{fmtDia(dia)}</span>
                     {items.length > 0 && <span style={{ marginLeft: 6, background: '#f59e0b30', color: '#f59e0b', padding: '0 5px', borderRadius: 6, fontSize: 9, fontWeight: 700 }}>{items.length}</span>}
                   </div>

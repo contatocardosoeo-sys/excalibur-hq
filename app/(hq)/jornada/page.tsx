@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Sidebar from '../../components/Sidebar'
+import { etapaLabel } from '../../lib/etapas'
 
 type Cliente = {
   id: string; nome: string; data_inicio: string
@@ -188,7 +189,7 @@ export default function JornadaPage() {
                             {c.alertasCriticos > 0 && <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 999, background: '#8b5cf620', color: '#8b5cf6', border: '1px solid #8b5cf640' }}>🚨 {c.alertasCriticos}</span>}
                           </div>
                           <div style={{ display: 'flex', gap: 10, fontSize: 11, color: '#6b7280' }}>
-                            <span>📅 Dia {c.dias}</span><span>•</span><span>{c.etapa?.replace(/_/g, ' ')}</span>
+                            <span>📅 Dia {c.dias}</span><span>•</span><span>{etapaLabel(c.etapa)}</span>
                             {c.tarefasAtrasadas > 0 && <><span>•</span><span style={{ color: '#ef4444' }}>⚠️ {c.tarefasAtrasadas} atrasada{c.tarefasAtrasadas > 1 ? 's' : ''}</span></>}
                           </div>
                         </div>

@@ -6,6 +6,7 @@ import Sidebar from '../../components/Sidebar'
 import Skeleton from '../../components/Skeleton'
 import EmptyState from '../../components/EmptyState'
 import { supabase } from '../../lib/supabase'
+import { etapaLabel } from '../../lib/etapas'
 import { Badge } from '@/components/ui/badge'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -296,7 +297,7 @@ export default function ClientesPage() {
                           ? 'bg-red-500/20 text-red-400 border-red-500/30'
                           : 'bg-gray-500/20 text-gray-400 border-gray-500/30'
                       }`}>
-                        {c.etapa.replace(/_/g, ' ')}
+                        {etapaLabel(c.etapa)}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-gray-400 text-sm font-mono">{c.dias_na_plataforma}d</TableCell>
