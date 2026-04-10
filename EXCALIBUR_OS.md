@@ -272,6 +272,7 @@ Webhooks para automações complexas (integrado em excalibur-app)
 5. **Commitar secrets** — Sempre verificar o diff antes do commit. Tokens, senhas e connection strings vão em .env.local.
 6. **Reescrever do zero quando o usuário pediu otimização** — "otimizar" ≠ "reescrever". Manter o que funciona, melhorar o resto.
 7. **Confundir excalibur-hq com excalibur-web** — São projetos DIFERENTES com bancos diferentes. Sempre verificar o diretório.
+8. **NÃO RECRIAR /dashboard** — A página `/dashboard` foi DELETADA DEFINITIVAMENTE. Cada role tem sua tela específica (admin → /ceo, sdr → /sdr, cs → /cs, closer → /comercial, cmo → /trafego). NUNCA recriar `/dashboard`. NUNCA referenciar `/dashboard` em links, redirects ou menus. Se algum código antigo apontar pra `/dashboard`, atualizar para a tela do role correto.
 
 ---
 

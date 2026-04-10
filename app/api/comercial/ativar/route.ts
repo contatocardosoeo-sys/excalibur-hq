@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     await supabase.from('notificacoes_hq').insert({
       para_email: admin, tipo: 'cliente_ativado',
       titulo: `Novo fechamento: ${item.nome_clinica}`,
-      mensagem: `Plano ${item.plano}, MRR R$${item.mrr_proposto}`, link: '/dashboard',
+      mensagem: `Plano ${item.plano}, MRR R$${item.mrr_proposto}`, link: '/ceo',
     })
   }
 

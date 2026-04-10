@@ -55,7 +55,7 @@ export default function AdminUsuarios() {
           setIsAdmin(true)
           load()
         } else {
-          window.location.href = '/dashboard'
+          window.location.href = '/ceo'
         }
       } else {
         window.location.href = '/'
