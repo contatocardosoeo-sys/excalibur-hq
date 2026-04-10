@@ -351,3 +351,9 @@ Quando surgir um novo tema técnico:
 1. Criar `docs/[nivel]/[tema].md`
 2. Adicionar ao `docs/INDEX.md`
 3. Referenciar no CLAUDE.md
+
+### Sessão encerrada: 10/04/2026 09:20
+- Branch: main
+- Último commit: feb6e20 refactor: aplicar Modal e KPICard globais no /cs e /operacao/financeiro
+- Arquivos alterados: app/(hq)/cs/page.tsx
+app/(hq)/operacao/financeiro/page.tsx
