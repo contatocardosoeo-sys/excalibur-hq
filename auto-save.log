@@ -148,3 +148,33 @@ warning: in the working copy of 'auto-save.log', LF will be replaced by CRLF the
 To https://github.com/contatocardosoeo-sys/excalibur-hq.git
    c93cd9b..6a26a88  main -> main
 ✅ Auto-save: 2026-04-10 11:56
+warning: in the working copy of 'app/(hq)/ceo/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/(hq)/comercial/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/(hq)/cs/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/(hq)/jornada/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/(hq)/onboarding/novo/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/(hq)/sdr/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/components/SistemaEventos.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/globals.css', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'package-lock.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'package.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components/ui/animated-list.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components/ui/animated-shiny-text.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components/ui/blur-fade.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components/ui/border-beam.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components/ui/confetti.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components/ui/number-ticker.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components/ui/shimmer-button.tsx', LF will be replaced by CRLF the next time Git touches it
+[main 3317634] auto-save: 2026-04-10 20:27 — app/(hq)/ceo/page.tsx,app/(hq)/comercial/page.tsx,app/(hq)/cs/page.tsx,app/(hq)/jornada/page.tsx,app/(hq)/onboarding/novo/page.tsx,
+ 18 files changed, 850 insertions(+), 29 deletions(-)
+ create mode 100644 components/ui/animated-list.tsx
+ create mode 100644 components/ui/animated-shiny-text.tsx
+ create mode 100644 components/ui/blur-fade.tsx
+ create mode 100644 components/ui/border-beam.tsx
+ create mode 100644 components/ui/confetti.tsx
+ create mode 100644 components/ui/number-ticker.tsx
+ create mode 100644 components/ui/shimmer-button.tsx
+To https://github.com/contatocardosoeo-sys/excalibur-hq.git
+   ea6468d..3317634  main -> main
+✅ Auto-save: 2026-04-10 20:27

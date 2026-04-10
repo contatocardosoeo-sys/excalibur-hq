@@ -46,6 +46,43 @@ node -e "const {Client}=require('pg');const c=new Client({connectionString:'post
 
 ---
 
+## 🎨 BIBLIOTECAS DE UI
+
+### Stack aprovado
+- shadcn/ui — componentes base (em `components/ui/`)
+- Tailwind 4 — utilitários
+- Magic UI — animações (via `npx shadcn add @magicui/...`)
+- Motion One (`motion/react`) — já incluso via Magic UI
+
+### Magic UI — componentes instalados
+Todos em `@/components/ui/[componente]` (o shadcn CLI instala nesse path, não em `registry/magicui/`)
+
+| Componente | Onde está sendo usado |
+|---|---|
+| `number-ticker` | KPIs numéricos (CEO, SDR, CS, Comercial) |
+| `border-beam` | Notificações SistemaEventos |
+| `animated-shiny-text` | Badges de status (Saudável/Atenção/Risco) em /jornada |
+| `shimmer-button` | Botão "Finalizar Cadastro" no /onboarding/novo |
+| `blur-fade` | Lista de clínicas em /jornada |
+| `animated-list` | Disponível (pulado em /eventos por ser tabela) |
+| `confetti` | Disponível (já integrado via Web API no SistemaEventos) |
+
+**Customização local:** `number-ticker.tsx` foi estendido com props `locale` (default `pt-BR`), `prefix` (ex: `"R$ "`) e `suffix` (ex: `"%"`) pra cobrir currency brasileiro e porcentagens.
+
+### Instalar novo componente Magic UI
+```bash
+npx shadcn@latest add @magicui/[nome-do-componente] --yes
+# Import: import { Componente } from '@/components/ui/[nome]'
+```
+
+### ⛔ NÃO instalar
+- Park UI (Panda CSS — conflita com Tailwind 4)
+- DaisyUI (conflita com shadcn/ui)
+- JollyUI (migração destrutiva do Radix)
+- Aceternity UI completo (copiar componentes isolados se necessário)
+
+---
+
 ## 👥 USUÁRIOS DO SISTEMA
 
 | Nome | Email | Senha | Role | Tela inicial |
