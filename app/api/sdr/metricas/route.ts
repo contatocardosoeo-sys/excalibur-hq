@@ -5,46 +5,81 @@ const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env
 
 export async function GET(req: NextRequest) {
   const sdr_email = req.nextUrl.searchParams.get('email') || 'trindade.excalibur@gmail.com'
+  const periodo = req.nextUrl.searchParams.get('periodo') || 'mes' // hoje | semana | mes | personalizado
+  const startParam = req.nextUrl.searchParams.get('start')
+  const endParam = req.nextUrl.searchParams.get('end')
+
   const now = new Date()
   const mes = now.getMonth() + 1
   const ano = now.getFullYear()
-  const inicioMes = `${ano}-${String(mes).padStart(2, '0')}-01`
-  const fimMes = mes === 12 ? `${ano + 1}-01-01` : `${ano}-${String(mes + 1).padStart(2, '0')}-01`
   const hoje = now.toISOString().split('T')[0]
 
-  const [metricasRes, metaRes] = await Promise.all([
-    supabase.from('sdr_metricas_diarias').select('*').eq('sdr_email', sdr_email).gte('data', inicioMes).lt('data', fimMes).order('data', { ascending: true }),
+  // Calcular range conforme periodo
+  let dataInicio: string
+  let dataFim: string
+
+  if (periodo === 'personalizado' && startParam && endParam) {
+    dataInicio = startParam
+    dataFim = endParam
+  } else if (periodo === 'hoje') {
+    dataInicio = hoje
+    dataFim = hoje
+  } else if (periodo === 'semana') {
+    const seg = new Date(now)
+    const day = seg.getDay()
+    const diff = seg.getDate() - day + (day === 0 ? -6 : 1)
+    seg.setDate(diff)
+    dataInicio = seg.toISOString().split('T')[0]
+    dataFim = hoje
+  } else {
+    // mes
+    dataInicio = `${ano}-${String(mes).padStart(2, '0')}-01`
+    dataFim = hoje
+  }
+
+  // Para query: lt fim+1
+  const fimQuery = new Date(dataFim + 'T12:00:00')
+  fimQuery.setDate(fimQuery.getDate() + 1)
+  const ltFim = fimQuery.toISOString().split('T')[0]
+
+  const [metricasRes, metaRes, mesRes] = await Promise.all([
+    supabase.from('sdr_metricas_diarias').select('*').eq('sdr_email', sdr_email).gte('data', dataInicio).lt('data', ltFim).order('data', { ascending: true }),
     supabase.from('metas_sdr').select('*').eq('sdr_email', sdr_email).eq('mes', mes).eq('ano', ano).single(),
+    supabase.from('sdr_metricas_diarias').select('*').eq('sdr_email', sdr_email).gte('data', `${ano}-${String(mes).padStart(2, '0')}-01`).order('data', { ascending: true }),
   ])
 
   const metricas = metricasRes.data || []
+  const metricasMes = mesRes.data || []
   const meta = metaRes.data || { meta_leads: 300, meta_agendamentos: 90, meta_comparecimentos: 54, meta_vendas: 3 }
 
-  // Acumulados do mes
+  // Acumulados do periodo selecionado
   const totalLeads = metricas.reduce((s, m) => s + (m.leads_recebidos || 0), 0)
   const totalContatos = metricas.reduce((s, m) => s + (m.contatos_realizados || 0), 0)
   const totalAgendamentos = metricas.reduce((s, m) => s + (m.agendamentos || 0), 0)
   const totalComparecimentos = metricas.reduce((s, m) => s + (m.comparecimentos || 0), 0)
   const totalVendas = metricas.reduce((s, m) => s + (m.vendas || 0), 0)
+  const totalValorVendas = metricas.reduce((s, m) => s + Number(m.valor_vendas || 0), 0)
 
-  // Metricas de hoje
-  const metricaHoje = metricas.find(m => m.data === hoje) || null
+  const metricaHoje = metricasMes.find(m => m.data === hoje) || null
 
-  // Taxas
   const taxaContato = totalLeads > 0 ? Math.round((totalContatos / totalLeads) * 100) : 0
   const taxaAgendamento = totalContatos > 0 ? Math.round((totalAgendamentos / totalContatos) * 100) : 0
   const taxaComparecimento = totalAgendamentos > 0 ? Math.round((totalComparecimentos / totalAgendamentos) * 100) : 0
   const taxaConversao = totalComparecimentos > 0 ? Math.round((totalVendas / totalComparecimentos) * 100) : 0
 
   return NextResponse.json({
+    periodo,
+    range: { start: dataInicio, end: dataFim },
     metricas_dia: metricaHoje,
-    metricas_mes: metricas,
+    metricas_mes: metricasMes,
+    metricas_periodo: metricas,
     acumulado: {
       leads: totalLeads,
       contatos: totalContatos,
       agendamentos: totalAgendamentos,
       comparecimentos: totalComparecimentos,
       vendas: totalVendas,
+      valor_vendas: totalValorVendas,
     },
     taxas: {
       contato: taxaContato,
@@ -74,6 +109,7 @@ export async function POST(req: NextRequest) {
     agendamentos: Number(body.agendamentos) || 0,
     comparecimentos: Number(body.comparecimentos) || 0,
     vendas: Number(body.vendas) || 0,
+    valor_vendas: Number(body.valor_vendas) || 0,
     observacao: body.observacao || null,
     updated_at: new Date().toISOString(),
   }, { onConflict: 'data,sdr_email' }).select().single()

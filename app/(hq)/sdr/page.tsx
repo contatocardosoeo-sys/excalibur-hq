@@ -6,29 +6,42 @@ import Sidebar from '../../components/Sidebar'
 import { supabase } from '../../lib/supabase'
 
 interface Metricas {
-  metricas_dia: { data: string; leads_recebidos: number; contatos_realizados: number; agendamentos: number; comparecimentos: number; vendas: number; observacao: string | null } | null
-  metricas_mes: Array<{ data: string; leads_recebidos: number; contatos_realizados: number; agendamentos: number; comparecimentos: number; vendas: number }>
-  acumulado: { leads: number; contatos: number; agendamentos: number; comparecimentos: number; vendas: number }
+  periodo?: string
+  range?: { start: string; end: string }
+  metricas_dia: { data: string; leads_recebidos: number; contatos_realizados: number; agendamentos: number; comparecimentos: number; vendas: number; valor_vendas?: number; observacao: string | null } | null
+  metricas_mes: Array<{ data: string; leads_recebidos: number; contatos_realizados: number; agendamentos: number; comparecimentos: number; vendas: number; valor_vendas?: number }>
+  metricas_periodo?: Array<{ data: string; leads_recebidos: number; contatos_realizados: number; agendamentos: number; comparecimentos: number; vendas: number; valor_vendas?: number }>
+  acumulado: { leads: number; contatos: number; agendamentos: number; comparecimentos: number; vendas: number; valor_vendas?: number }
   taxas: { contato: number; agendamento: number; comparecimento: number; conversao: number }
   metas: { leads: number; agendamentos: number; comparecimentos: number; vendas: number }
 }
 
+// 10 etapas reais do CRM (ACL — Acelera CRM)
 const ETAPAS_ACL = [
-  { key: 'A', label: 'Atracao', desc: 'Lead chega — confirmar interesse e qualificar', cor: '#3b82f6' },
-  { key: 'C', label: 'Conexao', desc: 'Apresentar valor e gerar conexao real', cor: '#a855f7' },
-  { key: 'L', label: 'Levantamento', desc: 'Levantar dores, contexto, decisor e momento', cor: '#22c55e' },
+  { num: 1, label: 'Recepcao', desc: 'Lead chegou — primeiro contato, confirmar nome e interesse', cor: '#3b82f6', prioridade: 2 },
+  { num: 2, label: 'Explicacao', desc: 'Apresentar a Excalibur, gerar conexao e tirar duvidas iniciais', cor: '#8b5cf6', prioridade: 5 },
+  { num: 3, label: 'Qualificacao', desc: 'Investigar dor, contexto, decisor e momento', cor: '#a855f7', prioridade: 4 },
+  { num: 4, label: 'Agendamento', desc: 'Marcar reuniao com horario confirmado', cor: '#fbbf24', prioridade: 3 },
+  { num: 5, label: 'Confirmacao', desc: 'Confirmar reuniao do dia — PRIMEIRA TAREFA AS 8H', cor: '#ef4444', prioridade: 1 },
+  { num: 6, label: 'Reagendar', desc: 'Pessoa que precisou remarcar — manter quente', cor: '#f97316', prioridade: 6 },
+  { num: 7, label: 'Sem CNPJ', desc: 'Pendencia de CNPJ — aguardando envio', cor: '#6b7280', prioridade: 7 },
+  { num: 8, label: 'Futuro', desc: 'Pessoa interessada mas sem timing — manter aquecida', cor: '#06b6d4', prioridade: 8 },
+  { num: 9, label: 'Lista Fria', desc: 'Reativacoes de leads antigos', cor: '#94a3b8', prioridade: 9 },
+  { num: 10, label: 'Fora do CP', desc: 'Fora do perfil — descarte ou educacao', cor: '#475569', prioridade: 10 },
 ]
 
+// Rotina diaria real do Trindade — ordem de prioridade
 const ROTINA_DIA = [
-  { hora: '08:30', titulo: 'Conferir leads novos do dia anterior' },
-  { hora: '09:00', titulo: 'Bloco 1 — Contatos novos (atracao)' },
-  { hora: '10:30', titulo: 'Pausa 15 min' },
-  { hora: '10:45', titulo: 'Bloco 2 — Follow-ups + qualificacoes' },
-  { hora: '12:00', titulo: 'Almoco' },
-  { hora: '13:30', titulo: 'Bloco 3 — Confirmacao de agendamentos do dia seguinte' },
-  { hora: '15:00', titulo: 'Bloco 4 — Reativacoes (lista fria)' },
-  { hora: '16:30', titulo: 'Atualizar planilha + CRM' },
-  { hora: '17:30', titulo: 'Feedback diario + planejamento amanha' },
+  { hora: '08:00', titulo: '🚨 Confirmacoes de reuniao do dia', desc: 'PRIMEIRA TAREFA — antes de qualquer coisa, confirme TODAS as reunioes do dia (etapa Confirmacao)', critico: true },
+  { hora: '08:30', titulo: '💬 Cadencias — responder TODO mundo no WhatsApp', desc: 'Mate as respostas pendentes antes de comecar o follow-up', critico: false },
+  { hora: '09:30', titulo: '📥 Recepcao — pessoas que ainda nao iniciaram atendimento', desc: 'Disparar fluxo de Recepcao para todos os leads novos', critico: false },
+  { hora: '10:30', titulo: '📅 Agendamento — converter qualificados em reuniao', desc: 'Trabalhar lista de qualificacao, marcar horarios', critico: false },
+  { hora: '11:30', titulo: '🎯 Qualificacao — investigar dor e contexto', desc: 'Disparar fluxo de qualificacao + follow-ups', critico: false },
+  { hora: '12:00', titulo: 'Almoco', desc: '', critico: false },
+  { hora: '13:30', titulo: '📖 Explicacao — apresentar Excalibur', desc: 'Disparar fluxo de explicacao para os que avancaram', critico: false },
+  { hora: '15:00', titulo: '🔄 Follow-ups — pessoas sem resposta', desc: 'Follow-up 1 hoje, follow-up 2 amanha (mesma cadencia)', critico: false },
+  { hora: '16:00', titulo: '❄️ Lista fria + Futuro — reativacao', desc: 'Tentativa de reativar pessoas frias e do futuro', critico: false },
+  { hora: '17:00', titulo: '📝 Atualizar metricas do dia + feedback', desc: 'Lancar numeros do dia + escrever feedback diario', critico: false },
 ]
 
 function fmt(n: number) { return n.toLocaleString('pt-BR') }
@@ -41,9 +54,14 @@ export default function SDRPage() {
   const [aba, setAba] = useState<'overview' | 'rotina' | 'etapas' | 'historico'>('overview')
   const [userEmail, setUserEmail] = useState('trindade.excalibur@gmail.com')
 
+  // Filtros de periodo
+  const [periodo, setPeriodo] = useState<'hoje' | 'semana' | 'mes' | 'personalizado'>('mes')
+  const [dataInicio, setDataInicio] = useState('')
+  const [dataFim, setDataFim] = useState('')
+
   const [form, setForm] = useState({
     leads_recebidos: '', contatos_realizados: '', agendamentos: '',
-    comparecimentos: '', vendas: '', observacao: '',
+    comparecimentos: '', vendas: '', valor_vendas: '', observacao: '',
   })
   const [salvando, setSalvando] = useState(false)
   const [editando, setEditando] = useState(false)
@@ -55,7 +73,11 @@ export default function SDRPage() {
       const email = session?.user?.email || 'trindade.excalibur@gmail.com'
       setUserEmail(email)
 
-      const res = await fetch(`/api/sdr/metricas?email=${encodeURIComponent(email)}`)
+      let qs = `email=${encodeURIComponent(email)}&periodo=${periodo}`
+      if (periodo === 'personalizado' && dataInicio && dataFim) {
+        qs += `&start=${dataInicio}&end=${dataFim}`
+      }
+      const res = await fetch(`/api/sdr/metricas?${qs}`)
       const d = await res.json()
       setData(d)
 
@@ -66,12 +88,13 @@ export default function SDRPage() {
           agendamentos: String(d.metricas_dia.agendamentos || ''),
           comparecimentos: String(d.metricas_dia.comparecimentos || ''),
           vendas: String(d.metricas_dia.vendas || ''),
+          valor_vendas: String(d.metricas_dia.valor_vendas || ''),
           observacao: d.metricas_dia.observacao || '',
         })
       }
     } catch { /* */ }
     setLoading(false)
-  }, [])
+  }, [periodo, dataInicio, dataFim])
 
   useEffect(() => { load() }, [load])
 
@@ -129,7 +152,7 @@ export default function SDRPage() {
       <div style={{ flex: 1, padding: '24px 32px', overflowY: 'auto', maxWidth: 1400 }}>
 
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <div>
             <h1 style={{ fontSize: 22, fontWeight: 700, color: '#fff', margin: 0 }}>📞 SDR — Prospeccao</h1>
             <p style={{ color: '#4b5563', fontSize: 12, margin: '4px 0 0' }}>Operacao diaria + metas + rotina + etapas ACL</p>
@@ -140,13 +163,56 @@ export default function SDRPage() {
           </div>
         </div>
 
-        {/* KPIs com metas */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10, marginBottom: 20 }}>
+        {/* Filtros de periodo */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, background: '#111827', border: '1px solid #1f2937', borderRadius: 10, padding: 8 }}>
+          <span style={{ fontSize: 10, color: '#6b7280', textTransform: 'uppercase', fontWeight: 600, marginLeft: 8, marginRight: 4 }}>Periodo:</span>
+          {[
+            { k: 'hoje' as const, l: 'Hoje' },
+            { k: 'semana' as const, l: 'Semana' },
+            { k: 'mes' as const, l: 'Mes' },
+            { k: 'personalizado' as const, l: 'Personalizado' },
+          ].map(p => (
+            <button key={p.k} onClick={() => setPeriodo(p.k)}
+              style={{ background: periodo === p.k ? '#f59e0b' : '#1f2937', color: periodo === p.k ? '#030712' : '#9ca3af', border: 'none', borderRadius: 6, padding: '6px 14px', fontSize: 11, cursor: 'pointer', fontWeight: periodo === p.k ? 700 : 500 }}>
+              {p.l}
+            </button>
+          ))}
+          {periodo === 'personalizado' && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 8 }}>
+              <input type="date" value={dataInicio} onChange={e => setDataInicio(e.target.value)}
+                style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 6, padding: '5px 10px', color: '#fff', fontSize: 11, outline: 'none' }} />
+              <span style={{ color: '#4b5563', fontSize: 10 }}>até</span>
+              <input type="date" value={dataFim} onChange={e => setDataFim(e.target.value)}
+                style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 6, padding: '5px 10px', color: '#fff', fontSize: 11, outline: 'none' }} />
+            </div>
+          )}
+          {data.range && (
+            <span style={{ fontSize: 10, color: '#4b5563', marginLeft: 'auto', marginRight: 8 }}>
+              {data.range.start === data.range.end
+                ? new Date(data.range.start + 'T12:00:00').toLocaleDateString('pt-BR')
+                : `${new Date(data.range.start + 'T12:00:00').toLocaleDateString('pt-BR')} → ${new Date(data.range.end + 'T12:00:00').toLocaleDateString('pt-BR')}`}
+            </span>
+          )}
+        </div>
+
+        {/* KPIs com metas — 6 cards (5 numericos + 1 valor) */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 10, marginBottom: 20 }}>
           <KPI icon="📥" label="Leads" atual={acumulado.leads} meta={metas.leads} cor="#60a5fa" />
           <KPI icon="📞" label="Contatos" atual={acumulado.contatos} meta={metas.leads} cor="#a78bfa" />
           <KPI icon="📅" label="Agendamentos" atual={acumulado.agendamentos} meta={metas.agendamentos} cor="#fbbf24" />
           <KPI icon="✅" label="Comparecimentos" atual={acumulado.comparecimentos} meta={metas.comparecimentos} cor="#fb923c" />
-          <KPI icon="💰" label="Vendas" atual={acumulado.vendas} meta={metas.vendas} cor="#4ade80" />
+          <KPI icon="🎯" label="Vendas" atual={acumulado.vendas} meta={metas.vendas} cor="#4ade80" />
+          {/* Card de valor de vendas — destaque */}
+          <div style={{ background: 'linear-gradient(135deg, #14532d 0%, #166534 100%)', border: '1px solid #22c55e40', borderRadius: 12, padding: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+              <span style={{ fontSize: 12 }}>💰</span>
+              <span style={{ fontSize: 9, color: '#86efac', textTransform: 'uppercase', fontWeight: 700 }}>Valor gerado</span>
+            </div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: '#4ade80', fontFamily: 'monospace' }}>
+              R$ {Number(acumulado.valor_vendas || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+            </div>
+            <div style={{ fontSize: 9, color: '#86efac', marginTop: 4 }}>{acumulado.vendas} venda{acumulado.vendas !== 1 ? 's' : ''}</div>
+          </div>
         </div>
 
         {/* Taxas */}
@@ -197,17 +263,20 @@ export default function SDRPage() {
 
             {!editando && data.metricas_dia ? (
               <>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10, marginBottom: 12 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 10, marginBottom: 12 }}>
                   {[
-                    { l: '📥 Leads', v: data.metricas_dia.leads_recebidos },
-                    { l: '📞 Contatos', v: data.metricas_dia.contatos_realizados },
-                    { l: '📅 Agendamentos', v: data.metricas_dia.agendamentos },
-                    { l: '✅ Comparecimentos', v: data.metricas_dia.comparecimentos },
-                    { l: '💰 Vendas', v: data.metricas_dia.vendas },
+                    { l: '📥 Leads', v: data.metricas_dia.leads_recebidos, formato: 'num' },
+                    { l: '📞 Contatos', v: data.metricas_dia.contatos_realizados, formato: 'num' },
+                    { l: '📅 Agendamentos', v: data.metricas_dia.agendamentos, formato: 'num' },
+                    { l: '✅ Comparecimentos', v: data.metricas_dia.comparecimentos, formato: 'num' },
+                    { l: '🎯 Vendas', v: data.metricas_dia.vendas, formato: 'num' },
+                    { l: '💰 Valor', v: data.metricas_dia.valor_vendas || 0, formato: 'rs' },
                   ].map((m, i) => (
                     <div key={i} style={{ background: '#0a0f1a', borderRadius: 8, padding: 12, textAlign: 'center' }}>
                       <div style={{ fontSize: 10, color: '#6b7280', marginBottom: 4 }}>{m.l}</div>
-                      <div style={{ fontSize: 24, fontWeight: 800, color: '#f59e0b', fontFamily: 'monospace' }}>{fmt(m.v)}</div>
+                      <div style={{ fontSize: m.formato === 'rs' ? 18 : 24, fontWeight: 800, color: '#f59e0b', fontFamily: 'monospace' }}>
+                        {m.formato === 'rs' ? `R$ ${Number(m.v).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : fmt(m.v)}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -219,17 +288,18 @@ export default function SDRPage() {
               </>
             ) : (
               <>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10, marginBottom: 12 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 10, marginBottom: 12 }}>
                   {[
-                    { k: 'leads_recebidos', l: '📥 Leads recebidos' },
-                    { k: 'contatos_realizados', l: '📞 Contatos feitos' },
-                    { k: 'agendamentos', l: '📅 Agendamentos' },
-                    { k: 'comparecimentos', l: '✅ Comparecimentos' },
-                    { k: 'vendas', l: '💰 Vendas' },
+                    { k: 'leads_recebidos', l: '📥 Leads' },
+                    { k: 'contatos_realizados', l: '📞 Contatos' },
+                    { k: 'agendamentos', l: '📅 Agendam.' },
+                    { k: 'comparecimentos', l: '✅ Comparec.' },
+                    { k: 'vendas', l: '🎯 Vendas' },
+                    { k: 'valor_vendas', l: '💰 Valor R$' },
                   ].map(f => (
                     <div key={f.k}>
                       <label style={{ fontSize: 9, color: '#6b7280', textTransform: 'uppercase', fontWeight: 600, display: 'block', marginBottom: 4 }}>{f.l}</label>
-                      <input type="number" value={form[f.k as keyof typeof form]} onChange={e => setForm({ ...form, [f.k]: e.target.value })}
+                      <input type="number" step={f.k === 'valor_vendas' ? '0.01' : '1'} value={form[f.k as keyof typeof form]} onChange={e => setForm({ ...form, [f.k]: e.target.value })}
                         style={{ width: '100%', background: '#1f2937', border: '1px solid #374151', borderRadius: 8, padding: '10px 12px', color: '#fff', fontSize: 16, outline: 'none', textAlign: 'center', fontWeight: 700 }} />
                     </div>
                   ))}
@@ -256,41 +326,56 @@ export default function SDRPage() {
         {/* ABA ROTINA */}
         {aba === 'rotina' && (
           <div style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 12, padding: 20 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 4 }}>⏰ Rotina diaria do SDR</div>
-            <p style={{ fontSize: 11, color: '#6b7280', marginBottom: 16 }}>Estrutura de blocos de trabalho — siga o fluxo para maximizar contatos qualificados</p>
+            <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 4 }}>⏰ Rotina diaria do SDR — ordem de prioridade</div>
+            <p style={{ fontSize: 11, color: '#6b7280', marginBottom: 16 }}>Comece SEMPRE pelas confirmacoes do dia. Voce tem autonomia para variar entre os blocos depois disso.</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {ROTINA_DIA.map((r, i) => (
-                <div key={i} style={{ display: 'flex', gap: 12, padding: '12px 14px', background: '#0a0f1a', borderRadius: 8, border: '1px solid #1f293750', borderLeft: '3px solid #f59e0b' }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: '#f59e0b', fontFamily: 'monospace', minWidth: 50 }}>{r.hora}</span>
-                  <span style={{ fontSize: 12, color: '#fff' }}>{r.titulo}</span>
+                <div key={i} style={{
+                  display: 'flex', gap: 12, padding: '14px 16px',
+                  background: r.critico ? 'linear-gradient(90deg, #7f1d1d20 0%, #0a0f1a 100%)' : '#0a0f1a',
+                  borderRadius: 8, border: `1px solid ${r.critico ? '#ef444450' : '#1f293750'}`,
+                  borderLeft: `4px solid ${r.critico ? '#ef4444' : '#f59e0b'}`,
+                }}>
+                  <span style={{ fontSize: 14, fontWeight: 800, color: r.critico ? '#f87171' : '#f59e0b', fontFamily: 'monospace', minWidth: 56 }}>{r.hora}</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, color: '#fff', fontWeight: 600 }}>{r.titulo}</div>
+                    {r.desc && <div style={{ fontSize: 10, color: '#6b7280', marginTop: 2 }}>{r.desc}</div>}
+                  </div>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* ABA ETAPAS */}
+        {/* ABA ETAPAS — 10 etapas reais do CRM (ACL — Acelera CRM) */}
         {aba === 'etapas' && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-            {ETAPAS_ACL.map(e => (
-              <div key={e.key} style={{ background: '#111827', border: `1px solid ${e.cor}30`, borderRadius: 12, padding: 20, borderTop: `3px solid ${e.cor}` }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                  <div style={{ background: e.cor + '20', color: e.cor, width: 36, height: 36, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 800 }}>{e.key}</div>
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{e.label}</div>
-                    <div style={{ fontSize: 9, color: '#6b7280', textTransform: 'uppercase' }}>etapa {e.key}</div>
+          <div>
+            <div style={{ background: '#111827', border: '1px solid #f59e0b30', borderRadius: 12, padding: 16, marginBottom: 12 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#f59e0b', marginBottom: 6 }}>🎯 Ordem de prioridade do dia</div>
+              <p style={{ fontSize: 11, color: '#9ca3af', lineHeight: 1.6, margin: 0 }}>
+                As 10 etapas do CRM (Acelera) tem ordem de prioridade. Trabalhe sempre na sequencia abaixo —
+                comece pelas <strong style={{ color: '#f87171' }}>confirmacoes</strong> as 8h antes de qualquer coisa.
+                Cada etapa tem fluxo automatico para disparar mensagens. Se a pessoa nao responder no fluxo: <strong>follow-up 1 no mesmo dia, follow-up 2 no dia seguinte</strong>.
+              </p>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+              {[...ETAPAS_ACL].sort((a, b) => a.prioridade - b.prioridade).map(e => (
+                <div key={e.num} style={{ background: '#111827', border: `1px solid ${e.cor}30`, borderRadius: 12, padding: 16, borderLeft: `4px solid ${e.cor}` }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                    <div style={{ background: e.cor + '20', color: e.cor, minWidth: 36, height: 36, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800 }}>
+                      #{e.prioridade}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{e.label}</div>
+                      <div style={{ fontSize: 9, color: '#6b7280', textTransform: 'uppercase' }}>Etapa {e.num} no CRM · prioridade {e.prioridade}</div>
+                    </div>
+                    {e.prioridade === 1 && (
+                      <span style={{ background: '#ef444420', color: '#f87171', padding: '2px 8px', borderRadius: 6, fontSize: 9, fontWeight: 700 }}>🚨 8H</span>
+                    )}
                   </div>
+                  <p style={{ fontSize: 11, color: '#9ca3af', lineHeight: 1.5, margin: 0 }}>{e.desc}</p>
                 </div>
-                <p style={{ fontSize: 12, color: '#9ca3af', lineHeight: 1.5 }}>{e.desc}</p>
-              </div>
-            ))}
-            <div style={{ gridColumn: '1 / -1', background: '#111827', border: '1px solid #1f2937', borderRadius: 12, padding: 20, marginTop: 4 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 8 }}>📋 Como aplicar a metodologia ACL</div>
-              <ul style={{ fontSize: 11, color: '#9ca3af', lineHeight: 1.7, paddingLeft: 20, margin: 0 }}>
-                <li><strong style={{ color: '#60a5fa' }}>A — Atracao:</strong> primeiro contato. Confirme nome, interesse real e disponibilidade.</li>
-                <li><strong style={{ color: '#a78bfa' }}>C — Conexao:</strong> apresente Excalibur, gere conexao humana, tire objecoes iniciais.</li>
-                <li><strong style={{ color: '#4ade80' }}>L — Levantamento:</strong> investigue dor, contexto, decisor e momento. Qualifique para passar ao closer.</li>
-              </ul>
+              ))}
             </div>
           </div>
         )}
