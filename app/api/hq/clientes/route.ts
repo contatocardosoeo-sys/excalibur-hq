@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
     // Single client fetch
     if (id) {
       const { data: cliente, error } = await supabase
-        .from('clientes_hq')
+        .from('clinicas')
         .select('*')
         .eq('id', id)
         .single()
@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
 
     // List with filters
     let query = supabase
-      .from('clientes_hq')
+      .from('clinicas')
       .select('*')
       .order('score_total', { ascending: true })
 

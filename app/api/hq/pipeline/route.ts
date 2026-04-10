@@ -50,7 +50,7 @@ function gerarProximaAcao(cliente: ClienteRow): string {
 export async function GET() {
   try {
     const { data: clientes, error } = await supabase
-      .from('clientes_hq')
+      .from('clinicas')
       .select('*')
       .order('score_total', { ascending: true })
 

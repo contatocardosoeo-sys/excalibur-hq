@@ -23,7 +23,7 @@ export async function PATCH(
   }
 
   const { data, error } = await supabase
-    .from('clientes_hq')
+    .from('clinicas')
     .update(updates)
     .eq('id', id)
     .select()

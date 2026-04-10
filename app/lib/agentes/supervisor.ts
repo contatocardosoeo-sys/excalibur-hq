@@ -22,7 +22,7 @@ export async function rodarAgenteSupervisor() {
     { data: logs },
     { data: incidentes }
   ] = await Promise.all([
-    supabase.from('clientes_hq')
+    supabase.from('clinicas')
       .select('nome, score_total, fase, status_execucao, ultimo_contato, dias_sem_venda')
       .order('score_total', { ascending: true })
       .limit(20),

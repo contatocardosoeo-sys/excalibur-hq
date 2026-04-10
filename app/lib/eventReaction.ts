@@ -145,7 +145,7 @@ async function executarAcao(acao: ReactionAction, evento: EventPayload): Promise
     case 'atualizar_score':
       if (evento.aggregate_id) {
         const { data: cliente } = await supabase
-          .from('clientes_hq')
+          .from('clinicas')
           .select('score_total')
           .eq('id', evento.aggregate_id)
           .single()
@@ -154,7 +154,7 @@ async function executarAcao(acao: ReactionAction, evento: EventPayload): Promise
           const current = (cliente as { score_total: number }).score_total || 50
           const novoScore = Math.min(100, Math.max(0, current + (acao.valor || 0)))
           await supabase
-            .from('clientes_hq')
+            .from('clinicas')
             .update({ score_total: novoScore })
             .eq('id', evento.aggregate_id)
         }

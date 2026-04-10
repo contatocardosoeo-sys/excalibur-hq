@@ -81,7 +81,7 @@ export async function GET() {
   try {
     // Fetch all data in parallel
     const [clientesRes, performanceRes, alertasRes] = await Promise.all([
-      supabase.from('clientes_hq').select('*'),
+      supabase.from('clinicas').select('*'),
       supabase.from('performance_diaria').select('*').order('data', { ascending: false }).limit(100),
       supabase.from('alertas_sistema').select('*').order('created_at', { ascending: false })
     ])

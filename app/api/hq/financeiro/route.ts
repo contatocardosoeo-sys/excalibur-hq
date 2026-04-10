@@ -8,7 +8,7 @@ const supabase = createClient(
 
 export async function GET() {
   try {
-    const { data: clientes } = await supabase.from('clientes_hq').select('*')
+    const { data: clientes } = await supabase.from('clinicas').select('*')
     const { data: historicoRaw } = await supabase
       .from('financeiro_mensal').select('*')
       .order('mes', { ascending: true })

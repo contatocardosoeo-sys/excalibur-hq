@@ -61,7 +61,7 @@ function proximaAcao(cliente: ClienteHQ) {
 
 export async function GET() {
   const { data: clientes, error } = await supabase
-    .from('clientes_hq')
+    .from('clinicas')
     .select('*')
     .order('score_total', { ascending: true })
 
