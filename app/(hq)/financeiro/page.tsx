@@ -507,7 +507,7 @@ export default function FinanceiroPage() {
                   <div>
                     <p className="text-sm text-amber-400 font-medium">Meta de crescimento</p>
                     <p className="text-xs text-gray-400 mt-1">
-                      Para atingir o cenário otimista, foque em upsell de Starter para Pro e redução do churn
+                      Para atingir o cenario otimista, foque em upsell para Completo e reducao do churn
                       abaixo de 3%.
                     </p>
                   </div>

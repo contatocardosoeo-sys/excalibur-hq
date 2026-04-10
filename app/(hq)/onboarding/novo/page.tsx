@@ -19,7 +19,7 @@ export default function NovoOnboarding() {
   const [estado, setEstado] = useState('')
   const [focos, setFocos] = useState<string[]>(['Prótese / Implantes / Protocolo'])
   const [focosOutros, setFocosOutros] = useState('')
-  const [plano, setPlano] = useState('Pacote Completo')
+  const [plano, setPlano] = useState('Completo (90 dias garantia)')
   const [valorContrato, setValorContrato] = useState('')
   const [dataInicio, setDataInicio] = useState(new Date().toISOString().split('T')[0])
   // Passo 2
@@ -187,9 +187,10 @@ export default function NovoOnboarding() {
                 <div>
                   <label style={S.label}>Plano contratado</label>
                   <select value={plano} onChange={e => setPlano(e.target.value)} style={S.input}>
-                    <option>Pacote Completo</option>
-                    <option>Somente Financeira</option>
-                    <option>Marketing</option>
+                    <option>Completo (sem fidelidade)</option>
+                    <option>Completo (90 dias garantia)</option>
+                    <option>Apenas Financeira</option>
+                    <option>Apenas Marketing</option>
                   </select>
                 </div>
                 <div><label style={S.label}>Valor contrato (R$)</label><input type="number" value={valorContrato} onChange={e => setValorContrato(e.target.value)} style={S.input} placeholder="1500" /></div>

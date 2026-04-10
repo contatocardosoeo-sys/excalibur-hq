@@ -68,33 +68,33 @@ export async function GET() {
       }
     })
 
-    // Breakdown por plano — só dados reais
+    // Breakdown por plano — pacotes reais Excalibur
     const planDistribution: Record<string, { count: number; mrr: number }> = {
-      starter: { count: 0, mrr: 0 },
-      pro: { count: 0, mrr: 0 },
-      elite: { count: 0, mrr: 0 },
+      completo: { count: 0, mrr: 0 },
+      financeira: { count: 0, mrr: 0 },
+      marketing: { count: 0, mrr: 0 },
     }
 
     activeClients.forEach((c) => {
-      const plan = (c.plano || c.plan || 'pro').toLowerCase()
-      if (plan.includes('elite') || plan.includes('premium')) {
-        planDistribution.elite.count++
-        planDistribution.elite.mrr += Number(c.mrr) || 0
-      } else if (plan.includes('starter') || plan.includes('basic') || plan.includes('basico')) {
-        planDistribution.starter.count++
-        planDistribution.starter.mrr += Number(c.mrr) || 0
+      const plan = (c.plano || c.plan || 'completo').toLowerCase()
+      if (plan.includes('financeira')) {
+        planDistribution.financeira.count++
+        planDistribution.financeira.mrr += Number(c.mrr) || 0
+      } else if (plan.includes('marketing')) {
+        planDistribution.marketing.count++
+        planDistribution.marketing.mrr += Number(c.mrr) || 0
       } else {
-        planDistribution.pro.count++
-        planDistribution.pro.mrr += Number(c.mrr) || 0
+        planDistribution.completo.count++
+        planDistribution.completo.mrr += Number(c.mrr) || 0
       }
     })
 
-    const totalMrrBreakdown = planDistribution.starter.mrr + planDistribution.pro.mrr + planDistribution.elite.mrr || 1
+    const totalMrrBreakdown = planDistribution.completo.mrr + planDistribution.financeira.mrr + planDistribution.marketing.mrr || 1
 
     const breakdown = [
-      { plano: 'Starter', clientes: planDistribution.starter.count, mrr: planDistribution.starter.mrr, percentual: Number(((planDistribution.starter.mrr / totalMrrBreakdown) * 100).toFixed(1)), cor: '#94a3b8' },
-      { plano: 'Pro', clientes: planDistribution.pro.count, mrr: planDistribution.pro.mrr, percentual: Number(((planDistribution.pro.mrr / totalMrrBreakdown) * 100).toFixed(1)), cor: '#f59e0b' },
-      { plano: 'Elite', clientes: planDistribution.elite.count, mrr: planDistribution.elite.mrr, percentual: Number(((planDistribution.elite.mrr / totalMrrBreakdown) * 100).toFixed(1)), cor: '#22c55e' },
+      { plano: 'Completo', clientes: planDistribution.completo.count, mrr: planDistribution.completo.mrr, percentual: Number(((planDistribution.completo.mrr / totalMrrBreakdown) * 100).toFixed(1)), cor: '#22c55e' },
+      { plano: 'Apenas Marketing', clientes: planDistribution.marketing.count, mrr: planDistribution.marketing.mrr, percentual: Number(((planDistribution.marketing.mrr / totalMrrBreakdown) * 100).toFixed(1)), cor: '#f59e0b' },
+      { plano: 'Apenas Financeira', clientes: planDistribution.financeira.count, mrr: planDistribution.financeira.mrr, percentual: Number(((planDistribution.financeira.mrr / totalMrrBreakdown) * 100).toFixed(1)), cor: '#94a3b8' },
     ]
 
     // Churn — só dados reais

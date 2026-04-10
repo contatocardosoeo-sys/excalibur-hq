@@ -17,9 +17,10 @@ const COLS = [
 ]
 const ORDER = ['reuniao_agendada', 'proposta_enviada', 'fechado', 'perdido']
 const PLANOS = [
-  { nome: 'Pacote Completo', mrr: 1997 },
-  { nome: 'Somente Financeira', mrr: 997 },
-  { nome: 'Marketing', mrr: 1497 },
+  { nome: 'Completo (sem fidelidade)', mrr: 3500 },
+  { nome: 'Completo (90 dias garantia)', mrr: 3000 },
+  { nome: 'Apenas Financeira', mrr: 1000 },
+  { nome: 'Apenas Marketing', mrr: 1500 },
 ]
 
 function fmt(v: number) { return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 0 }) }
@@ -33,7 +34,7 @@ export default function ComercialPage() {
   const [ativarModal, setAtivarModal] = useState<PipeItem | null>(null)
   const [ativarEmail, setAtivarEmail] = useState('')
   const [ativarData, setAtivarData] = useState(new Date().toISOString().split('T')[0])
-  const [form, setForm] = useState({ nome_clinica: '', plano: 'Pacote Completo', mrr_proposto: '1997', data_reuniao: '', observacoes: '', origem: 'outbound' })
+  const [form, setForm] = useState({ nome_clinica: '', plano: 'Completo (90 dias garantia)', mrr_proposto: '3000', data_reuniao: '', observacoes: '', origem: 'outbound' })
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState('')
   // Aba
@@ -76,7 +77,7 @@ export default function ComercialPage() {
   const criar = async () => {
     if (!form.nome_clinica) return; setSaving(true)
     await fetch('/api/comercial/pipeline', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...form, mrr_proposto: Number(form.mrr_proposto) || 0, observacoes: form.observacoes + (form.origem !== 'outbound' ? ` [Origem: ${form.origem}]` : '') }) })
-    setForm({ nome_clinica: '', plano: 'Pacote Completo', mrr_proposto: '1997', data_reuniao: '', observacoes: '', origem: 'outbound' }); setModal(false); setSaving(false); load()
+    setForm({ nome_clinica: '', plano: 'Completo (90 dias garantia)', mrr_proposto: '3000', data_reuniao: '', observacoes: '', origem: 'outbound' }); setModal(false); setSaving(false); load()
   }
 
   const mover = async (id: string, dir: 'next' | string) => {
