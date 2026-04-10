@@ -129,7 +129,7 @@ export default function CEODashboard() {
     }
   }, [])
 
-  useEffect(() => { fetchData() }, [fetchData])
+  useEffect(() => { fetchData(); const iv = setInterval(fetchData, 120000); return () => clearInterval(iv) }, [fetchData])
 
   useEffect(() => {
     const ch1 = supabase.channel('ceo_metricas').on('postgres_changes', { event: '*', schema: 'public', table: 'metricas_ceo' }, () => fetchData()).subscribe()
@@ -150,6 +150,8 @@ export default function CEODashboard() {
 
   if (!data) return null
   const { receita, crescimento, funil, gargalos, times, alertas } = data
+  const finCeo = (data as unknown as Record<string, unknown>).financeiro_ceo as { caixa: number; recebido: number; total_receber: number; pago: number; total_pagar: number; tx_pagamento: number; mes_anterior: { recebido: number; pago: number; caixa: number } } | undefined
+  const metas = (data as unknown as Record<string, unknown>).metas as { sdr: { leads: { atual: number; meta: number }; reunioes: { atual: number; meta: number } }; closer: { reunioes: { atual: number; meta: number }; fechamentos: { atual: number; meta: number }; mrr: { atual: number; meta: number } } } | undefined
   const criticosCount = alertas.filter(a => a.nivel === 'critico').length
 
   return (
@@ -496,7 +498,76 @@ export default function CEODashboard() {
           </Card>
         </div>
 
-        {/* ━━━ BLOCO 6: ALERTAS ESTRATEGICOS ━━━ */}
+        {/* ━━━ BLOCO 6: CAIXA & FINANCEIRO ━━━ */}
+        {finCeo && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+            <Card className="bg-gray-900 border-gray-800">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-white text-sm font-semibold">Caixa do Mes</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-3 gap-3 mb-3">
+                  <div>
+                    <p className="text-[10px] text-gray-500 uppercase">Recebido</p>
+                    <p className="text-lg font-bold text-green-400">{fmt(finCeo.recebido)}</p>
+                    <p className="text-[10px] text-gray-500">{finCeo.tx_pagamento}% do previsto</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-gray-500 uppercase">Pago</p>
+                    <p className="text-lg font-bold text-red-400">{fmt(finCeo.pago)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-gray-500 uppercase">Caixa</p>
+                    <p className={`text-lg font-bold ${finCeo.caixa >= 0 ? 'text-green-400' : 'text-red-400'}`}>{fmt(finCeo.caixa)}</p>
+                  </div>
+                </div>
+                <Progress value={Math.min(finCeo.tx_pagamento, 100)} className="h-1.5 bg-gray-800 [&>div]:bg-green-500" />
+                <p className="text-[10px] text-gray-500 mt-2">{fmt(finCeo.recebido)} de {fmt(finCeo.total_receber)} previsto</p>
+                {finCeo.mes_anterior.recebido > 0 && (
+                  <div className="mt-3 flex gap-4 text-[10px] text-gray-500">
+                    <span>Mes anterior: Caixa {fmt(finCeo.mes_anterior.caixa)}</span>
+                    <span className={finCeo.caixa > finCeo.mes_anterior.caixa ? 'text-green-400' : 'text-red-400'}>
+                      {finCeo.caixa > finCeo.mes_anterior.caixa ? '↑' : '↓'} {Math.abs(Math.round(((finCeo.caixa - finCeo.mes_anterior.caixa) / (finCeo.mes_anterior.caixa || 1)) * 100))}%
+                    </span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {metas && (
+              <Card className="bg-gray-900 border-gray-800">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-white text-sm font-semibold">Metas dos Times</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {[
+                      { label: 'SDR — Leads', atual: metas.sdr.leads.atual, meta: metas.sdr.leads.meta },
+                      { label: 'SDR — Reunioes', atual: metas.sdr.reunioes.atual, meta: metas.sdr.reunioes.meta },
+                      { label: 'Closer — Fechamentos', atual: metas.closer.fechamentos.atual, meta: metas.closer.fechamentos.meta },
+                      { label: 'Closer — MRR', atual: metas.closer.mrr.atual, meta: metas.closer.mrr.meta },
+                    ].map((m, i) => {
+                      const p = m.meta > 0 ? Math.round((m.atual / m.meta) * 100) : 0
+                      return (
+                        <div key={i}>
+                          <div className="flex justify-between text-xs mb-1">
+                            <span className="text-gray-400">{m.label}</span>
+                            <span className={`font-bold ${p >= 80 ? 'text-green-400' : p >= 50 ? 'text-amber-400' : 'text-red-400'}`}>
+                              {m.label.includes('MRR') ? fmt(m.atual) : m.atual}/{m.label.includes('MRR') ? fmt(m.meta) : m.meta}
+                            </span>
+                          </div>
+                          <Progress value={Math.min(p, 100)} className={`h-1 bg-gray-800 ${p >= 80 ? '[&>div]:bg-green-500' : p >= 50 ? '[&>div]:bg-amber-500' : '[&>div]:bg-red-500'}`} />
+                        </div>
+                      )
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
+
+        {/* ━━━ BLOCO 7: ALERTAS ESTRATEGICOS ━━━ */}
         <Card className="bg-gray-900 border-gray-800">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">

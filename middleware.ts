@@ -31,7 +31,7 @@ const ROUTE_ROLES: Record<string, string[]> = {
 
 // Rota padrão por role (onde redirecionar se não tem acesso)
 const DEFAULT_ROUTE: Record<string, string> = {
-  admin: '/dashboard',
+  admin: '/ceo',
   cs: '/cs',
   sdr: '/sdr',
   closer: '/comercial',
