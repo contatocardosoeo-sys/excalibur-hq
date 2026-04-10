@@ -34,7 +34,7 @@ export default function LoginHQ() {
 
     // Cada role vai direto para sua tela especifica
     const destino: Record<string, string> = {
-      admin: '/ceo', cs: '/cs', sdr: '/sdr',
+      admin: '/ceo', coo: '/coo', cs: '/cs', sdr: '/sdr',
       closer: '/comercial', cmo: '/trafego', financeiro: '/financeiro',
     }
     const target = destino[primaryRole] || '/ceo'
