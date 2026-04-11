@@ -5,36 +5,8 @@ import { usePathname } from 'next/navigation'
 import { supabase } from '../lib/supabase'
 import AlertaCentral from '../components/AlertaCentral'
 import SistemaEventos from '../components/SistemaEventos'
+import TitleSync from '../components/TitleSync'
 import { ToastProvider } from '../components/Toast'
-
-const TITULOS: Record<string, string> = {
-  '/ceo': 'CEO',
-  '/coo': 'COO',
-  '/sdr': 'SDR',
-  '/sdr/feedbacks': 'Feedbacks SDR',
-  '/comercial': 'Comercial',
-  '/trafego': 'Tráfego',
-  '/cs': 'CS',
-  '/cs/calendario': 'Calendário',
-  '/clientes': 'Clientes',
-  '/jornada': 'Jornada',
-  '/financeiro': 'Financeiro',
-  '/operacao/financeiro': 'Financeiro Operacional',
-  '/operacao/colaboradores': 'Colaboradores',
-  '/onboarding': 'Onboarding',
-  '/onboarding/novo': 'Novo Cliente',
-  '/alertas': 'Alertas',
-  '/visao-geral': 'Visão Geral',
-  '/eventos': 'Eventos',
-  '/pipeline': 'Pipeline',
-  '/planos': 'Planos',
-  '/automacoes': 'Automações',
-  '/observabilidade': 'Observabilidade',
-  '/base': 'Base do Projeto',
-  '/ia/supervisor': 'Supervisor IA',
-  '/ia/reactions': 'Event Reactions',
-  '/admin/usuarios': 'Usuários',
-}
 
 export default function HQLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -42,15 +14,6 @@ export default function HQLayout({ children }: { children: React.ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false)
   const [primaryRole, setPrimaryRole] = useState<string>('')
   const [ready, setReady] = useState(false)
-
-  // Atualiza titulo da aba do browser baseado na rota
-  useEffect(() => {
-    const match = Object.entries(TITULOS)
-      .filter(([k]) => pathname === k || pathname.startsWith(k + '/'))
-      .sort((a, b) => b[0].length - a[0].length)[0]
-    const titulo = match ? match[1] : 'HQ'
-    document.title = `${titulo} | Excalibur HQ`
-  }, [pathname])
 
   useEffect(() => {
     ;(async () => {
@@ -71,6 +34,7 @@ export default function HQLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <ToastProvider>
+      <TitleSync />
       {ready && email && <AlertaCentral userEmail={email} isAdmin={isAdmin} />}
       {ready && primaryRole && <SistemaEventos userRole={primaryRole} />}
       <div key={pathname} className="page-transition pt-14 md:pt-0 min-h-screen overflow-x-hidden min-w-0 max-w-full">
