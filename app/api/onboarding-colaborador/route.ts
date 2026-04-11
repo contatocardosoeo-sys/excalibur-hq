@@ -12,14 +12,38 @@ type Estado = 'tutorial' | 'check' | 'ativo'
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const email = searchParams.get('email')
-  const role = searchParams.get('role')
+  const role = (searchParams.get('role') || '').toLowerCase().trim()
+  const rolesRaw = searchParams.get('roles') || ''
 
   if (!email) return NextResponse.json({ show: false })
 
-  // Admin e COO nao veem onboarding
-  if (role === 'admin' || role === 'coo') {
+  // Admin e COO nao veem onboarding — NUNCA, sob qualquer circunstancia.
+  // Aceita: role=admin | role=coo | roles=admin,coo (case-insensitive)
+  const rolesSet = new Set<string>()
+  if (role) rolesSet.add(role)
+  rolesRaw.split(',').map(r => r.trim().toLowerCase()).filter(Boolean).forEach(r => rolesSet.add(r))
+
+  if (rolesSet.has('admin') || rolesSet.has('coo')) {
     return NextResponse.json({ show: false, estado: 'ativo' as Estado })
   }
+
+  // Salvaguarda extra: cruzar com usuarios_internos pelo email
+  // (caso o client passe role errado, ainda bloqueia admin/coo)
+  try {
+    const { data: interno } = await supabase
+      .from('usuarios_internos')
+      .select('role, roles')
+      .eq('email', email)
+      .maybeSingle()
+    if (interno) {
+      const internoRoles: string[] = (interno.roles && Array.isArray(interno.roles) && interno.roles.length > 0)
+        ? interno.roles.map((r: string) => (r || '').toLowerCase())
+        : [(interno.role || '').toLowerCase()]
+      if (internoRoles.includes('admin') || internoRoles.includes('coo')) {
+        return NextResponse.json({ show: false, estado: 'ativo' as Estado })
+      }
+    }
+  } catch { /* nao bloqueia se a checagem falhar */ }
 
   const { data, error } = await supabase
     .from('onboarding_colaborador')

@@ -138,35 +138,70 @@ export default function AlertaCentral({ userEmail, isAdmin }: { userEmail: strin
         .alerta-icon { display: inline-block; animation: alertaShake 0.6s infinite; }
       `}</style>
 
-      <button onClick={() => setOpen(!open)}
-        className={open ? '' : 'alerta-pulsante'}
-        style={{
-          position: 'fixed',
-          bottom: `calc(16px + env(safe-area-inset-bottom, 0))`,
-          right: 16,
-          zIndex: 60,
-          background: open ? '#1f2937' : 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)',
-          color: '#fff',
-          border: '3px solid #fff',
-          borderRadius: open ? 12 : 999,
-          padding: open ? '10px 14px' : '12px 18px',
-          cursor: 'pointer',
-          fontSize: 13, fontWeight: 800,
-          display: 'flex', alignItems: 'center', gap: 8,
-          letterSpacing: '0.02em',
-          textTransform: 'uppercase',
-          maxWidth: 'calc(100vw - 32px)',
-        }}>
-        {open ? (
-          <>✕ FECHAR</>
-        ) : (
-          <>
-            <span className="alerta-icon" style={{ fontSize: 20 }}>🚨</span>
-            <span>{badgeLabel}</span>
-            <span className="hidden sm:inline">ALERTA{totalBadge > 1 ? 'S' : ''}</span>
-          </>
+      <div style={{
+        position: 'fixed',
+        bottom: `calc(16px + env(safe-area-inset-bottom, 0))`,
+        right: 16,
+        zIndex: 60,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6,
+        maxWidth: 'calc(100vw - 32px)',
+      }}>
+        <button onClick={() => setOpen(!open)}
+          className={open ? '' : 'alerta-pulsante'}
+          style={{
+            background: open ? '#1f2937' : 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)',
+            color: '#fff',
+            border: '3px solid #fff',
+            borderRadius: open ? 12 : 999,
+            padding: open ? '10px 14px' : '12px 18px',
+            cursor: 'pointer',
+            fontSize: 13, fontWeight: 800,
+            display: 'flex', alignItems: 'center', gap: 8,
+            letterSpacing: '0.02em',
+            textTransform: 'uppercase',
+          }}>
+          {open ? (
+            <>✕ FECHAR</>
+          ) : (
+            <>
+              <span className="alerta-icon" style={{ fontSize: 20 }}>🚨</span>
+              <span>{badgeLabel}</span>
+              <span className="hidden sm:inline">ALERTA{totalBadge > 1 ? 'S' : ''}</span>
+            </>
+          )}
+        </button>
+
+        {/* Botao X minimizar — ao lado do botao pulsante, so quando fechado */}
+        {!open && (
+          <button
+            onClick={minimizar}
+            title="Minimizar alertas por 30 minutos"
+            aria-label="Minimizar alertas"
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: '50%',
+              background: 'rgba(31, 41, 55, 0.95)',
+              border: '2px solid #4b5563',
+              color: '#9ca3af',
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.4)',
+              flexShrink: 0,
+              padding: 0,
+              lineHeight: 1,
+            }}
+          >
+            ✕
+          </button>
         )}
-      </button>
+      </div>
 
       {open && (
         <div style={{
