@@ -19,6 +19,11 @@ export default function AcaoHoje({ role }: AcaoHojeProps) {
 
   useEffect(() => {
     if (typeof window === 'undefined') return
+
+    // Não mostrar enquanto o tutorial de onboarding não foi dispensado
+    const tutorialVisto = sessionStorage.getItem('onboarding_tutorial_visto')
+    if (!tutorialVisto) return
+
     const hoje = new Date().toISOString().slice(0, 10)
     const key = `acao_hoje_${role}_${hoje}`
     if (sessionStorage.getItem(key) === 'dispensado') {
@@ -50,12 +55,23 @@ export default function AcaoHoje({ role }: AcaoHojeProps) {
             href: '/cs',
           })
         } else if (role === 'closer') {
-          setAcao({
-            titulo: 'Kanban sem movimentação hoje',
-            descricao: 'Leads parados = dados errados para o CEO. Atualize o pipeline agora.',
-            btnLabel: '→ Abrir kanban',
-            href: '/comercial',
-          })
+          // B13 fix: só alertar se REALMENTE zerado (0 fechamentos E 0 reunioes)
+          // Se tem fechamentos >= 5 E mrr >= 8000, não mostrar nada
+          try {
+            const stats = await fetch('/api/comercial/stats').then(r => r.json())
+            const fechamentos = Number(stats.fechamentos || 0)
+            const mrr = Number(stats.mrr_gerado || 0)
+            const reunioes = Number(stats.reunioes || 0)
+            if (fechamentos >= 5 && mrr >= 8000) return // tudo ok
+            if (fechamentos === 0 && reunioes === 0) {
+              setAcao({
+                titulo: 'Pipeline sem movimentação',
+                descricao: 'Nenhuma reunião nem fechamento esta semana. Atualize o kanban agora.',
+                btnLabel: '→ Abrir kanban',
+                href: '/comercial',
+              })
+            }
+          } catch { /* */ }
         }
       } catch { /* */ }
     })()

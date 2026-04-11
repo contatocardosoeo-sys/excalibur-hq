@@ -174,9 +174,9 @@ export default function SDRPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#030712', display: 'flex' }}>
+    <div style={{ minHeight: '100vh', background: '#030712', display: 'flex', overflowX: 'hidden' }}>
       <Sidebar />
-      <div style={{ flex: 1, padding: '24px 32px', overflowY: 'auto', maxWidth: 1400 }}>
+      <div style={{ flex: 1, padding: '24px 32px', overflowY: 'auto', overflowX: 'hidden', maxWidth: 1400, minWidth: 0 }}>
 
         {/* Card de acao do dia (imperativo) */}
         <AcaoHoje role="sdr" />
@@ -318,19 +318,28 @@ export default function SDRPage() {
               </>
             ) : (
               <>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 10, marginBottom: 12 }}>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 mb-3">
                   {[
-                    { k: 'leads_recebidos', l: '📥 Leads' },
-                    { k: 'contatos_realizados', l: '📞 Contatos' },
-                    { k: 'agendamentos', l: '📅 Agendam.' },
-                    { k: 'comparecimentos', l: '✅ Comparec.' },
-                    { k: 'vendas', l: '🎯 Vendas' },
-                    { k: 'valor_vendas', l: '💰 Valor R$' },
+                    { k: 'leads_recebidos', l: '📥 Leads', aria: 'Leads recebidos' },
+                    { k: 'contatos_realizados', l: '📞 Contatos', aria: 'Contatos realizados' },
+                    { k: 'agendamentos', l: '📅 Agendam.', aria: 'Agendamentos' },
+                    { k: 'comparecimentos', l: '✅ Comparec.', aria: 'Comparecimentos' },
+                    { k: 'vendas', l: '🎯 Vendas', aria: 'Vendas fechadas' },
+                    { k: 'valor_vendas', l: '💰 Valor R$', aria: 'Valor total em reais' },
                   ].map(f => (
                     <div key={f.k}>
-                      <label style={{ fontSize: 9, color: '#6b7280', textTransform: 'uppercase', fontWeight: 600, display: 'block', marginBottom: 4 }}>{f.l}</label>
-                      <input type="number" step={f.k === 'valor_vendas' ? '0.01' : '1'} value={form[f.k as keyof typeof form]} onChange={e => setForm({ ...form, [f.k]: e.target.value })}
-                        style={{ width: '100%', background: '#1f2937', border: '1px solid #374151', borderRadius: 8, padding: '10px 12px', color: '#fff', fontSize: 16, outline: 'none', textAlign: 'center', fontWeight: 700 }} />
+                      <label htmlFor={`input-${f.k}`} style={{ fontSize: 9, color: '#6b7280', textTransform: 'uppercase', fontWeight: 600, display: 'block', marginBottom: 4 }}>{f.l}</label>
+                      <input
+                        id={`input-${f.k}`}
+                        type="number"
+                        min="0"
+                        step={f.k === 'valor_vendas' ? '0.01' : '1'}
+                        placeholder="0"
+                        aria-label={f.aria}
+                        value={form[f.k as keyof typeof form]}
+                        onChange={e => setForm({ ...form, [f.k]: e.target.value })}
+                        style={{ width: '100%', background: '#1f2937', border: '1px solid #374151', borderRadius: 8, padding: '10px 12px', color: '#fff', fontSize: 16, outline: 'none', textAlign: 'center', fontWeight: 700 }}
+                      />
                     </div>
                   ))}
                 </div>

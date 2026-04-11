@@ -245,6 +245,10 @@ export default function OnboardingColaborador({
   const fechar = async (acao: string) => {
     setFechando(true)
     await marcar(acao)
+    // Marca no sessionStorage para o AcaoHoje não aparecer junto
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('onboarding_tutorial_visto', 'true')
+    }
     setTimeout(() => setState({ show: false, estado: 'ativo' }), 350)
   }
 

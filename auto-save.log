@@ -184,3 +184,10 @@ warning: in the working copy of 'app/(hq)/trafego/page.tsx', LF will be replaced
 To https://github.com/contatocardosoeo-sys/excalibur-hq.git
    cde0020..e614d1a  main -> main
 ✅ Auto-save: 2026-04-10 21:57
+warning: in the working copy of 'app/components/Sidebar.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'middleware.ts', LF will be replaced by CRLF the next time Git touches it
+[main ceaecea] auto-save: 2026-04-11 01:57 — app/components/Sidebar.tsx,middleware.ts,
+ 2 files changed, 18 insertions(+), 18 deletions(-)
+To https://github.com/contatocardosoeo-sys/excalibur-hq.git
+   c2ebdde..ceaecea  main -> main
+✅ Auto-save: 2026-04-11 01:57
