@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import Sidebar from '../../components/Sidebar'
+import AcaoHoje from '../../components/AcaoHoje'
 import { useToast } from '../../components/Toast'
 import { supabase } from '../../lib/supabase'
 import { useDispararEvento } from '../../hooks/useDispararEvento'
@@ -134,6 +135,8 @@ export default function ComercialPage() {
     <div style={{ minHeight: '100vh', background: '#09090f', display: 'flex' }}>
       <Sidebar />
       <div style={{ flex: 1, padding: '20px 24px', overflowY: 'auto' }}>
+        {/* Card de acao do dia (imperativo) */}
+        <AcaoHoje role="closer" />
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <div><h1 style={{ fontSize: 22, fontWeight: 700, color: '#fff', margin: 0 }}>Comercial — Pipeline de Fechamento</h1><p style={{ color: '#6b7280', fontSize: 13, margin: '4px 0 0' }}>Gestao de propostas e fechamentos</p></div>
           <div style={{ display: 'flex', gap: 8 }}><button onClick={() => setModal(true)} style={{ background: '#f59e0b', color: '#000', border: 'none', borderRadius: 8, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 700 }}>+ Nova Proposta</button><button onClick={load} style={{ background: 'transparent', border: '1px solid #252535', color: '#9ca3af', borderRadius: 8, padding: '8px 12px', cursor: 'pointer' }}>🔄</button></div>

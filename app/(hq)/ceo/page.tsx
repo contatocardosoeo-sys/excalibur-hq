@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Separator } from '@/components/ui/separator'
 import { NumberTicker } from '@/components/ui/number-ticker'
+import AdocaoEquipe from '../../components/AdocaoEquipe'
 
 interface Receita {
   dia: number
@@ -159,6 +160,9 @@ export default function CEODashboard() {
     <div className="min-h-screen bg-gray-950 flex">
       <Sidebar />
       <div className="flex-1 p-4 md:p-6 overflow-auto">
+
+        {/* ━━━ ADOÇÃO DA EQUIPE (primeiro elemento — monitoramento de execução) ━━━ */}
+        <AdocaoEquipe />
 
         {/* ━━━ HEADER ━━━ */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">

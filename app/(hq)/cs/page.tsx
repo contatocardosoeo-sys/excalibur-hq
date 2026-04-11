@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Sidebar from '../../components/Sidebar'
+import AcaoHoje from '../../components/AcaoHoje'
 import { useToast } from '../../components/Toast'
 import Modal, { ModalButton } from '../../components/Modal'
 import { supabase } from '../../lib/supabase'
@@ -187,6 +188,9 @@ export default function CSPainel() {
     <div style={{ minHeight: '100vh', background: '#030712', display: 'flex' }}>
       <Sidebar />
       <div style={{ flex: 1, padding: '24px 32px', overflowY: 'auto', maxWidth: 1400 }}>
+
+        {/* Card de acao do dia (imperativo) */}
+        <AcaoHoje role="cs" />
 
         {/* ── Header ── */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>

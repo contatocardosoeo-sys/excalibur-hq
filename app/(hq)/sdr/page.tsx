@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import Sidebar from '../../components/Sidebar'
+import AcaoHoje from '../../components/AcaoHoje'
 import { useToast } from '../../components/Toast'
 import { supabase } from '../../lib/supabase'
 import { useDispararEvento } from '../../hooks/useDispararEvento'
@@ -176,6 +177,9 @@ export default function SDRPage() {
     <div style={{ minHeight: '100vh', background: '#030712', display: 'flex' }}>
       <Sidebar />
       <div style={{ flex: 1, padding: '24px 32px', overflowY: 'auto', maxWidth: 1400 }}>
+
+        {/* Card de acao do dia (imperativo) */}
+        <AcaoHoje role="sdr" />
 
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
