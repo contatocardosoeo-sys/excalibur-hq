@@ -140,6 +140,27 @@ export default function Sidebar() {
   // Close mobile on route change
   useEffect(() => { setMobileOpen(false) }, [pathname])
 
+  // Atalho "/" para focar na busca global · Esc para sair
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement
+      const tag = target?.tagName
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(tag)) {
+        if (e.key === 'Escape' && (target as HTMLInputElement).placeholder?.toLowerCase().includes('buscar')) {
+          (target as HTMLInputElement).blur()
+        }
+        return
+      }
+      if (e.key === '/') {
+        e.preventDefault()
+        const busca = document.querySelector<HTMLInputElement>('input[placeholder*="Buscar"], input[placeholder*="buscar"]')
+        if (busca) { busca.focus(); busca.select() }
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
+
   // Search debounce
   const handleSearch = (q: string) => {
     setSearchQuery(q)
@@ -199,7 +220,7 @@ export default function Sidebar() {
             onChange={e => handleSearch(e.target.value)}
             onFocus={() => searchResults.length > 0 && setShowSearch(true)}
             onBlur={() => setTimeout(() => setShowSearch(false), 200)}
-            placeholder="Buscar..."
+            placeholder="Buscar... (/)"
             style={{ width: '100%', background: '#1f2937', border: '1px solid #374151', borderRadius: 8, padding: '6px 10px 6px 28px', color: '#fff', fontSize: 11, outline: 'none' }}
           />
           <span style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: '#4b5563' }}>🔍</span>

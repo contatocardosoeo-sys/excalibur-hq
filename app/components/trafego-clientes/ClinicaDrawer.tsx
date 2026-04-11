@@ -100,7 +100,7 @@ export default function ClinicaDrawer({ clinicaId, onClose }: Props) {
             <h2 className="text-white font-bold text-base truncate">{limparNomeClinica(data?.clinica?.nome) || 'Carregando...'}</h2>
             <p className="text-gray-500 text-[10px]">{data?.clinica?.fase || ''} · {data?.vinculo?.gestores_trafego?.nome || 'sem gestor'}</p>
           </div>
-          <button onClick={onClose} className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-800 hover:text-white">✕</button>
+          <button onClick={onClose} aria-label="Fechar drawer" title="Fechar" className="min-w-[44px] min-h-[44px] md:w-9 md:h-9 md:min-w-0 md:min-h-0 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-800 hover:text-white">✕</button>
         </div>
 
         {loading && <div className="p-6 text-center text-gray-500 text-sm">Carregando...</div>}

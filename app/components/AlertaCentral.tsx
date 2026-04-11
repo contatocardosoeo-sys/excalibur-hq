@@ -103,8 +103,11 @@ export default function AlertaCentral({ userEmail, isAdmin }: { userEmail: strin
 
   if (!meuPendente && !adminPendente && qtdClientes === 0) return null
 
-  const totalBadge = (meuPendente ? 1 : 0) + (adminPendente ? faltando.length : 0) + qtdClientes
-  // Limitar display a "9+" quando ha muitos alertas (evita "52 ALERTAS" assustador)
+  // Badge só conta os alertas dinâmicos vindos da API /api/hq/alertas.
+  // Planilhas pendentes (meuPendente/adminPendente) aparecem como itens internos ao expandir,
+  // mas não inflam o contador — evita divergência entre API e banner.
+  const totalBadge = qtdClientes
+  // Limitar display a "9+" quando ha muitos alertas
   const badgeLabel = totalBadge > 9 ? '9+' : String(totalBadge)
 
   // Modo minimizado — badge compacta no canto superior direito, sem animacao

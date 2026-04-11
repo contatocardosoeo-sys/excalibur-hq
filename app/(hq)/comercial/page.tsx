@@ -263,7 +263,25 @@ export default function ComercialPage() {
                         </div>
                       </div>
                     ))}
-                    {items.length === 0 && <div style={{ textAlign: 'center', color: '#252535', fontSize: 11, padding: 20 }}>Vazio</div>}
+                    {items.length === 0 && (
+                      <div style={{ textAlign: 'center', border: '1px dashed #374151', borderRadius: 10, padding: '20px 12px', margin: '8px 0' }}>
+                        <div style={{ fontSize: 24, marginBottom: 6 }}>
+                          {col.key === 'reuniao_agendada' ? '📅' : col.key === 'proposta_enviada' ? '📋' : col.key === 'fechado' ? '✅' : '📌'}
+                        </div>
+                        <div style={{ fontSize: 12, color: '#9ca3af', fontWeight: 600, marginBottom: 4 }}>Nenhum lead aqui</div>
+                        <div style={{ fontSize: 10, color: '#6b7280', marginBottom: 8, lineHeight: 1.4 }}>
+                          {col.key === 'reuniao_agendada' ? 'Leads com reunião marcada' :
+                           col.key === 'proposta_enviada' ? 'Propostas aguardando resposta' :
+                           col.key === 'fechado' ? 'Contratos fechados' :
+                           'Leads perdidos ou descartados'}
+                        </div>
+                        {col.key === 'reuniao_agendada' && (
+                          <button onClick={() => setModal(true)} style={{ fontSize: 10, color: '#f59e0b', background: 'transparent', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
+                            + Adicionar primeiro lead →
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               )

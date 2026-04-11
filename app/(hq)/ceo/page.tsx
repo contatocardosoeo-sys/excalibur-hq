@@ -10,6 +10,7 @@ import { Progress } from '@/components/ui/progress'
 import { Separator } from '@/components/ui/separator'
 import { NumberTicker } from '@/components/ui/number-ticker'
 import AdocaoEquipe from '../../components/AdocaoEquipe'
+import ResumoDia from '../../components/ResumoDia'
 
 interface Receita {
   dia: number
@@ -160,6 +161,9 @@ export default function CEODashboard() {
     <div className="min-h-screen bg-gray-950 flex overflow-x-hidden">
       <Sidebar />
       <div className="flex-1 p-4 md:p-6 overflow-auto min-w-0">
+
+        {/* ━━━ RESUMO DO DIA (uma linha — pagamentos, leads, alertas) ━━━ */}
+        <ResumoDia />
 
         {/* ━━━ ADOÇÃO DA EQUIPE (primeiro elemento — monitoramento de execução) ━━━ */}
         <AdocaoEquipe />
@@ -424,7 +428,7 @@ export default function CEODashboard() {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-white text-sm font-semibold">Onde esta perdendo dinheiro agora</CardTitle>
-              <Button size="sm" variant="outline" className="h-7 text-xs border-amber-500/30 text-amber-400 hover:bg-amber-500/10">
+              <Button size="sm" variant="outline" className="min-h-[44px] md:h-7 text-xs border-amber-500/30 text-amber-400 hover:bg-amber-500/10">
                 Pedir analise ao HEAD
               </Button>
             </div>
@@ -599,7 +603,7 @@ export default function CEODashboard() {
                   <Badge className="bg-red-500/20 text-red-400 border-red-500/40 text-xs">{alertas.length}</Badge>
                 )}
               </CardTitle>
-              <Button size="sm" variant="outline" className="h-7 text-xs border-amber-500/30 text-amber-400 hover:bg-amber-500/10">
+              <Button size="sm" variant="outline" className="min-h-[44px] md:h-7 text-xs border-amber-500/30 text-amber-400 hover:bg-amber-500/10">
                 O que fazer agora
               </Button>
             </div>
@@ -625,7 +629,7 @@ export default function CEODashboard() {
                       <p className="text-white text-sm font-medium">{alerta.titulo}</p>
                       <p className="text-gray-400 text-xs mt-1">{alerta.descricao}</p>
                     </div>
-                    <Button size="sm" className="h-7 text-[10px] bg-amber-500 hover:bg-amber-400 text-gray-950 font-semibold ml-3 shrink-0">
+                    <Button size="sm" className="min-h-[44px] md:h-7 text-[10px] bg-amber-500 hover:bg-amber-400 text-gray-950 font-semibold ml-3 shrink-0">
                       Decidir
                     </Button>
                   </div>

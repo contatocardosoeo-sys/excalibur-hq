@@ -412,7 +412,9 @@ export default function SistemaEventos({ userRole }: { userRole?: string }) {
         </div>
         <button
           onClick={fechar}
-          style={{ background:'rgba(0,0,0,0.3)', border:'none', color:'rgba(255,255,255,0.7)', fontSize:18, cursor:'pointer', padding:'6px 11px', borderRadius:10, fontWeight:'bold', flexShrink:0 }}
+          aria-label="Fechar evento"
+          title="Fechar"
+          style={{ background:'rgba(0,0,0,0.3)', border:'none', color:'rgba(255,255,255,0.7)', fontSize:18, cursor:'pointer', padding:'6px 11px', borderRadius:10, fontWeight:'bold', flexShrink:0, minHeight: 44, minWidth: 44 }}
         >✕</button>
       </div>
     </>

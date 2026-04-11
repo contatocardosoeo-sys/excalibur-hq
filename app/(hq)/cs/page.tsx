@@ -216,7 +216,7 @@ export default function CSPainel() {
 
         {/* ── KPIs secundarios ── */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10, marginBottom: 20 }}>
-          <KPICard icon="📊" label="Score medio" valor={`${kpis.score_medio}%`} cor={scoreCor(kpis.score_medio)} />
+          <KPICard icon="📊" label="Score medio" valor={`${kpis.score_medio}%`} sub={kpis.score_medio >= 80 ? '🟢 Saudável · meta 80' : kpis.score_medio >= 60 ? '🟡 Atenção · meta 80' : kpis.score_medio >= 40 ? '🟠 Ação hoje · meta 80' : '🔴 Crítico · agir já'} cor={scoreCor(kpis.score_medio)} />
           <KPICard icon="💰" label="Faturamento mes" valor={fmt(kpis.faturamento_mes)} sub="dos clientes" cor="#fbbf24" />
           <KPICard icon="⏳" label="Sem interacao" valor={kpis.sem_interacao} sub=">= 5 dias" cor={kpis.sem_interacao > 0 ? '#f97316' : '#4ade80'} />
           <KPICard icon="🎯" label="Acoes pendentes" valor={acoes.length} sub="obrigatorias" cor={acoes.length > 0 ? '#fbbf24' : '#4ade80'} />
