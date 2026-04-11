@@ -17,6 +17,7 @@ const ROUTE_ROLES: Record<string, string[]> = {
   '/migracao': ['admin', 'coo', 'cs', 'sdr', 'closer', 'cmo', 'financeiro', 'head_traffic'],
   '/importar': ['admin', 'coo', 'cs', 'sdr', 'closer', 'cmo', 'financeiro', 'head_traffic'],
   '/coo/migracao': ['admin', 'coo'],
+  '/sistema': ['admin'],
   '/planos': ['admin'],
   '/financeiro': ['admin', 'coo', 'financeiro'],
   '/operacao/financeiro': ['admin', 'coo', 'financeiro'],

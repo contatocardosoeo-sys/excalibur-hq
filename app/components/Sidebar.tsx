@@ -49,6 +49,8 @@ const allSections: MenuSection[] = [
     items: [
       { href: '/escritorio', icon: '🏢', label: 'Escritório 2D', roles: ['admin', 'coo', 'cs', 'sdr', 'closer', 'cmo', 'financeiro', 'head_traffic'] },
       { href: '/eventos', icon: '⚡', label: 'Eventos', roles: ['admin', 'coo'] },
+      { href: '/sistema/apis', icon: '🔌', label: 'APIs', roles: ['admin'] },
+      { href: '/sistema/webhooks', icon: '📡', label: 'Webhooks', roles: ['admin'] },
       { href: '/admin/usuarios', icon: '🔐', label: 'Usuarios', roles: ['admin'] },
     ],
   },

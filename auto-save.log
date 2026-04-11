@@ -378,3 +378,6 @@ warning: in the working copy of 'scripts/migracao-migrate.mjs', LF will be repla
 To https://github.com/contatocardosoeo-sys/excalibur-hq.git
    df2684c..134278e  main -> main
 ✅ Auto-save: 2026-04-11 14:15
+warning: in the working copy of 'scripts/asaas-vercel-env.sh', LF will be replaced by CRLF the next time Git touches it
+[main 502df91] auto-save: 2026-04-11 15:15 — scripts/asaas-vercel-env.sh,
+ 1 file changed, 2 insertions(+), 2 deletions(-)
