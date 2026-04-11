@@ -381,3 +381,32 @@ To https://github.com/contatocardosoeo-sys/excalibur-hq.git
 warning: in the working copy of 'scripts/asaas-vercel-env.sh', LF will be replaced by CRLF the next time Git touches it
 [main 502df91] auto-save: 2026-04-11 15:15 — scripts/asaas-vercel-env.sh,
  1 file changed, 2 insertions(+), 2 deletions(-)
+remote: error: GH013: Repository rule violations found for refs/heads/main.        
+remote: 
+remote: - GITHUB PUSH PROTECTION        
+remote:   —————————————————————————————————————————        
+remote:     Resolve the following violations before pushing again        
+remote: 
+remote:     - Push cannot contain secrets        
+remote: 
+remote:             
+remote:      (?) Learn how to resolve a blocked push        
+remote:      https://docs.github.com/code-security/secret-scanning/working-with-secret-scanning-and-push-protection/working-with-push-protection-from-the-command-line#resolving-a-blocked-push        
+remote:             
+remote:             
+remote:       —— Vercel Personal Access Token ——————————————————————        
+remote:        locations:        
+remote:          - commit: fd32aba773af5916e51f21788c9ac86fb3594a44        
+remote:            path: scripts/asaas-vercel-env.sh:16        
+remote:          - commit: fd32aba773af5916e51f21788c9ac86fb3594a44        
+remote:            path: scripts/asaas-vercel-env.sh:19        
+remote:             
+remote:        (?) To push, remove secret from commit(s) or follow this URL to allow the secret.        
+remote:        https://github.com/contatocardosoeo-sys/excalibur-hq/security/secret-scanning/unblock-secret/3CCVVkUGDgEmdqtTmkHbaUIKpab        
+remote:             
+remote: 
+remote: 
+To https://github.com/contatocardosoeo-sys/excalibur-hq.git
+ ! [remote rejected] main -> main (push declined due to repository rule violations)
+error: failed to push some refs to 'https://github.com/contatocardosoeo-sys/excalibur-hq.git'
+✅ Auto-save: 2026-04-11 15:15

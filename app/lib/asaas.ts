@@ -1,12 +1,20 @@
 // Client helper para a API do Asaas — centraliza env + base URL + auth
 
-export const ASAAS_ENV = process.env.ASAAS_ENV || 'sandbox'
+export const ASAAS_API_KEY = (process.env.ASAAS_API_KEY || '').trim()
+export const ASAAS_WEBHOOK_TOKEN = (process.env.ASAAS_WEBHOOK_TOKEN || '').trim()
+
+// Inferir ambiente pela própria key (mais robusto que env var):
+// - $aact_prod_... → produção
+// - $aact_YTU0... (sem prefixo prod_) → sandbox
+// Fallback: ASAAS_ENV env var (trim pra evitar whitespace)
+const envVar = (process.env.ASAAS_ENV || '').trim().toLowerCase()
+const keyIndicaProducao = ASAAS_API_KEY.startsWith('$aact_prod_')
+export const ASAAS_ENV: 'production' | 'sandbox' = keyIndicaProducao
+  ? 'production'
+  : (envVar === 'production' ? 'production' : 'sandbox')
 export const ASAAS_BASE = ASAAS_ENV === 'production'
   ? 'https://api.asaas.com'
   : 'https://sandbox.asaas.com/api'
-
-export const ASAAS_API_KEY = process.env.ASAAS_API_KEY || ''
-export const ASAAS_WEBHOOK_TOKEN = process.env.ASAAS_WEBHOOK_TOKEN || ''
 
 export function asaasConfigured(): boolean {
   return !!ASAAS_API_KEY && ASAAS_API_KEY.length > 10
