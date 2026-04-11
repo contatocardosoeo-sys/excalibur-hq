@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import Sidebar from '../../components/Sidebar'
 import { supabase } from '../../lib/supabase'
+import { NumberTicker } from '@/components/ui/number-ticker'
 
 type Etapa = { nome: string; valor: number; custo: number | null; custoLabel: string | null; taxa: number | null; diag: { cor: string; status: string; emoji: string } | null; baseline: number | null }
 type Decisao = { metrica: string; valor: number; cor: string; status: string; emoji: string; acoes: string[]; baseline: number; unidade: string }
@@ -277,7 +278,14 @@ export default function TrafegoBI() {
                       <div style={{ flex: 1, background: e.diag ? `${e.diag.cor}10` : '#1a1a2e', border: `1px solid ${e.diag?.cor || '#252535'}30`, borderRadius: 10, padding: '12px 8px', textAlign: 'center' }}>
                         {e.diag && <div style={{ fontSize: 12, marginBottom: 2 }}>{e.diag.emoji}</div>}
                         <div style={{ fontSize: 9, color: '#6b7280', textTransform: 'uppercase' }}>{e.nome}</div>
-                        <div style={{ fontSize: 18, fontWeight: 800, color: isLast ? '#f59e0b' : e.diag?.cor || '#fff', margin: '4px 0' }}>{isLast ? f$(e.valor) : e.valor}</div>
+                        <div style={{ margin: '4px 0' }}>
+                          <NumberTicker
+                            value={Number(e.valor) || 0}
+                            delay={i * 0.15}
+                            prefix={isLast ? 'R$ ' : ''}
+                            style={{ fontSize: 18, fontWeight: 800, color: isLast ? '#f59e0b' : e.diag?.cor || '#fff' }}
+                          />
+                        </div>
                         {e.taxa != null && <div style={{ fontSize: 11, color: e.diag?.cor || '#6b7280', fontWeight: 600 }}>{pct(e.taxa)}</div>}
                         {e.custo != null && <div style={{ fontSize: 9, color: '#4b5563', marginTop: 2 }}>{e.custoLabel}: {f$(e.custo)}</div>}
                         {e.baseline != null && <div style={{ fontSize: 8, color: '#374151', marginTop: 2 }}>baseline: {e.baseline < 100 ? (e.baseline + (e.nome === 'Leads' ? '' : '%')) : f$(e.baseline)}</div>}
