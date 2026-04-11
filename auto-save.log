@@ -191,3 +191,26 @@ warning: in the working copy of 'middleware.ts', LF will be replaced by CRLF the
 To https://github.com/contatocardosoeo-sys/excalibur-hq.git
    c2ebdde..ceaecea  main -> main
 ✅ Auto-save: 2026-04-11 01:57
+warning: in the working copy of 'app/components/Sidebar.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'middleware.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/api/trafego-clientes/clinicas/route.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/api/trafego-clientes/gestores/route.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/api/trafego-clientes/overview/route.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'scripts/trafego-alter-role.mjs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'scripts/trafego-check-role.mjs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'scripts/trafego-create-tables.mjs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'scripts/trafego-jessica.mjs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'scripts/trafego-schema.mjs', LF will be replaced by CRLF the next time Git touches it
+[main 8aec45d] auto-save: 2026-04-11 02:27 — app/api/trafego-clientes/clinicas/route.ts,app/api/trafego-clientes/gestores/route.ts,app/api/trafego-clientes/overview/route.ts,app/components/Sidebar.tsx,middleware.ts,
+ 10 files changed, 408 insertions(+), 2 deletions(-)
+ create mode 100644 app/api/trafego-clientes/clinicas/route.ts
+ create mode 100644 app/api/trafego-clientes/gestores/route.ts
+ create mode 100644 app/api/trafego-clientes/overview/route.ts
+ create mode 100644 scripts/trafego-alter-role.mjs
+ create mode 100644 scripts/trafego-check-role.mjs
+ create mode 100644 scripts/trafego-create-tables.mjs
+ create mode 100644 scripts/trafego-jessica.mjs
+ create mode 100644 scripts/trafego-schema.mjs
+To https://github.com/contatocardosoeo-sys/excalibur-hq.git
+   bfa5ca5..8aec45d  main -> main
+✅ Auto-save: 2026-04-11 02:27

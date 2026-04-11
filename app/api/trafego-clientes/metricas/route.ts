@@ -30,11 +30,22 @@ export async function POST(req: NextRequest) {
   const cpc = cliques > 0 ? Math.round((investimento / cliques) * 100) / 100 : 0
   const ctr = impressoes > 0 ? Math.round((cliques / impressoes) * 10000) / 100 : 0
 
-  // Pegar gestor_id do vínculo da clínica se não informado
+  const agendamentos = Number(body.agendamentos || 0)
+  const comparecimentos = Number(body.comparecimentos || 0)
+  const fechamentos = Number(body.fechamentos || 0)
+  const receitaGerada = Number(body.receita_gerada || 0)
+  const tempoRespostaMin = body.tempo_resposta_min != null && body.tempo_resposta_min !== '' ? Number(body.tempo_resposta_min) : null
+  const ofertaRodando = body.oferta_rodando || null
+
   let gestorId = body.gestor_id || null
+  let metaCpl = 0
   if (!gestorId) {
     const { data: v } = await sb.from('trafego_clinica').select('gestor_id, meta_cpl').eq('clinica_id', body.clinica_id).maybeSingle()
     gestorId = v?.gestor_id || null
+    metaCpl = Number(v?.meta_cpl || 0)
+  } else {
+    const { data: v } = await sb.from('trafego_clinica').select('meta_cpl').eq('clinica_id', body.clinica_id).maybeSingle()
+    metaCpl = Number(v?.meta_cpl || 0)
   }
 
   const { data, error } = await sb.from('trafego_metricas').upsert({
@@ -45,33 +56,29 @@ export async function POST(req: NextRequest) {
     impressoes, cliques,
     alcance: Number(body.alcance || 0),
     frequencia: Number(body.frequencia || 0),
+    agendamentos, comparecimentos, fechamentos,
+    receita_gerada: receitaGerada,
+    tempo_resposta_min: tempoRespostaMin,
+    oferta_rodando: ofertaRodando,
   }, { onConflict: 'clinica_id,data' }).select().single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Gerar alertas automáticos
   const alertasCriados: Array<{ tipo: string; prioridade: string }> = []
 
-  const { data: vinc } = await sb.from('trafego_clinica').select('meta_cpl, meta_leads').eq('clinica_id', body.clinica_id).maybeSingle()
-  const metaCpl = Number(vinc?.meta_cpl || 0)
-
-  // Regra 1: CPL > 2x meta = crítico
+  // CPL > 2x meta = crítico
   if (metaCpl > 0 && cpl > metaCpl * 2) {
     await sb.from('trafego_alertas').insert({
-      clinica_id: body.clinica_id,
-      gestor_id: gestorId,
+      clinica_id: body.clinica_id, gestor_id: gestorId,
       tipo: 'cpl_alto',
       titulo: 'CPL 2x acima da meta',
       descricao: `CPL de R$ ${cpl} vs meta de R$ ${metaCpl}`,
       prioridade: 'critica',
     })
     alertasCriados.push({ tipo: 'cpl_alto', prioridade: 'critica' })
-  }
-  // Regra 2: CPL > meta = alta
-  else if (metaCpl > 0 && cpl > metaCpl) {
+  } else if (metaCpl > 0 && cpl > metaCpl) {
     await sb.from('trafego_alertas').insert({
-      clinica_id: body.clinica_id,
-      gestor_id: gestorId,
+      clinica_id: body.clinica_id, gestor_id: gestorId,
       tipo: 'cpl_alto',
       titulo: 'CPL acima da meta',
       descricao: `CPL de R$ ${cpl} vs meta de R$ ${metaCpl}`,
@@ -80,17 +87,50 @@ export async function POST(req: NextRequest) {
     alertasCriados.push({ tipo: 'cpl_alto', prioridade: 'alta' })
   }
 
-  // Regra 3: 0 leads com investimento > 0 = crítico
+  // 0 leads com investimento
   if (leads === 0 && investimento > 0) {
     await sb.from('trafego_alertas').insert({
-      clinica_id: body.clinica_id,
-      gestor_id: gestorId,
+      clinica_id: body.clinica_id, gestor_id: gestorId,
       tipo: 'sem_leads',
       titulo: 'Zero leads com investimento ativo',
       descricao: `R$ ${investimento} investido sem retorno de leads`,
       prioridade: 'critica',
     })
     alertasCriados.push({ tipo: 'sem_leads', prioridade: 'critica' })
+  }
+
+  // Velocidade de resposta lenta nos últimos 3 lançamentos
+  if (tempoRespostaMin != null && tempoRespostaMin > 30) {
+    const { data: ultimas } = await sb
+      .from('trafego_metricas')
+      .select('tempo_resposta_min, data')
+      .eq('clinica_id', body.clinica_id)
+      .not('tempo_resposta_min', 'is', null)
+      .order('data', { ascending: false })
+      .limit(3)
+
+    if ((ultimas || []).length === 3 && ultimas!.every(u => Number(u.tempo_resposta_min || 0) > 30)) {
+      await sb.from('trafego_alertas').insert({
+        clinica_id: body.clinica_id, gestor_id: gestorId,
+        tipo: 'resposta_lenta',
+        titulo: 'Resposta lenta há 3 lançamentos',
+        descricao: `Tempo médio de resposta acima de 30 min — leads esfriando`,
+        prioridade: 'alta',
+      })
+      alertasCriados.push({ tipo: 'resposta_lenta', prioridade: 'alta' })
+    }
+  }
+
+  // ROI baixo (receita/investimento < 100%)
+  if (receitaGerada > 0 && investimento > 0 && receitaGerada / investimento < 1) {
+    await sb.from('trafego_alertas').insert({
+      clinica_id: body.clinica_id, gestor_id: gestorId,
+      tipo: 'roi_baixo',
+      titulo: 'ROI abaixo de 100%',
+      descricao: `Receita R$ ${receitaGerada} vs investimento R$ ${investimento}`,
+      prioridade: 'media',
+    })
+    alertasCriados.push({ tipo: 'roi_baixo', prioridade: 'media' })
   }
 
   return NextResponse.json({ success: true, data, alertas_gerados: alertasCriados })
