@@ -40,6 +40,7 @@ const allSections: MenuSection[] = [
     label: 'Migração HQ-only',
     items: [
       { href: '/migracao', icon: '⚔️', label: 'Minha trilha', roles: ['admin', 'coo', 'cs', 'sdr', 'closer', 'cmo', 'financeiro', 'head_traffic'] },
+      { href: '__MIGRACAO_ROLE__', icon: '📍', label: 'Trilha detalhada', roles: ['admin', 'coo', 'cs', 'sdr', 'closer', 'cmo', 'financeiro', 'head_traffic'] },
       { href: '/migracao/checkin', icon: '✅', label: 'Checkin do dia', roles: ['admin', 'coo', 'cs', 'sdr', 'closer', 'cmo', 'financeiro', 'head_traffic'] },
       { href: '/importar', icon: '📥', label: 'Importar dados', roles: ['admin', 'coo', 'cs', 'sdr', 'closer', 'cmo', 'financeiro', 'head_traffic'] },
       { href: '/coo/migracao', icon: '📊', label: 'Adoção equipe', roles: ['admin', 'coo'] },
@@ -176,8 +177,22 @@ export default function Sidebar() {
     }, 300)
   }
 
+  // Resolver href dinâmico __MIGRACAO_ROLE__ com base no role do usuário
+  const resolveHref = (href: string): string => {
+    if (href === '__MIGRACAO_ROLE__') {
+      const r = userRoles[0] || 'admin'
+      return `/migracao/${r}`
+    }
+    return href
+  }
+
   const filteredSections = loaded
-    ? allSections.map(s => ({ ...s, items: s.items.filter(i => hasAnyRole(userRoles, i.roles)) })).filter(s => s.items.length > 0)
+    ? allSections.map(s => ({
+        ...s,
+        items: s.items
+          .filter(i => hasAnyRole(userRoles, i.roles))
+          .map(i => ({ ...i, href: resolveHref(i.href) })),
+      })).filter(s => s.items.length > 0)
     : []
 
   const logout = async () => { await supabase.auth.signOut(); router.push('/') }

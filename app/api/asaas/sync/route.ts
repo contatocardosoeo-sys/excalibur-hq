@@ -113,21 +113,45 @@ async function doSync(req: NextRequest): Promise<NextResponse> {
         try {
           const customerId = typeof p.customer === 'string' ? p.customer : (p.customer as { id?: string })?.id || null
 
-          const { data: existing } = await sb
+          // 1. Match primário: asaas_payment_id
+          let { data: existing } = await sb
             .from('financeiro_receber')
-            .select('id')
+            .select('id, clinica_id')
             .eq('asaas_payment_id', p.id)
             .maybeSingle()
 
           // Tenta achar a clinica pelo customer vinculado
-          let clinicaId: string | null = null
-          if (customerId) {
+          let clinicaId: string | null = existing?.clinica_id || null
+          if (!clinicaId && customerId) {
             const { data: clinica } = await sb
               .from('clinicas')
               .select('id, nome')
               .eq('asaas_customer_id', customerId)
               .maybeSingle()
             if (clinica) clinicaId = clinica.id
+          }
+
+          // 2. Fallback: se não achou pelo asaas_payment_id, tentar match por
+          //    (valor + data_vencimento + clinica_id ou cliente_nome) pra evitar
+          //    duplicar cobranças manuais já cadastradas.
+          if (!existing) {
+            if (clinicaId) {
+              const { data: manual } = await sb
+                .from('financeiro_receber')
+                .select('id')
+                .eq('clinica_id', clinicaId)
+                .eq('valor', p.value)
+                .eq('data_vencimento', p.dueDate)
+                .is('asaas_payment_id', null)
+                .maybeSingle()
+              if (manual) existing = { id: manual.id, clinica_id: clinicaId }
+            }
+          }
+
+          // 3. Se AINDA não achou e não tem clinica_id, NÃO INSERIR.
+          //    Evita o bug que criou 27 linhas "Cliente Asaas" sem vínculo.
+          if (!existing && !clinicaId) {
+            continue
           }
 
           const row = {
