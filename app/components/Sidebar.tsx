@@ -25,6 +25,7 @@ const allSections: MenuSection[] = [
   {
     label: 'Operacao',
     items: [
+      { href: '/escritorio', icon: '🏢', label: 'Escritório 2D', roles: ['admin', 'coo', 'cs', 'sdr', 'closer', 'cmo', 'financeiro', 'head_traffic'] },
       { href: '/onboarding', icon: '🚀', label: 'Novo Cliente', roles: ['admin', 'coo', 'cs'] },
       { href: '/clientes', icon: '👥', label: 'Clientes', roles: ['admin', 'coo', 'cs', 'closer', 'sdr'] },
       { href: '/jornada', icon: '📈', label: 'Jornada do Cliente', roles: ['admin', 'coo', 'cs', 'sdr'] },
@@ -47,7 +48,6 @@ const allSections: MenuSection[] = [
   {
     label: 'Sistema',
     items: [
-      { href: '/escritorio', icon: '🏢', label: 'Escritório 2D', roles: ['admin', 'coo', 'cs', 'sdr', 'closer', 'cmo', 'financeiro', 'head_traffic'] },
       { href: '/eventos', icon: '⚡', label: 'Eventos', roles: ['admin', 'coo'] },
       { href: '/sistema/apis', icon: '🔌', label: 'APIs', roles: ['admin'] },
       { href: '/sistema/webhooks', icon: '📡', label: 'Webhooks', roles: ['admin'] },
