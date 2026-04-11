@@ -292,3 +292,10 @@ To https://github.com/contatocardosoeo-sys/excalibur-hq.git
  ! [remote rejected] main -> main (push declined due to repository rule violations)
 error: failed to push some refs to 'https://github.com/contatocardosoeo-sys/excalibur-hq.git'
 ✅ Auto-save: 2026-04-11 03:57
+warning: in the working copy of 'scripts/check-financeiro-schema.mjs', LF will be replaced by CRLF the next time Git touches it
+[main 9075f1c] auto-save: 2026-04-11 04:57 — scripts/check-financeiro-schema.mjs,
+ 1 file changed, 24 insertions(+)
+ create mode 100644 scripts/check-financeiro-schema.mjs
+To https://github.com/contatocardosoeo-sys/excalibur-hq.git
+   0bdbd5b..9075f1c  main -> main
+✅ Auto-save: 2026-04-11 04:57
