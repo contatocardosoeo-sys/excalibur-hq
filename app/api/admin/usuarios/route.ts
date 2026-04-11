@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   const body = await req.json()
-  const { email, ativo, role, novaSenha } = body
+  const { email, ativo, role, novaSenha, must_reset_password } = body
 
   // Alterar senha — usa Supabase Auth Admin API
   if (novaSenha) {
@@ -64,10 +64,11 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ success: true, message: 'Senha alterada com sucesso' })
   }
 
-  // Update padrao (ativo, role)
+  // Update padrao (ativo, role, must_reset_password)
   const updates: Record<string, unknown> = {}
   if (ativo !== undefined) updates.ativo = ativo
   if (role) updates.role = role
+  if (must_reset_password !== undefined) updates.must_reset_password = must_reset_password
 
   const { data, error } = await supabase
     .from('usuarios_internos')

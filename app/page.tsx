@@ -22,10 +22,10 @@ export default function LoginHQ() {
       return
     }
 
-    // Buscar roles do usuário
+    // Buscar roles do usuário + flag de reset de senha
     const { data: interno } = await supabase
       .from('usuarios_internos')
-      .select('role, roles')
+      .select('role, roles, must_reset_password')
       .eq('email', data.user.email)
       .single()
 
@@ -39,15 +39,18 @@ export default function LoginHQ() {
     }
     const target = destino[primaryRole] || '/ceo'
 
+    // Se flag must_reset_password estiver ativa, forcar troca de senha
+    const finalTarget = interno?.must_reset_password ? '/reset-password' : target
+
     // Verificar que a sessão está realmente salva
     await new Promise(resolve => setTimeout(resolve, 200))
     const { data: { session } } = await supabase.auth.getSession()
     if (session) {
-      window.location.href = target
+      window.location.href = finalTarget
     } else {
       // Fallback: tentar novamente com delay maior
       await new Promise(resolve => setTimeout(resolve, 500))
-      window.location.href = target
+      window.location.href = finalTarget
     }
   }
 

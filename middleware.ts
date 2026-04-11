@@ -59,7 +59,7 @@ function hasAccess(userRoles: string[], pathname: string): boolean {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  if (pathname === '/' || pathname === '/login') return NextResponse.next()
+  if (pathname === '/' || pathname === '/login' || pathname === '/reset-password') return NextResponse.next()
 
   let supabaseResponse = NextResponse.next({ request })
 
