@@ -299,3 +299,9 @@ warning: in the working copy of 'scripts/check-financeiro-schema.mjs', LF will b
 To https://github.com/contatocardosoeo-sys/excalibur-hq.git
    0bdbd5b..9075f1c  main -> main
 ✅ Auto-save: 2026-04-11 04:57
+warning: in the working copy of 'auto-save.log', LF will be replaced by CRLF the next time Git touches it
+[main a1d8159] auto-save: 2026-04-11 05:27 — auto-save.log,
+ 1 file changed, 7 insertions(+)
+To https://github.com/contatocardosoeo-sys/excalibur-hq.git
+   9075f1c..a1d8159  main -> main
+✅ Auto-save: 2026-04-11 05:27
