@@ -353,3 +353,13 @@ warning: in the working copy of 'auto-save.log', LF will be replaced by CRLF the
 To https://github.com/contatocardosoeo-sys/excalibur-hq.git
    a5994fd..2b220b8  main -> main
 ✅ Auto-save: 2026-04-11 09:27
+warning: in the working copy of 'auto-save.log', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/lib/asaas.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'scripts/asaas-migrate.mjs', LF will be replaced by CRLF the next time Git touches it
+[main caa2863] auto-save: 2026-04-11 13:45 — app/lib/asaas.ts,auto-save.log,scripts/asaas-migrate.mjs,
+ 3 files changed, 171 insertions(+)
+ create mode 100644 app/lib/asaas.ts
+ create mode 100644 scripts/asaas-migrate.mjs
+To https://github.com/contatocardosoeo-sys/excalibur-hq.git
+   2b220b8..caa2863  main -> main
+✅ Auto-save: 2026-04-11 13:45

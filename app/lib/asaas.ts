@@ -1,85 +1,86 @@
-// Cliente Asaas — helpers compartilhados
-// Docs: https://docs.asaas.com
+// Client helper para a API do Asaas — centraliza env + base URL + auth
 
-export const ASAAS_BASE = process.env.ASAAS_ENV === 'sandbox'
-  ? 'https://sandbox.asaas.com/api'
-  : 'https://api.asaas.com'
+export const ASAAS_ENV = process.env.ASAAS_ENV || 'sandbox'
+export const ASAAS_BASE = ASAAS_ENV === 'production'
+  ? 'https://api.asaas.com'
+  : 'https://sandbox.asaas.com/api'
 
-export function asaasHeaders() {
-  const key = process.env.ASAAS_API_KEY
-  if (!key) throw new Error('ASAAS_API_KEY não configurada')
-  return {
-    access_token: key,
-    'Content-Type': 'application/json',
-    'User-Agent': 'ExcaliburHQ/1.0',
-  }
+export const ASAAS_API_KEY = process.env.ASAAS_API_KEY || ''
+export const ASAAS_WEBHOOK_TOKEN = process.env.ASAAS_WEBHOOK_TOKEN || ''
+
+export function asaasConfigured(): boolean {
+  return !!ASAAS_API_KEY && ASAAS_API_KEY.length > 10
 }
 
 export async function asaasGet<T = unknown>(path: string): Promise<T> {
-  const url = `${ASAAS_BASE}/v3${path}`
-  const r = await fetch(url, { headers: asaasHeaders(), cache: 'no-store' })
-  if (!r.ok) {
-    const txt = await r.text()
-    throw new Error(`Asaas GET ${path} → ${r.status}: ${txt.slice(0, 200)}`)
+  if (!asaasConfigured()) throw new Error('ASAAS_API_KEY não configurada')
+  const res = await fetch(`${ASAAS_BASE}/v3${path}`, {
+    headers: {
+      access_token: ASAAS_API_KEY,
+      'Content-Type': 'application/json',
+    },
+    cache: 'no-store',
+  })
+  if (!res.ok) {
+    const txt = await res.text().catch(() => '')
+    throw new Error(`Asaas ${path}: ${res.status} ${txt.slice(0, 200)}`)
   }
-  return r.json() as Promise<T>
+  return res.json() as Promise<T>
 }
 
 export async function asaasPost<T = unknown>(path: string, body: unknown): Promise<T> {
-  const url = `${ASAAS_BASE}/v3${path}`
-  const r = await fetch(url, {
+  if (!asaasConfigured()) throw new Error('ASAAS_API_KEY não configurada')
+  const res = await fetch(`${ASAAS_BASE}/v3${path}`, {
     method: 'POST',
-    headers: asaasHeaders(),
+    headers: {
+      access_token: ASAAS_API_KEY,
+      'Content-Type': 'application/json',
+    },
     body: JSON.stringify(body),
-    cache: 'no-store',
   })
-  if (!r.ok) {
-    const txt = await r.text()
-    throw new Error(`Asaas POST ${path} → ${r.status}: ${txt.slice(0, 200)}`)
+  if (!res.ok) {
+    const txt = await res.text().catch(() => '')
+    throw new Error(`Asaas POST ${path}: ${res.status} ${txt.slice(0, 200)}`)
   }
-  return r.json() as Promise<T>
+  return res.json() as Promise<T>
 }
 
-// Mapear status do Asaas pro nosso
-export function mapAsaasStatus(s: string): 'pago' | 'pendente' | 'atrasado' | 'cancelado' {
+// Mapeamento de status do Asaas → nosso status interno
+export function mapAsaasStatus(asaasStatus: string): 'pago' | 'pendente' | 'atrasado' | 'cancelado' {
   const map: Record<string, 'pago' | 'pendente' | 'atrasado' | 'cancelado'> = {
     RECEIVED: 'pago',
-    RECEIVED_IN_CASH: 'pago',
     CONFIRMED: 'pago',
+    RECEIVED_IN_CASH: 'pago',
     PENDING: 'pendente',
     AWAITING_RISK_ANALYSIS: 'pendente',
     OVERDUE: 'atrasado',
     REFUNDED: 'cancelado',
     REFUND_REQUESTED: 'cancelado',
+    REFUND_IN_PROGRESS: 'cancelado',
     CHARGEBACK_REQUESTED: 'cancelado',
+    CHARGEBACK_DISPUTE: 'cancelado',
+    AWAITING_CHARGEBACK_REVERSAL: 'cancelado',
+    DUNNING_REQUESTED: 'atrasado',
+    DUNNING_RECEIVED: 'pago',
     DELETED: 'cancelado',
   }
-  return map[s] || 'pendente'
+  return map[asaasStatus] || 'pendente'
 }
 
+// Tipos do payload Asaas
 export type AsaasPayment = {
   id: string
   customer: string
   subscription?: string
   value: number
   netValue?: number
-  status: string
-  billingType: string
   dueDate: string
   paymentDate?: string
-  customerName?: string
-  bankSlipUrl?: string
-  invoiceUrl?: string
+  status: string
+  billingType: 'BOLETO' | 'PIX' | 'CREDIT_CARD' | 'UNDEFINED'
   description?: string
-}
-
-export type AsaasCustomer = {
-  id: string
-  name: string
-  email?: string
-  cpfCnpj?: string
-  phone?: string
-  mobilePhone?: string
+  invoiceUrl?: string
+  bankSlipUrl?: string
   externalReference?: string
 }
 
@@ -87,8 +88,26 @@ export type AsaasBalance = {
   balance: number
 }
 
-export type AsaasStatistics = {
-  netValue: number
-  pendingValue: number
-  receivedThisMonth?: number
+export type AsaasPaymentStatistics = {
+  quantity?: number
+  value?: number
+  netValue?: number
+}
+
+export type AsaasCustomer = {
+  id: string
+  name: string
+  email?: string
+  cpfCnpj?: string
+  mobilePhone?: string
+  externalReference?: string
+}
+
+export type AsaasListResponse<T> = {
+  object: string
+  hasMore: boolean
+  totalCount: number
+  limit: number
+  offset: number
+  data: T[]
 }

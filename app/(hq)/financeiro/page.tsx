@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Sidebar from '../../components/Sidebar'
+import AsaasPanel from '../../components/AsaasPanel'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -242,6 +243,9 @@ export default function FinanceiroPage() {
             Atualizar
           </Button>
         </div>
+
+        {/* Painel Asaas — saldo ao vivo */}
+        <AsaasPanel />
 
         {/* BLOCO 1: KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
