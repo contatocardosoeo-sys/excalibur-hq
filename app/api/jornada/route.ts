@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
         { data: funil },
       ] = await Promise.all([
         supabase.from('jornada_clinica').select('etapa, dias_na_plataforma, notas').eq('clinica_id', clinica.id).single(),
-        supabase.from('adocao_clinica').select('score, classificacao').eq('clinica_id', clinica.id).order('created_at', { ascending: false }).limit(1).single(),
+        supabase.from('adocao_clinica').select('score').eq('clinica_id', clinica.id).order('created_at', { ascending: false }).limit(1).single(),
         supabase.from('alertas_clinica').select('id, tipo, nivel').eq('clinica_id', clinica.id).eq('resolvido', false),
         supabase.from('tarefas_jornada').select('status, prazo_dia, data_prazo, fase').eq('clinica_id', clinica.id),
         supabase.from('funil_diario').select('data, leads, fechamentos, taxa_agendamento, taxa_fechamento').eq('clinica_id', clinica.id).order('data', { ascending: false }).limit(7),
@@ -97,7 +97,7 @@ export async function GET(req: NextRequest) {
         cs_responsavel: clinica.cs_responsavel,
         dias, faseMacro,
         etapa: jornada?.etapa || 'D0_NOVO',
-        score, classificacao: adocao?.classificacao || 'RISCO',
+        score, classificacao: score >= 80 ? 'SAUDAVEL' : score >= 60 ? 'ATENCAO' : 'RISCO',
         status, totalAlertas, alertasCriticos, tarefasAtrasadas,
         gargalo, ultimaInteracao,
         proximaAcao: proximaTarefa ? `D${proximaTarefa.prazo_dia}: ${proximaTarefa.fase}` : 'Sem tarefas pendentes',

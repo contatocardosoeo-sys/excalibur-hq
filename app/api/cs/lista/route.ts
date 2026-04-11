@@ -14,7 +14,7 @@ export async function GET() {
   const [clinicasRes, jornadaRes, adocaoRes, alertasRes, funilRes] = await Promise.all([
     supabase.from('clinicas').select('id, nome, aviso_previo_inicio, score_total, sla_estourado, dias_sem_venda, problema_detectado, proxima_acao, cs_responsavel, fase, status_execucao'),
     supabase.from('jornada_clinica').select('clinica_id, etapa, dias_na_plataforma, cs_responsavel'),
-    supabase.from('adocao_clinica').select('clinica_id, score, classificacao').eq('semana', semana),
+    supabase.from('adocao_clinica').select('clinica_id, score').eq('semana', semana),
     supabase.from('alertas_clinica').select('clinica_id').eq('resolvido', false),
     supabase.from('funil_diario').select('clinica_id, faturamento').gte('data', inicioMes),
   ])

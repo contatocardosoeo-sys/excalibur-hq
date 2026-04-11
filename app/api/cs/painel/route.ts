@@ -21,7 +21,7 @@ export async function GET() {
   const [clinicasR, jornadaR, adocaoR, alertasR, funilR, tarefasR, logR, receberR] = await Promise.all([
     supabase.from('clinicas').select('id, nome, plano, valor_contrato, data_inicio, cs_responsavel, ativo, cidade, estado, responsavel, whatsapp, email, foco, fase, score_total, status_execucao, mrr, dias_na_etapa').eq('ativo', true),
     supabase.from('jornada_clinica').select('clinica_id, etapa, dias_na_plataforma, data_inicio, notas, updated_at, cs_responsavel'),
-    supabase.from('adocao_clinica').select('clinica_id, score, classificacao').eq('semana', semana),
+    supabase.from('adocao_clinica').select('clinica_id, score').eq('semana', semana),
     supabase.from('alertas_clinica').select('id, clinica_id, tipo, titulo, nivel, descricao, resolvido, created_at').eq('resolvido', false),
     supabase.from('funil_diario').select('clinica_id, faturamento, data').gte('data', inicioMes),
     supabase.from('tarefas_jornada').select('id, clinica_id, fase, titulo, status, bloqueante, prazo_dia, data_prazo'),
@@ -68,7 +68,7 @@ export async function GET() {
       dias_na_plataforma: j?.dias_na_plataforma || (c as { dias_na_etapa?: number }).dias_na_etapa || 0,
       data_inicio: j?.data_inicio || c.data_inicio,
       score,
-      classificacao: a?.classificacao || (score >= 80 ? 'SAUDAVEL' : score >= 60 ? 'ATENCAO' : 'RISCO'),
+      classificacao: score >= 80 ? 'SAUDAVEL' : score >= 60 ? 'ATENCAO' : 'RISCO',
       alertas_count: alertas.length,
       alertas_criticos: alertas.filter(x => x.nivel === 3).length,
       faturamento_mes: fat,

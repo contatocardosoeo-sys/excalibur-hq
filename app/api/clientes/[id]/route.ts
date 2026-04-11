@@ -26,7 +26,7 @@ export async function GET(_req: NextRequest, context: { params: Promise<{ id: st
   const [{ data: clinica, error }, { data: jornada }, { data: adocao }, { data: alertas }] = await Promise.all([
     supabase.from('clinicas').select('*').eq('id', id).single(),
     supabase.from('jornada_clinica').select('*').eq('clinica_id', id).maybeSingle(),
-    supabase.from('adocao_clinica').select('score, classificacao, semana').eq('clinica_id', id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+    supabase.from('adocao_clinica').select('score, semana').eq('clinica_id', id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
     supabase.from('alertas_clinica').select('id, tipo, nivel, titulo, descricao, resolvido, created_at').eq('clinica_id', id).eq('resolvido', false),
   ])
 
