@@ -45,82 +45,101 @@ function nivelToPrioridade(nivel: number | null): 'critica' | 'alta' | 'media' |
   return 'baixa'
 }
 
-function gerarAlertasDinamicos(clinicas: ClinicaMin[]): Alerta[] {
+// Limites anti-ruído
+const HEALTH_SCORE_MAX_ALERTAS = 5   // max 5 alertas de score baixo
+const HEALTH_SCORE_DIAS_MIN = 7       // só alerta clínicas com >7 dias na plataforma
+const HEALTH_SCORE_THRESHOLD = 40     // score abaixo disso = em risco
+
+function gerarAlertasDinamicos(clinicas: ClinicaMin[], diasMap: Map<string, number>): Alerta[] {
   const hoje = Date.now()
   const alertas: Alerta[] = []
+  const ativas = clinicas.filter(c => c.ativo !== false)
 
-  for (const c of clinicas) {
-    if (c.ativo === false) continue
+  // Regra 1: Aviso prévio ativo (crítico)
+  for (const c of ativas) {
+    if (!c.aviso_previo_inicio) continue
+    const inicio = new Date(c.aviso_previo_inicio + 'T12:00:00')
+    const fim = new Date(inicio)
+    fim.setDate(fim.getDate() + 30)
+    const dias = Math.ceil((fim.getTime() - hoje) / 86400000)
+    alertas.push({
+      id: `dyn-aviso-${c.id}`,
+      cliente_id: c.id,
+      cliente_nome: c.nome,
+      tipo: 'aviso_previo',
+      prioridade: 'critica',
+      descricao: dias > 0
+        ? `Cliente em aviso prévio — ${dias} dia${dias > 1 ? 's' : ''} restante${dias > 1 ? 's' : ''} para saída.`
+        : 'Aviso prévio expirado. Cliente deve ser desativado ou recuperado.',
+      acao_sugerida: 'Reunião imediata de recuperação com CS e COO',
+      status: 'aberto',
+      responsavel: c.cs_responsavel || 'CS',
+      created_at: c.aviso_previo_inicio + 'T12:00:00.000Z',
+    })
+  }
 
-    // Regra 1: Aviso prévio ativo (crítico)
-    if (c.aviso_previo_inicio) {
-      const inicio = new Date(c.aviso_previo_inicio + 'T12:00:00')
-      const fim = new Date(inicio)
-      fim.setDate(fim.getDate() + 30)
-      const dias = Math.ceil((fim.getTime() - hoje) / 86400000)
-      alertas.push({
-        id: `dyn-aviso-${c.id}`,
-        cliente_id: c.id,
-        cliente_nome: c.nome,
-        tipo: 'aviso_previo',
-        prioridade: 'critica',
-        descricao: dias > 0
-          ? `Cliente em aviso prévio — ${dias} dia${dias > 1 ? 's' : ''} restante${dias > 1 ? 's' : ''} para saída.`
-          : 'Aviso prévio expirado. Cliente deve ser desativado ou recuperado.',
-        acao_sugerida: 'Reunião imediata de recuperação com CS e COO',
-        status: 'aberto',
-        responsavel: c.cs_responsavel || 'CS',
-        created_at: c.aviso_previo_inicio + 'T12:00:00.000Z',
-      })
-    }
+  // Regra 2: Health score em risco (TOP N, só clínicas ativas há > 7 dias)
+  // Clínicas D0_NOVO (recém onboardadas) tem score baixo por natureza — não alertar.
+  const emRiscoScore = ativas
+    .filter(c => {
+      if (c.score_total == null || c.score_total >= HEALTH_SCORE_THRESHOLD) return false
+      const dias = diasMap.get(c.id) ?? 0
+      return dias > HEALTH_SCORE_DIAS_MIN
+    })
+    .sort((a, b) => (a.score_total ?? 0) - (b.score_total ?? 0))
+    .slice(0, HEALTH_SCORE_MAX_ALERTAS)
 
-    // Regra 2: Health score em risco
-    if (c.score_total != null && c.score_total < 60) {
-      alertas.push({
-        id: `dyn-score-${c.id}`,
-        cliente_id: c.id,
-        cliente_nome: c.nome,
-        tipo: 'health_score',
-        prioridade: c.score_total < 40 ? 'critica' : 'alta',
-        descricao: `Health score em ${c.score_total}/100. Cliente em risco de churn.`,
-        acao_sugerida: 'Revisar plano de ação D0-D30 e agendar 1:1 com clínica',
-        status: 'aberto',
-        responsavel: c.cs_responsavel || 'CS',
-        created_at: c.created_at || new Date().toISOString(),
-      })
-    }
+  for (const c of emRiscoScore) {
+    alertas.push({
+      id: `dyn-score-${c.id}`,
+      cliente_id: c.id,
+      cliente_nome: c.nome,
+      tipo: 'health_score',
+      prioridade: (c.score_total ?? 0) < 20 ? 'critica' : 'alta',
+      descricao: `Health score em ${c.score_total}/100 após ${diasMap.get(c.id) ?? 0} dias. Cliente em risco de churn.`,
+      acao_sugerida: 'Revisar plano de ação D0-D30 e agendar 1:1 com clínica',
+      status: 'aberto',
+      responsavel: c.cs_responsavel || 'CS',
+      created_at: c.created_at || new Date().toISOString(),
+    })
+  }
 
-    // Regra 3: Sem vendas há muito tempo
-    if (c.dias_sem_venda != null && c.dias_sem_venda > 15) {
-      alertas.push({
-        id: `dyn-vendas-${c.id}`,
-        cliente_id: c.id,
-        cliente_nome: c.nome,
-        tipo: 'sem_vendas',
-        prioridade: c.dias_sem_venda > 30 ? 'alta' : 'media',
-        descricao: `Sem vendas há ${c.dias_sem_venda} dias.`,
-        acao_sugerida: 'Investigar funil de vendas e qualidade dos leads',
-        status: 'aberto',
-        responsavel: c.cs_responsavel || 'CS',
-        created_at: c.created_at || new Date().toISOString(),
-      })
-    }
+  // Regra 3: Sem vendas há muito tempo (TOP 5)
+  const semVendasLong = ativas
+    .filter(c => c.dias_sem_venda != null && c.dias_sem_venda > 15)
+    .sort((a, b) => (b.dias_sem_venda ?? 0) - (a.dias_sem_venda ?? 0))
+    .slice(0, 5)
 
-    // Regra 4: SLA estourado
-    if (c.sla_estourado) {
-      alertas.push({
-        id: `dyn-sla-${c.id}`,
-        cliente_id: c.id,
-        cliente_nome: c.nome,
-        tipo: 'sla',
-        prioridade: 'alta',
-        descricao: 'SLA de atendimento estourado.',
-        acao_sugerida: 'Cumprir tarefas atrasadas da jornada D0-D30',
-        status: 'aberto',
-        responsavel: c.cs_responsavel || 'CS',
-        created_at: c.created_at || new Date().toISOString(),
-      })
-    }
+  for (const c of semVendasLong) {
+    alertas.push({
+      id: `dyn-vendas-${c.id}`,
+      cliente_id: c.id,
+      cliente_nome: c.nome,
+      tipo: 'sem_vendas',
+      prioridade: (c.dias_sem_venda ?? 0) > 30 ? 'alta' : 'media',
+      descricao: `Sem vendas há ${c.dias_sem_venda} dias.`,
+      acao_sugerida: 'Investigar funil de vendas e qualidade dos leads',
+      status: 'aberto',
+      responsavel: c.cs_responsavel || 'CS',
+      created_at: c.created_at || new Date().toISOString(),
+    })
+  }
+
+  // Regra 4: SLA estourado
+  for (const c of ativas) {
+    if (!c.sla_estourado) continue
+    alertas.push({
+      id: `dyn-sla-${c.id}`,
+      cliente_id: c.id,
+      cliente_nome: c.nome,
+      tipo: 'sla',
+      prioridade: 'alta',
+      descricao: 'SLA de atendimento estourado.',
+      acao_sugerida: 'Cumprir tarefas atrasadas da jornada D0-D30',
+      status: 'aberto',
+      responsavel: c.cs_responsavel || 'CS',
+      created_at: c.created_at || new Date().toISOString(),
+    })
   }
 
   return alertas
@@ -179,11 +198,13 @@ export async function GET(request: NextRequest) {
 
     const [
       { data: clinicas },
+      { data: jornadas },
       { data: alertasManuais },
       { data: receber },
       { data: pagar },
     ] = await Promise.all([
       supabase.from('clinicas').select('id, nome, aviso_previo_inicio, score_total, dias_sem_venda, sla_estourado, cs_responsavel, created_at, ativo, data_inicio'),
+      supabase.from('jornada_clinica').select('clinica_id, dias_na_plataforma'),
       supabase.from('alertas_clinica').select('id, clinica_id, tipo, nivel, titulo, descricao, resolvido, created_at').eq('resolvido', false),
       supabase.from('financeiro_receber').select('valor, status').gte('data_vencimento', inicioMes).lt('data_vencimento', fimMes),
       supabase.from('financeiro_pagar').select('valor, status').gte('data_vencimento', inicioMes).lt('data_vencimento', fimMes),
@@ -191,6 +212,11 @@ export async function GET(request: NextRequest) {
 
     const cls = (clinicas as ClinicaMin[]) || []
     const nomeMap = new Map(cls.map(c => [c.id, c.nome]))
+    // Map clinica_id → dias_na_plataforma (pra filtrar clinicas novas do alerta de score)
+    const diasMap = new Map<string, number>(
+      ((jornadas as Array<{ clinica_id: string; dias_na_plataforma: number | null }>) || [])
+        .map(j => [j.clinica_id, j.dias_na_plataforma ?? 0])
+    )
 
     // Calculo de caixa do mes (recebido - pago)
     const r = receber || []
@@ -215,7 +241,7 @@ export async function GET(request: NextRequest) {
     }))
 
     // Dinâmicos (calculados em cada request)
-    const dinamicos = gerarAlertasDinamicos(cls)
+    const dinamicos = gerarAlertasDinamicos(cls, diasMap)
 
     // Alerta de caixa (global, nao atrelado a clinica)
     const alertaCaixa = gerarAlertaCaixa(caixa, recebido, totalReceber)

@@ -104,6 +104,8 @@ export default function AlertaCentral({ userEmail, isAdmin }: { userEmail: strin
   if (!meuPendente && !adminPendente && qtdClientes === 0) return null
 
   const totalBadge = (meuPendente ? 1 : 0) + (adminPendente ? faltando.length : 0) + qtdClientes
+  // Limitar display a "9+" quando ha muitos alertas (evita "52 ALERTAS" assustador)
+  const badgeLabel = totalBadge > 9 ? '9+' : String(totalBadge)
 
   // Modo minimizado — badge compacta no canto superior direito, sem animacao
   if (minimizado) {
@@ -115,7 +117,7 @@ export default function AlertaCentral({ userEmail, isAdmin }: { userEmail: strin
         className="fixed z-50 bg-red-900/80 hover:bg-red-800 text-red-200 text-xs font-bold px-3 py-1.5 rounded-full border border-red-700 shadow-lg transition"
         style={{ top: `calc(64px + env(safe-area-inset-top, 0))`, right: 16 }}
       >
-        🚨 {totalBadge}
+        🚨 {badgeLabel}
       </button>
     )
   }
@@ -160,7 +162,7 @@ export default function AlertaCentral({ userEmail, isAdmin }: { userEmail: strin
         ) : (
           <>
             <span className="alerta-icon" style={{ fontSize: 20 }}>🚨</span>
-            <span>{totalBadge}</span>
+            <span>{badgeLabel}</span>
             <span className="hidden sm:inline">ALERTA{totalBadge > 1 ? 'S' : ''}</span>
           </>
         )}
