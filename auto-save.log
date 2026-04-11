@@ -363,3 +363,18 @@ warning: in the working copy of 'scripts/asaas-migrate.mjs', LF will be replaced
 To https://github.com/contatocardosoeo-sys/excalibur-hq.git
    2b220b8..caa2863  main -> main
 ✅ Auto-save: 2026-04-11 13:45
+warning: in the working copy of 'app/api/migracao/checkin/route.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/api/migracao/diagnostico/route.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/api/migracao/score/route.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/lib/migracao.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'scripts/migracao-migrate.mjs', LF will be replaced by CRLF the next time Git touches it
+[main 134278e] auto-save: 2026-04-11 14:15 — app/api/migracao/checkin/route.ts,app/api/migracao/diagnostico/route.ts,app/api/migracao/score/route.ts,app/lib/migracao.ts,scripts/migracao-migrate.mjs,
+ 5 files changed, 425 insertions(+)
+ create mode 100644 app/api/migracao/checkin/route.ts
+ create mode 100644 app/api/migracao/diagnostico/route.ts
+ create mode 100644 app/api/migracao/score/route.ts
+ create mode 100644 app/lib/migracao.ts
+ create mode 100644 scripts/migracao-migrate.mjs
+To https://github.com/contatocardosoeo-sys/excalibur-hq.git
+   df2684c..134278e  main -> main
+✅ Auto-save: 2026-04-11 14:15

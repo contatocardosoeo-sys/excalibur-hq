@@ -36,6 +36,15 @@ const allSections: MenuSection[] = [
     ],
   },
   {
+    label: 'Migração HQ-only',
+    items: [
+      { href: '/migracao', icon: '⚔️', label: 'Minha trilha', roles: ['admin', 'coo', 'cs', 'sdr', 'closer', 'cmo', 'financeiro', 'head_traffic'] },
+      { href: '/migracao/checkin', icon: '✅', label: 'Checkin do dia', roles: ['admin', 'coo', 'cs', 'sdr', 'closer', 'cmo', 'financeiro', 'head_traffic'] },
+      { href: '/importar', icon: '📥', label: 'Importar dados', roles: ['admin', 'coo', 'cs', 'sdr', 'closer', 'cmo', 'financeiro', 'head_traffic'] },
+      { href: '/coo/migracao', icon: '📊', label: 'Adoção equipe', roles: ['admin', 'coo'] },
+    ],
+  },
+  {
     label: 'Sistema',
     items: [
       { href: '/escritorio', icon: '🏢', label: 'Escritório 2D', roles: ['admin', 'coo', 'cs', 'sdr', 'closer', 'cmo', 'financeiro', 'head_traffic'] },
