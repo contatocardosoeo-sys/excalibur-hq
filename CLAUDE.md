@@ -1,453 +1,118 @@
-# EXCALIBUR_OS — CLAUDE.md
+# Excalibur HQ — Sistema Operacional Interno v2.0
 > Arquivo lido automaticamente pelo Claude Code a cada sessão.
-> Última atualização: 2026-04-11 (v1.5)
+> Última atualização: 2026-04-11 (v2.0)
 
-## 📊 ESTADO DO SISTEMA (snapshot atual)
+## Stack
+Next.js 16 + React 19 + Supabase + Tailwind 4 + shadcn/ui + Magic UI
+URL prod: https://excalibur-hq.vercel.app
+Repo: ~/Desktop/excalibur/excalibur-hq
+Vercel token: ver .env.local (VERCEL_TOKEN)
+DB: postgresql://postgres:Excalibur%402026%21DB@db.hluhlsnodndpskrkbjuw.supabase.co:5432/postgres
 
-- **Versão:** v1.5
-- **Clínicas ativas:** 48 (47 em D0_NOVO + 1 Demo em D7_ATIVADO)
-- **Adoção:** seed inicial aplicado (score médio 10.6 — mostra realidade operacional)
-- **Usuários:** Cardoso(admin), Luana(coo+admin), Medina(cs), Guilherme(closer+cmo), Trindade(sdr) — **senha padrão `excalibur10`**
-- **Colaboradores:** 7 ativos — Gisele(R$1.700), Rodrigo(R$2.000), Jonathan(R$1.500), Vivi(R$7.000), Jessica, Lua, Medina
-- **Caixa mês atual:** R$1.840 — **CRÍTICO** (alerta automático ativo)
-- **MRR:** R$81.800 (meta mês)
-- **SDR Leads:** 0/300 (Wascript não configurado por Trindade)
+## Usuários (todos: excalibur10)
+| Nome | Email | Role | Tela inicial |
+|---|---|---|---|
+| Matheus Cardoso | contato.cardosoeo@gmail.com | admin | /ceo |
+| Luana Caira | luanacaira.excalibur@gmail.com | coo | /coo |
+| Bruno Medina | brunomedina.contato@gmail.com | cs | /cs |
+| Guilherme | guilherme.excalibur@gmail.com | closer | /comercial |
+| Trindade | trindade.excalibur@gmail.com | sdr | /sdr |
+| Jéssica | jessica.excalibur@gmail.com | head_traffic | /trafego-clientes |
 
-## 🎨 SISTEMA DE TÍTULOS DE ABA
+## Rotas em produção
+Dashboards: /ceo /coo /financeiro /comercial /trafego /sdr /cs
+Operação: /clientes /jornada /trafego-clientes /cs/calendario /onboarding/novo /operacao/financeiro /operacao/colaboradores /alertas
+Sistema: /escritorio /eventos /admin/usuarios /sdr/feedbacks /visao-geral
+Dinâmica: /jornada/[id] /clientes/[id]
 
-Títulos dinâmicos via `app/components/TitleSync.tsx` (client-side, montado no HQLayout).
-- Funciona via `useEffect` + `requestAnimationFrame` + `setTimeout` + `MutationObserver`
-- **Não usar `export const metadata`** nas pages `'use client'` — não funciona, por isso o MutationObserver
-- Formato: `"NomePágina | Excalibur HQ"`
-- 26 rotas mapeadas
-
----
-
-## 🚨 REGRAS ABSOLUTAS — LEIA ANTES DE QUALQUER COISA
-
-1. NUNCA alterar telas aprovadas pelo CEO sem autorização explícita
-2. NUNCA fazer mais do que foi pedido — apenas o que foi solicitado
-3. SEMPRE fazer build + deploy + commit ao final de cada tarefa
-4. SEMPRE perguntar antes de mexer em algo que já funciona
-5. NUNCA misturar projetos: excalibur-hq ≠ excalibur-web ≠ excalibur-extension
-6. SEMPRE responder em português brasileiro (preferência do CEO)
-7. NUNCA commitar secrets (.env, tokens, senhas) — verificar diff antes
-
----
-
-## ⚡ COMANDOS RÁPIDOS
-
-```bash
-# Build e deploy (token em .env.local — NUNCA commitar)
-cd ~/Desktop/excalibur/excalibur-hq
-npm run build
-npx vercel --prod --token "$VERCEL_TOKEN"
-
-# Commit padrão
-git add -A && git commit -m "feat/fix: descrição" && git push
-
-# Fim de sessão
-./fim-sessao.sh
-
-# Banco de dados (via node + pg)
-node -e "const {Client}=require('pg');const c=new Client({connectionString:'postgresql://postgres:Excalibur%402026%21DB@db.hluhlsnodndpskrkbjuw.supabase.co:5432/postgres'});c.connect().then(async()=>{const r=await c.query('SELECT 1');console.log(r.rows);await c.end()})"
-```
-
----
-
-## 🏗️ ARQUITETURA DO PROJETO
-
-- **Stack:** Next.js 16 + React 19 + Supabase + Tailwind 4 + Claude API
-- **Deploy:** Vercel (excalibur-hq.vercel.app)
-- **Repo:** ~/Desktop/excalibur/excalibur-hq
-- **Supabase URL:** https://hluhlsnodndpskrkbjuw.supabase.co
-- **Credenciais:** em .env.local (NUNCA commitar)
-
----
-
-## 🎨 BIBLIOTECAS DE UI
-
-### Stack aprovado
-- shadcn/ui — componentes base (em `components/ui/`)
-- Tailwind 4 — utilitários
-- Magic UI — animações (via `npx shadcn add @magicui/...`)
-- Motion One (`motion/react`) — já incluso via Magic UI
-
-### Magic UI — componentes instalados
-Todos em `@/components/ui/[componente]` (o shadcn CLI instala nesse path, não em `registry/magicui/`)
-
-| Componente | Onde está sendo usado |
-|---|---|
-| `number-ticker` | KPIs numéricos (CEO, SDR, CS, Comercial) |
-| `border-beam` | Notificações SistemaEventos |
-| `animated-shiny-text` | Badges de status (Saudável/Atenção/Risco) em /jornada |
-| `shimmer-button` | Botão "Finalizar Cadastro" no /onboarding/novo |
-| `blur-fade` | Lista de clínicas em /jornada |
-| `animated-list` | Disponível (pulado em /eventos por ser tabela) |
-| `confetti` | Disponível (já integrado via Web API no SistemaEventos) |
-
-**Customização local:** `number-ticker.tsx` foi estendido com props `locale` (default `pt-BR`), `prefix` (ex: `"R$ "`) e `suffix` (ex: `"%"`) pra cobrir currency brasileiro e porcentagens.
-
-### Instalar novo componente Magic UI
-```bash
-npx shadcn@latest add @magicui/[nome-do-componente] --yes
-# Import: import { Componente } from '@/components/ui/[nome]'
-```
-
-### ⛔ NÃO instalar
-- Park UI (Panda CSS — conflita com Tailwind 4)
-- DaisyUI (conflita com shadcn/ui)
-- JollyUI (migração destrutiva do Radix)
-- Aceternity UI completo (copiar componentes isolados se necessário)
-
----
-
-## 👥 USUÁRIOS DO SISTEMA
-
-**🔑 SENHA PADRÃO DE TODOS: `excalibur10`**
-(Última rotação: 2026-04-11 — usar essa em TODOS os testes/acessos)
-
-| Nome | Email | Senha | Role | Tela inicial |
-|---|---|---|---|---|
-| Cardoso (CEO) | contato.cardosoeo@gmail.com | `excalibur10` | admin | /ceo |
-| Luana | luanacaira.excalibur@gmail.com | `excalibur10` | coo+admin | /coo |
-| Medina | brunomedina.contato@gmail.com | `excalibur10` | cs | /cs |
-| Guilherme | guilherme.excalibur@gmail.com | `excalibur10` | closer+cmo | /comercial |
-| Trindade | trindade.excalibur@gmail.com | `excalibur10` | sdr | /sdr |
-
-Senha mínima Supabase: 6 caracteres. Padrão atual: `excalibur10`.
-Autenticação via Supabase Auth (não tabela própria). Reset só via Admin API
-(`supabase.auth.admin.updateUserById`). Flag `must_reset_password` em
-`usuarios_internos` força redirect pra `/reset-password` no próximo login.
-
----
-
-## 🔒 TELAS APROVADAS PELO CEO — NÃO ALTERAR
-
-Estas telas foram validadas e aprovadas. Qualquer alteração visual ou estrutural requer autorização explícita. Apenas adicionar funcionalidades quando solicitado, NUNCA modificar o que já existe.
-
-| Tela | O que tem | Status |
-|---|---|---|
-| /ceo | Dashboard CEO — receita, MRR, metas, projeção, caixa, comparativo (TELA INICIAL ADMIN) | ✅ APROVADO |
-| /coo | Visão operacional — pipeline, gargalos, SLAs | ✅ APROVADO |
-| /sdr | Métricas SDR + filtros período + valor vendas + 10 etapas ACL + rotina + feedback | ✅ APROVADO |
-| /sdr/feedbacks | Feedback diário do Trindade (humor + 4 campos) | ✅ APROVADO |
-| /comercial | Pipeline 4 colunas + comissão 10% | ✅ APROVADO |
-| /trafego | BI Comercial completo + baseline + gargalos automáticos | ✅ APROVADO |
-| /cs | Painel CS — 5 abas, auto-refresh 60s, ações prioritárias | ✅ APROVADO |
-| /clientes | Base completa de clínicas | ✅ APROVADO |
-| /jornada | Painel macro de todos os clientes | ✅ APROVADO |
-| /jornada/[id] | Kanban D0-D90 com 22 tarefas | ✅ APROVADO |
-| /alertas | Alertas automáticos | ✅ APROVADO |
-| /financeiro | Dashboard financeiro CEO | ✅ APROVADO |
-| /operacao/financeiro | 3 abas: A Receber, A Pagar, Resumo | ✅ APROVADO |
-| /operacao/colaboradores | CRUD colaboradores | ✅ APROVADO |
-| /cs/calendario | Calendário semanal de tarefas | ✅ APROVADO |
-| /onboarding/novo | Novo cliente 3 etapas | ✅ APROVADO |
-| /admin/usuarios | CRUD usuarios + alterar senha | ✅ APROVADO |
-
-**Telas removidas:** /dashboard (deletada — cada role vai direto pra sua tela), /visao-geral (não no menu)
-
-### Rotas padrão por role (login)
-- admin → /ceo
-- cs → /cs
-- sdr → /sdr
-- closer → /comercial
-- cmo → /trafego
-- financeiro → /financeiro
-
----
-
-## 🗄️ BANCO DE DADOS — TABELAS EXISTENTES
-
-Principais tabelas (NÃO recriar, NÃO dropar):
-
-### Usuários e auth
-- `usuarios_internos` — roles[], nome, email, ativo
-
-### CS / Clientes
-- `clinicas` — clínicas ativas (47 reais + 1 demo)
-- `jornada_clinica` — etapa, dias_na_plataforma, data_inicio, cs_responsavel
-- `tarefas_jornada` — 22 tarefas D0-D30 por clínica (fase, bloqueante, prazo_dia)
-- `alertas_clinica` — alertas com nivel
-- `adocao_clinica` — score semanal
-- `funil_diario` — faturamento diário por clínica
-- `log_atividades_cs` — histórico de contatos CS
-
-### SDR / Comercial
-- `leads_sdr` — leads do Trindade (com historico_wa, etiqueta_wa)
-- `pipeline_closer` — propostas do Guilherme
-- `metas_sdr` — meta_leads, meta_agendamentos, meta_comparecimentos, meta_vendas
-- `metas_closer` — meta_reunioes, meta_fechamentos, meta_mrr, comissao_pct
-- `sdr_metricas_diarias` — métricas diárias do Trindade (manual)
-- `sdr_feedbacks` — feedbacks diários
-- `campanhas_trafego` — campanhas de tráfego
-- `funil_trafego_diario` — métricas diárias de tráfego
+## APIs principais
+### Core
+/api/hq/alertas /api/hq/eventos /api/admin/usuarios /api/busca /api/notificacoes /api/onboarding-colaborador
 
 ### Financeiro
-- `financeiro_receber` — A Receber (207 registros Jan-Abr 2026)
-- `financeiro_pagar` — A Pagar (236 registros Jan-Abr 2026)
-- `financeiro_colaboradores` — colaboradores fixos
-- `financeiro_mensal` — resumo mensal (4 meses populados)
+/api/financeiro/resumo /api/financeiro/receber /api/financeiro/pagar /api/financeiro/colaboradores /api/ceo/dashboard
 
-### IMPORTANTE — UNIFICACAO clinicas
-Em 10/04/2026 a tabela `clientes_hq` foi DROPADA. Os 47 clientes foram migrados para `clinicas` que agora tem 48 ativos (47 reais + 1 Demo).
-
-A tabela `clinicas` agora tem TODOS os campos:
-- Cadastro: id, nome, cnpj, email, plano, valor_contrato, cidade, especialidade
-- Operacional: fase, score_total, mrr, status_execucao, dias_na_etapa, sla_estourado
-- Adoção: adocao_crm, adocao_responde_leads, adocao_planilha, adocao_script
-- KPIs: leads_semana, total_vendas_semana, ticket_medio, roi
-- CS: cs_responsavel, ultimo_contato, dias_sem_venda, problema_detectado, proxima_acao
-
-NUNCA recriar `clientes_hq`. Sempre usar `clinicas`.
-
-### Sistema
-- `notificacoes_hq` — notificações cross-setor
-- `prospecta_webhooks_log` — webhooks recebidos
-- `event_reactions` — 8 regras de automação (NÃO mexer)
-- `preenchimento_diario` — log de quem preencheu planilha
-
----
-
-## 💼 PLANOS DOS CLIENTES (DEFINITIVOS — NÃO ALTERAR)
-
-| Pacote | Valor mensal |
-|---|---|
-| Completo (sem fidelidade) | R$3.500 |
-| Completo (90 dias garantia) | R$3.000 |
-| Apenas Marketing | R$1.500 |
-| Apenas Financeira | R$1.000 |
-
----
-
-## 📋 CONTEXTO DE CADA SETOR
-
-### SDR — Trindade
-- Usa **ACL (Wascript / Prospecta CRM)** como CRM externo — NÃO tem CRM interno no HQ
-- 10 etapas do ACL em ordem de prioridade:
-  1. **Confirmação (8H — crítico)** — confirmar reuniões do dia ANTES de qualquer coisa
-  2. Recepção
-  3. Agendamento
-  4. Qualificação
-  5. Explicação
-  6. Reagendar
-  7. Sem CNPJ
-  8. Futuro
-  9. Lista Fria
-  10. Fora do CP
-- Cada etapa tem fluxo automático. Se não responder: follow-up 1 (mesmo dia) → follow-up 2 (dia seguinte)
-- Metas mensais: **300 leads / 90 agendamentos / 54 comparecimentos / 3 vendas**
-- Métricas lançadas manualmente em /sdr (input às 17h)
-- Feedback diário visível em /sdr/feedbacks
-
-### Comercial — Guilherme (Closer)
-- Pipeline 4 colunas: Reunião Agendada → Proposta Enviada → Fechado → Perdido
-- **Comissão: 10% do MRR fechado**
-- Metas: 20 reuniões / 5 fechamentos / R$10k MRR por mês
-
-### Tráfego — Guilherme (CMO)
-- BI com **baseline histórico imutável**: CPL R$10,68 / Agendamento 35,25% / Comparecimento 71,30% / Qualificação 82,56% / Conversão 24,09% / CAC R$188,94
-- 3 metas: Mínima R$74k / Normal R$90k / Super R$106k
-- Filtro período estilo Meta Ads
-- Planilha diária obrigatória no fim do turno
-- Regras de cores automáticas por métrica (verde/amarelo/vermelho)
-
-### CS — Medina
-- Jornada D0-D30 com 22 tarefas por clínica
-- **Marcos bloqueantes: D7, D15, D30** (reuniões obrigatórias)
-- Gargalos classificados: Marketing / Atendimento / Conversão / Adoção
-- Log de atividades por clínica (`log_atividades_cs`)
-- Calendário semanal de tarefas em /cs/calendario
-
-### Financeiro — admin (Cardoso/Luana)
-- Dados Jan-Abr 2026 importados da planilha Google Sheets
-- A Receber: 200 registros / R$342.200
-- A Pagar: 236 registros / R$335.107
-- Tipos normalizados: prolabore, colaborador, ferramenta, marketing, aluguel, outro
-- Acesso: admin apenas
-
----
-
-## 🔌 INTEGRAÇÕES
-
-### Supabase
-URL: https://hluhlsnodndpskrkbjuw.supabase.co
-Credenciais em .env.local (NUNCA commitar)
-
-### WaScript API (Prospecta CRM white label)
-Base: https://api-whatsapp.wascript.com.br
-Webhook receptor: https://excalibur-hq.vercel.app/api/crm/webhook
-**PENDENTE:** tokens individuais do Trindade e Guilherme
-
-### Claude API
-Modelo: claude-sonnet-4-20250514
-Usado em: /ia/supervisor + extensão Chrome
-
-### N8N
-Webhooks para automações complexas (integrado em excalibur-app)
-
----
-
-## 📦 APIs EXISTENTES (NÃO RECRIAR)
+### Comercial / SDR / Tráfego
+/api/comercial/stats /api/comercial/pipeline
+/api/sdr/metricas /api/sdr/feedbacks /api/trafego/funil
 
 ### CS
-- `/api/cs/painel` — dashboard consolidado CS
-- `/api/cs/cockpit` — cockpit CS com clínicas e alertas
-- `/api/cs/lista` — lista completa de clínicas
-- `/api/cs/log` — log de atividades por clínica
-- `/api/cs/tarefas-semana` — tarefas por semana para calendário
-- `/api/cs/registrar-contato` — registrar interação CS
+/api/cs/painel /api/cs/cockpit /api/cs/registrar-contato /api/jornada
 
-### Financeiro
-- `/api/financeiro/receber` — A Receber CRUD
-- `/api/financeiro/pagar` — A Pagar CRUD
-- `/api/financeiro/resumo` — cálculos de caixa
-- `/api/financeiro/colaboradores` — CRUD colaboradores
-- `/api/hq/financeiro` — dashboard financeiro CEO
+### Tráfego Clientes (setor da Jéssica)
+/api/trafego-clientes/overview /api/trafego-clientes/clinicas /api/trafego-clientes/gestores
+/api/trafego-clientes/metricas /api/trafego-clientes/setup /api/trafego-clientes/otimizacao
+/api/trafego-clientes/relatorio-semanal /api/trafego-clientes/historico /api/trafego-clientes/vinculo
 
-### SDR
-- `/api/sdr/metricas` — métricas diárias SDR (com filtro período)
-- `/api/sdr/feedbacks` — feedbacks do Trindade
-- `/api/sdr/stats` — stats resumidas
-- `/api/sdr/leads` — CRUD leads SDR
+### Escritório 2D
+/api/escritorio/presenca
 
-### Comercial
-- `/api/comercial/pipeline` — pipeline closer
-- `/api/comercial/stats` — stats do pipeline
-- `/api/comercial/ativar` — fechar lead → criar clínica
+## Banco — tabelas principais
+clinicas, jornada_clinica, adocao_clinica, tarefas_jornada
+metricas_sdr, pipeline_closer, funil_trafego, metas_closer
+alertas_clinica, eventos_hq, onboarding_colaborador
+escritorio_presenca, usuarios_internos
+gestores_trafego, trafego_clinica, trafego_metricas
+trafego_alertas, trafego_setup, trafego_otimizacoes
 
-### CEO / Visão Geral
-- `/api/ceo/dashboard` — dashboard CEO completo (dados reais)
-- `/api/dashboard` — funil consolidado
-- `/api/hq/coo` — dashboard COO
+## Dados reais (Abril 2026)
+MRR: ~R$84.800 | Caixa: R$4.340 | Recebido: R$15.400
+Clínicas ativas: 48 | Score CS médio: 68
+Fechamentos comercial: 5 | Reuniões: 8 | MRR mês: R$12.000
+SDR leads: 90 | Tráfego clientes: 10/48 configuradas | CPL médio: R$18,56
 
-### Tráfego
-- `/api/trafego/funil` — dados de funil
-- `/api/trafego/metas` — metas comerciais
+## Hierarquia CS + Tráfego Clientes
+Cardoso (CEO) → Medina (CS) → Jéssica (Head Traffic) → Gestores → Clínicas
+Jéssica gerencia tráfego pago das 48 clínicas odontológicas clientes
 
-### Sistema
-- `/api/busca` — busca global
-- `/api/preenchimento` — planilha diária
-- `/api/notificacoes` — cross-setor
-- `/api/crm/webhook` — receptor Prospecta CRM
-- `/api/wascript/send` — envio WhatsApp
-- `/api/admin/usuarios` — CRUD usuários (com alterar senha)
+## Sistemas especiais
+- TitleSync.tsx: títulos via MutationObserver client-side (não Next.js metadata)
+- Escritório 2D: canvas tile-based 38x28, WASD, Supabase Realtime (postgres_changes)
+- Onboarding colaborador: 3 estados (tutorial→check→lembrete) por role
+- AcaoHoje: card de ação diária por role (só após tutorial dispensado, checa 3 chaves)
+- Alertas dinâmicos: health_score + aviso_prévio + caixa_critico
+  Regras: dias_na_plataforma > 7, máximo 5 por tipo, banner "9+" se > 9
+- Tráfego clientes (12 melhorias v2): setup 5 etapas, score 0-100,
+  benchmarks BR (CPL R$8-20), funil completo (agendamentos/comparec/fech/receita/ROI/CAC),
+  sparkline 7d, comparativo MoM, calendário otimizações, drawer histórico,
+  alerta velocidade resposta, especialidades, mapa de cobertura
+- adocao_clinica.score é GENERATED COLUMN (não pode UPDATE direto, set os booleans)
 
----
+## Magic UI (em components/ui/)
+number-ticker, border-beam, blur-fade, shimmer-button,
+animated-shiny-text, animated-list, confetti
+Instalar: npx shadcn@latest add @magicui/[nome]
+NÃO USAR: DaisyUI, Park UI, JollyUI
 
-## ❌ ERROS PASSADOS — NÃO REPETIR
-
-1. **Implementar mais do que foi pedido** — Sempre confirmar o escopo antes de começar. Se o usuário pediu X, fazer só X.
-2. **Alterar layout de telas aprovadas** — Quando pedido para adicionar funcionalidade, APENAS adicionar, nunca modificar o existente.
-3. **Deletar dados reais junto com seeds** — `jornada_clinica` e `tarefas_jornada` são DADOS REAIS, nunca deletar em limpezas.
-4. **Mudar rotas/navegação sem autorização** — Qualquer mudança de rota padrão ou sidebar requer aprovação explícita.
-5. **Commitar secrets** — Sempre verificar o diff antes do commit. Tokens, senhas e connection strings vão em .env.local.
-6. **Reescrever do zero quando o usuário pediu otimização** — "otimizar" ≠ "reescrever". Manter o que funciona, melhorar o resto.
-7. **Confundir excalibur-hq com excalibur-web** — São projetos DIFERENTES com bancos diferentes. Sempre verificar o diretório.
-8. **NÃO RECRIAR /dashboard** — A página `/dashboard` foi DELETADA DEFINITIVAMENTE. Cada role tem sua tela específica (admin → /ceo, sdr → /sdr, cs → /cs, closer → /comercial, cmo → /trafego). NUNCA recriar `/dashboard`. NUNCA referenciar `/dashboard` em links, redirects ou menus. Se algum código antigo apontar pra `/dashboard`, atualizar para a tela do role correto.
-9. **NÃO RECRIAR clientes_hq** — Tabela `clientes_hq` foi DROPADA em 10/04/2026. Todos os clientes operacionais estão em `clinicas` (48 ativos). A tabela `clinicas` agora tem TODOS os campos: cadastro + operacional + adoção + KPIs.
-10. **NÃO RECRIAR tabelas órfãs vazias** — 33 tabelas vazias foram dropadas (assinaturas, atividades_lead, automacoes_execucoes, procedimentos*, estoque*, pacientes_*, etc). Eram resquícios do excalibur-web ou legacy. Se precisar criar tabela nova, verificar primeiro se já não existe algo equivalente.
-
----
-
-## ⚠️ BUGS CONHECIDOS PENDENTES
-
-1. **Inconsistência tráfego vs comercial** — `/api/comercial/stats` agora tem fallback pra `funil_trafego` quando `pipeline_closer` está vazio (Guilherme ainda preenche fechamentos no funil mensal, não no kanban). Quando o closer começar a usar o kanban interno, pipeline_closer vai ter dados e o fallback perde efeito naturalmente.
-
-2. **adocao_clinica vazia** — Health scores de todas as clínicas reais aparecem como 0 porque `adocao_clinica` não tem registros populados. A coluna `clinicas.score_total` é usada como fonte primária em /clientes desde o fix do filtro de risco. Para preencher adocao_clinica é preciso processo manual ou seed.
-
-3. **SDR leads = 0** — Wascript/Prospecta CRM não configurado por Trindade. A tabela `leads_sdr` está vazia (0 rows). O funil mostra dados via `funil_trafego` (manual). Pendente: Trindade gerar tokens Wascript para integrar webhook automático.
-
-4. **Cardoso continua no histórico** — Luana é COO mas os 5 commits fantasma do loop do `.envrc` (resolvido em 2c2bb1f) ficaram no histórico principal. Não removidos pra evitar force-push em main.
-
-5. **Token Vercel exposto** — Token `vcp_...` foi compartilhado em sessões de chat. Recomendação persistente: rotacionar em vercel.com/account/tokens e atualizar `.env.local`.
-
----
-
-## 🔄 PROTOCOLO DE SESSÃO
-
-### Início
-1. Ler este arquivo completo
-2. Confirmar com o usuário o que será feito antes de começar
-3. Se for mexer em tela aprovada, pedir autorização explícita
-
-### Durante
-- Auto-save roda a cada 30min em background
-- Build + teste antes de qualquer deploy
-- Reportar ✅/❌ para cada tarefa concluída
-- Preferir editar arquivos existentes a criar novos
-
-### Fim
+## Comandos
 ```bash
-cd ~/Desktop/excalibur/excalibur-hq && ./fim-sessao.sh
+cd ~/Desktop/excalibur/excalibur-hq
+npm run build
+npm test                # vitest run contra prod
+npx vercel --prod --token "$VERCEL_TOKEN"   # token em .env.local
+git add -A && git commit -m "msg" && git push
 ```
 
----
+## Identidade visual — LEI MÁXIMA
+Modo Dark sempre · bg-gray-950 · cards bg-gray-900/800
+Accent amber-500 · hover amber-400 · border-gray-700/800
+Sucesso green-500 · Erro red-500 · Fonte Geist · Ícone ⚔️ · rounded-xl
 
-## 🚀 PRÓXIMAS TAREFAS (backlog)
-
-- [ ] Tokens Wascript — Trindade e Guilherme (pendente deles)
-- [ ] Automatizar `sdr_metricas_diarias` (parar input manual, usar leads_sdr)
-- [ ] Integrar Meta Ads + Google Ads APIs
-- [ ] Sistema de alterar senha do próprio usuário (não admin)
-
----
-
-## 📚 BASE DE CONHECIMENTO — /docs/
-
-Roadmaps técnicos organizados em 4 níveis. O Claude Code DEVE ler o arquivo relevante antes de executar qualquer tarefa.
-
-### Estrutura
-```
-docs/
-├── INDEX.md              — índice geral
-├── critico/ (14 arquivos) — leitura obrigatória por tarefa
-├── alto/    (13 arquivos) — leitura quando relevante
-├── medio/   README.md    — referência futura
-└── futuro/  README.md    — base expandida
-```
-
-### Regra de leitura
-- Tarefa de frontend/página → `docs/critico/nextjs.md` + `docs/critico/react.md`
-- Tarefa de banco → `docs/critico/postgresql.md` + `docs/critico/supabase.md`
-- Tarefa de API → `docs/critico/api-design.md`
-- Tarefa de UX/visual → `docs/critico/ux-design.md` + `docs/critico/design-system.md`
-- Qualquer tarefa → ler `docs/INDEX.md` primeiro
-
-### Auto-evolução
-1. Claude Code lê CLAUDE.md + docs/ relevante
-2. Executa com nível técnico superior
-3. `fim-sessao.sh` atualiza CLAUDE.md com o que aconteceu
-4. Próxima sessão começa mais inteligente
-5. Ao longo do tempo: docs/ pode ser expandido com novos aprendizados
-
-### Como expandir a base
-Quando surgir um novo tema técnico:
-1. Criar `docs/[nivel]/[tema].md`
-2. Adicionar ao `docs/INDEX.md`
-3. Referenciar no CLAUDE.md
-
-### Sessão encerrada: 10/04/2026 09:20
-- Branch: main
-- Último commit: feb6e20 refactor: aplicar Modal e KPICard globais no /cs e /operacao/financeiro
-- Arquivos alterados: app/(hq)/cs/page.tsx
-app/(hq)/operacao/financeiro/page.tsx
-
-### Sessão encerrada: 10/04/2026 12:01
-- Branch: main
-- Último commit: 6a26a88 auto-save: 2026-04-10 11:56 — auto-save.log,
-- Arquivos alterados: auto-save.log
-
-### Sessão encerrada: 10/04/2026 12:01
-- Branch: main
-- Último commit: df0f4d2 chore(sessao): fim de sessão 10/04/2026 12:01 — CLAUDE.md atualizado
-- Arquivos alterados: .auto-save.pid
-CLAUDE.md
-auto-save.log
-
-### Sessão encerrada: 10/04/2026 12:03
-- Branch: main
-- Último commit: b33e5c0 chore(sessao): fim de sessão 10/04/2026 12:01 — CLAUDE.md atualizado
-- Arquivos alterados: .auto-save.pid
-CLAUDE.md
+## Erros para nunca repetir
+1. Pedir permissão pra editar arquivos do projeto
+2. Commit direto na main sem mensagem
+3. Modificar .env sem avisar
+4. Apagar dados reais do Supabase
+5. Usar `any` em TypeScript
+6. Declarar tarefa concluída sem validar build
+7. Instalar libs incompatíveis (DaisyUI, Park UI)
+8. Confundir SSR HTML com DOM client-side ao verificar títulos
+9. Reportar como entregue antes do deploy chegar
+10. Alertas sem limite por clínica (gerou 52 antes do filtro)
+11. Comercial zerado por `.single()` no metas_closer derrubando Promise.all (corrigido v2.0)
+12. Score CS zerado — adocao_clinica.score é GENERATED (atualizar booleans, não score)
+13. Login quebrado após mudança de hash — sempre testar auth após deploy
+14. Dados sujos no campo `nome` de `clinicas` (valores monetários, datas) — limpos v2.0
+15. AcaoHoje + Tutorial aparecendo juntos na 1ª visita — checar `tutorial_visto`
+16. setInterval pra presence quando deveria ser Supabase Realtime
+17. `repeat(N, 1fr)` em grids causa overflow — usar `repeat(N, minmax(0, 1fr))`

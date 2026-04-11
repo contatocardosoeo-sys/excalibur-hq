@@ -142,7 +142,7 @@ export default function SDRPage() {
         <Sidebar />
         <div style={{ flex: 1, padding: 32 }}>
           <div style={{ height: 28, width: 200, background: '#111827', borderRadius: 8, animation: 'pulse 1.5s infinite', marginBottom: 24 }} />
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10, marginBottom: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 10, marginBottom: 16 }}>
             {[1, 2, 3, 4, 5].map(i => <div key={i} style={{ background: '#111827', borderRadius: 12, height: 90, animation: 'pulse 1.5s infinite' }} />)}
           </div>
           <style>{`@keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: 0.4 } }`}</style>
@@ -176,7 +176,7 @@ export default function SDRPage() {
   return (
     <div style={{ minHeight: '100vh', background: '#030712', display: 'flex', overflowX: 'hidden' }}>
       <Sidebar />
-      <div style={{ flex: 1, padding: '24px 32px', overflowY: 'auto', overflowX: 'hidden', maxWidth: 1400, minWidth: 0 }}>
+      <div style={{ flex: 1, padding: '24px 32px', overflowY: 'auto', overflowX: 'hidden', maxWidth: '100%', minWidth: 0 }}>
 
         {/* Card de acao do dia (imperativo) */}
         <AcaoHoje role="sdr" />
@@ -226,7 +226,7 @@ export default function SDRPage() {
         </div>
 
         {/* KPIs com metas — 6 cards (5 numericos + 1 valor) */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 10, marginBottom: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: 10, marginBottom: 20 }}>
           <KPI icon="📥" label="Leads" atual={acumulado.leads} meta={metas.leads} cor="#60a5fa" />
           <KPI icon="📞" label="Contatos" atual={acumulado.contatos} meta={metas.leads} cor="#a78bfa" />
           <KPI icon="📅" label="Agendamentos" atual={acumulado.agendamentos} meta={metas.agendamentos} cor="#fbbf24" />
@@ -248,7 +248,7 @@ export default function SDRPage() {
         {/* Taxas */}
         <div style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 12, padding: 16, marginBottom: 20 }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: '#fff', marginBottom: 12 }}>📈 Taxas de conversao do mes</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10 }}>
             {[
               { label: 'Lead → Contato', value: taxas.contato },
               { label: 'Contato → Agend.', value: taxas.agendamento },
@@ -293,7 +293,7 @@ export default function SDRPage() {
 
             {!editando && data.metricas_dia ? (
               <>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 10, marginBottom: 12 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: 10, marginBottom: 12 }}>
                   {[
                     { l: '📥 Leads', v: data.metricas_dia.leads_recebidos, formato: 'num' },
                     { l: '📞 Contatos', v: data.metricas_dia.contatos_realizados, formato: 'num' },

@@ -4,8 +4,8 @@ import { NextResponse, type NextRequest } from 'next/server'
 // Mapeamento de rotas por roles permitidos
 const ROUTE_ROLES: Record<string, string[]> = {
   '/cs': ['admin', 'coo', 'cs'],
-  '/clientes': ['admin', 'coo', 'cs'],
-  '/jornada': ['admin', 'coo', 'cs'],
+  '/clientes': ['admin', 'coo', 'cs', 'closer', 'sdr'],
+  '/jornada': ['admin', 'coo', 'cs', 'sdr'],
   '/alertas': ['admin', 'coo', 'cs', 'sdr', 'closer'],
   '/adocao': ['admin', 'coo', 'cs'],
   '/onboarding': ['admin', 'coo', 'cs'],

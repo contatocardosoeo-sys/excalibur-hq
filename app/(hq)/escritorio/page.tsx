@@ -314,51 +314,80 @@ export default function EscritorioPage() {
     }
   }, [userInfo, location])
 
-  // ─── 4. Presence sync — busca outros usuários reais a cada 5s ───
+  // ─── 4. Presence sync — Supabase Realtime + fallback inicial via fetch ───
   useEffect(() => {
     if (!userInfo) return
-    const fetchPresence = async () => {
-      try {
-        const r = await fetch('/api/escritorio/presenca').then(r => r.json())
-        const outros = (r.presencas || []).filter((p: { user_email: string }) => p.user_email !== userInfo.email)
-        setPresentes(outros.map((p: { user_email: string; user_nome: string; user_role: string; sala_atual: string; status: string }) => ({
-          email: p.user_email,
-          nome: p.user_nome,
-          role: p.user_role,
-          sala: p.sala_atual,
-          status: p.status,
-        })))
-        // Atualizar posição dos NPCs que são usuários reais logados
-        const emailToId: Record<string, string> = {
-          'contato.cardosoeo@gmail.com': 'cardoso',
-          'luanacaira.excalibur@gmail.com': 'luana',
-          'brunomedina.contato@gmail.com': 'medina',
-          'guilherme.excalibur@gmail.com': 'guilherme',
-          'trindade.excalibur@gmail.com': 'trindade',
-        }
-        for (const p of outros) {
-          const npcId = emailToId[p.user_email]
-          if (!npcId) continue
-          const npc = stateRef.current.npcs.find(n => n.id === npcId)
-          if (npc) {
-            // Suavizar: teleportar parcialmente (lerp) pra posição real
-            const tx = Number(p.pos_x) || npc.x
-            const ty = Number(p.pos_y) || npc.y
-            npc.x += (tx - npc.x) * 0.5
-            npc.y += (ty - npc.y) * 0.5
-            npc.isReal = true
-            npc.email = p.user_email
-            npc.status = p.status as 'online' | 'away' | 'offline'
-            // NPC real não segue path — fica parado aguardando próximo sync
-            npc.path = [{ x: tx, y: ty }]
-            npc.pathIdx = 0
-          }
-        }
-      } catch { /* */ }
+
+    const emailToId: Record<string, string> = {
+      'contato.cardosoeo@gmail.com': 'cardoso',
+      'luanacaira.excalibur@gmail.com': 'luana',
+      'brunomedina.contato@gmail.com': 'medina',
+      'guilherme.excalibur@gmail.com': 'guilherme',
+      'trindade.excalibur@gmail.com': 'trindade',
     }
-    fetchPresence()
-    const iv = setInterval(fetchPresence, 5_000)
-    return () => clearInterval(iv)
+
+    type PresencaRow = {
+      user_email: string; user_nome: string; user_role: string;
+      sala_atual: string; status: string; pos_x?: number; pos_y?: number
+    }
+
+    const aplicarPresenca = (lista: PresencaRow[]) => {
+      const outros = lista.filter(p => p.user_email !== userInfo.email)
+      setPresentes(outros.map(p => ({
+        email: p.user_email,
+        nome: p.user_nome,
+        role: p.user_role,
+        sala: p.sala_atual,
+        status: p.status,
+      })))
+      for (const p of outros) {
+        const npcId = emailToId[p.user_email]
+        if (!npcId) continue
+        const npc = stateRef.current.npcs.find(n => n.id === npcId)
+        if (npc) {
+          const tx = Number(p.pos_x) || npc.x
+          const ty = Number(p.pos_y) || npc.y
+          npc.x += (tx - npc.x) * 0.5
+          npc.y += (ty - npc.y) * 0.5
+          npc.isReal = true
+          npc.email = p.user_email
+          npc.status = p.status as 'online' | 'away' | 'offline'
+          npc.path = [{ x: tx, y: ty }]
+          npc.pathIdx = 0
+        }
+      }
+    }
+
+    // Carga inicial via fetch
+    let cache: PresencaRow[] = []
+    fetch('/api/escritorio/presenca')
+      .then(r => r.json())
+      .then(r => {
+        cache = (r.presencas || []) as PresencaRow[]
+        aplicarPresenca(cache)
+      })
+      .catch(() => { /* */ })
+
+    // Subscription Realtime
+    const channel = supabase
+      .channel('escritorio-presenca')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'escritorio_presenca' },
+        (payload) => {
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            const novo = payload.new as PresencaRow
+            cache = cache.filter(p => p.user_email !== novo.user_email).concat(novo)
+          } else if (payload.eventType === 'DELETE') {
+            const old = payload.old as { user_email: string }
+            cache = cache.filter(p => p.user_email !== old.user_email)
+          }
+          aplicarPresenca(cache)
+        }
+      )
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
   }, [userInfo])
 
   // ─── 4. Game loop ───

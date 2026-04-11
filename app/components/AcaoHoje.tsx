@@ -21,8 +21,16 @@ export default function AcaoHoje({ role }: AcaoHojeProps) {
     if (typeof window === 'undefined') return
 
     // Não mostrar enquanto o tutorial de onboarding não foi dispensado
-    const tutorialVisto = sessionStorage.getItem('onboarding_tutorial_visto')
-    if (!tutorialVisto) return
+    const chavesTutorial = [
+      'onboarding_tutorial_visto',
+      'tutorial_visto',
+      `onboarding_${role}_visto`,
+    ]
+    const tutorialVisto = chavesTutorial.some(k => sessionStorage.getItem(k) || localStorage.getItem(k))
+    if (!tutorialVisto) {
+      setAcao(null)
+      return
+    }
 
     const hoje = new Date().toISOString().slice(0, 10)
     const key = `acao_hoje_${role}_${hoje}`

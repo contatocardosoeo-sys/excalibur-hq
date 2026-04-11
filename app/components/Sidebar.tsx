@@ -26,8 +26,8 @@ const allSections: MenuSection[] = [
     label: 'Operacao',
     items: [
       { href: '/onboarding', icon: '🚀', label: 'Novo Cliente', roles: ['admin', 'coo', 'cs'] },
-      { href: '/clientes', icon: '👥', label: 'Clientes', roles: ['admin', 'coo', 'cs', 'closer'] },
-      { href: '/jornada', icon: '📈', label: 'Jornada D0-D90', roles: ['admin', 'coo', 'cs'] },
+      { href: '/clientes', icon: '👥', label: 'Clientes', roles: ['admin', 'coo', 'cs', 'closer', 'sdr'] },
+      { href: '/jornada', icon: '📈', label: 'Jornada do Cliente', roles: ['admin', 'coo', 'cs', 'sdr'] },
       { href: '/trafego-clientes', icon: '📣', label: 'Trafego Clientes', roles: ['admin', 'coo', 'cs', 'head_traffic'] },
       { href: '/cs/calendario', icon: '📅', label: 'Calendario', roles: ['admin', 'coo', 'cs'] },
       { href: '/operacao/financeiro', icon: '💰', label: 'Financeiro', roles: ['admin', 'coo', 'financeiro'] },

@@ -31,12 +31,12 @@ export async function GET(req: NextRequest) {
   // CARTEIRA COMPLETA
   const { data: clinicas } = await supabase
     .from('clinicas')
-    .select('id, nome, data_inicio, cs_responsavel, ativo')
+    .select('id, nome, data_inicio, cs_responsavel, ativo, fase, status_cliente, aviso_previo_inicio')
     .eq('ativo', true)
     .order('nome')
 
   if (!clinicas || clinicas.length === 0) {
-    return NextResponse.json({ carteira: [], kpis: { total: 0, onboarding: 0, adocao: 0, consolidacao: 0, retencao: 0, emRisco: 0, atrasados: 0, semInteracao: 0, alertasCriticos: 0 } })
+    return NextResponse.json({ carteira: [], kpis: { total: 0, onboarding: 0, adocao: 0, consolidacao: 0, retencao: 0, embarcados: 0, avisoPrevio: 0, emRisco: 0, atrasados: 0, semInteracao: 0, alertasCriticos: 0 } })
   }
 
   const hoje = new Date().toISOString().split('T')[0]
@@ -61,9 +61,15 @@ export async function GET(req: NextRequest) {
       const score = adocao?.score || 0
       const totalAlertas = alertas?.length || 0
       const alertasCriticos = alertas?.filter(a => a.nivel === 3).length || 0
+      const etapa = jornada?.etapa || 'D0_NOVO'
+      const cliFase = (clinica as { fase?: string }).fase
+      const statusCliente = (clinica as { status_cliente?: string }).status_cliente
+      const avisoPrevio = statusCliente === 'aviso_previo' || !!(clinica as { aviso_previo_inicio?: string }).aviso_previo_inicio
 
+      // faseMacro: usa etapa formal quando D90_EMBARCADO, senão calcula por dias
       let faseMacro = 'D0-D7'
-      if (dias > 30) faseMacro = 'D30+'
+      if (etapa === 'D90_EMBARCADO' || cliFase === 'escala' || dias > 90) faseMacro = 'D90+'
+      else if (dias > 30) faseMacro = 'D30+'
       else if (dias > 15) faseMacro = 'D15-D30'
       else if (dias > 7) faseMacro = 'D7-D15'
 
@@ -83,7 +89,8 @@ export async function GET(req: NextRequest) {
         : null
 
       let status: 'saudavel' | 'atencao' | 'risco' = 'saudavel'
-      if (score < 60 || alertasCriticos > 0 || tarefasAtrasadas > 2) status = 'risco'
+      if (avisoPrevio) status = 'risco' // aviso prévio sempre é risco
+      else if (score < 60 || alertasCriticos > 0 || tarefasAtrasadas > 2) status = 'risco'
       else if (score < 80 || totalAlertas > 0 || tarefasAtrasadas > 0) status = 'atencao'
 
       const proximaTarefa = tarefas
@@ -96,7 +103,8 @@ export async function GET(req: NextRequest) {
         data_inicio: clinica.data_inicio,
         cs_responsavel: clinica.cs_responsavel,
         dias, faseMacro,
-        etapa: jornada?.etapa || 'D0_NOVO',
+        etapa,
+        avisoPrevio,
         score, classificacao: score >= 80 ? 'SAUDAVEL' : score >= 60 ? 'ATENCAO' : 'RISCO',
         status, totalAlertas, alertasCriticos, tarefasAtrasadas,
         gargalo, ultimaInteracao,
@@ -114,6 +122,8 @@ export async function GET(req: NextRequest) {
     adocao: carteira.filter(c => c.faseMacro === 'D7-D15').length,
     consolidacao: carteira.filter(c => c.faseMacro === 'D15-D30').length,
     retencao: carteira.filter(c => c.faseMacro === 'D30+').length,
+    embarcados: carteira.filter(c => c.faseMacro === 'D90+').length,
+    avisoPrevio: carteira.filter(c => c.avisoPrevio).length,
     emRisco: carteira.filter(c => c.status === 'risco').length,
     atrasados: carteira.filter(c => c.tarefasAtrasadas > 0).length,
     semInteracao: carteira.filter(c => !c.ultimaInteracao && c.dias > 5).length,

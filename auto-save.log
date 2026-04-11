@@ -235,3 +235,60 @@ warning: in the working copy of 'scripts/trafego-migrate-v2.mjs', LF will be rep
 To https://github.com/contatocardosoeo-sys/excalibur-hq.git
    7ac2b8e..9524308  main -> main
 ✅ Auto-save: 2026-04-11 02:57
+warning: in the working copy of 'app/api/comercial/pipeline/route.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'auto-save.log', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'scripts/check-comercial.mjs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'scripts/check-cs-painel.mjs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'scripts/check-cs-score.mjs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'scripts/check-etapas.mjs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'scripts/check-score-gen.mjs', LF will be replaced by CRLF the next time Git touches it
+[main 1296cbd] auto-save: 2026-04-11 03:27 — app/api/comercial/pipeline/route.ts,auto-save.log,scripts/check-comercial.mjs,scripts/check-cs-painel.mjs,scripts/check-cs-score.mjs,
+ 7 files changed, 140 insertions(+), 9 deletions(-)
+ create mode 100644 scripts/check-comercial.mjs
+ create mode 100644 scripts/check-cs-painel.mjs
+ create mode 100644 scripts/check-cs-score.mjs
+ create mode 100644 scripts/check-etapas.mjs
+ create mode 100644 scripts/check-score-gen.mjs
+To https://github.com/contatocardosoeo-sys/excalibur-hq.git
+   164aa13..1296cbd  main -> main
+✅ Auto-save: 2026-04-11 03:27
+warning: in the working copy of 'app/(hq)/jornada/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/api/jornada/route.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/components/Sidebar.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/components/TitleSync.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/lib/etapas.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'scripts/audit-jornada.mjs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'scripts/check-tarefas-jornada.mjs', LF will be replaced by CRLF the next time Git touches it
+[main c1f8e5f] auto-save: 2026-04-11 03:57 — app/(hq)/jornada/page.tsx,app/api/jornada/route.ts,app/components/Sidebar.tsx,app/components/TitleSync.tsx,app/lib/etapas.ts,
+ 7 files changed, 103 insertions(+), 20 deletions(-)
+ create mode 100644 scripts/audit-jornada.mjs
+ create mode 100644 scripts/check-tarefas-jornada.mjs
+remote: error: GH013: Repository rule violations found for refs/heads/main.        
+remote: 
+remote: - GITHUB PUSH PROTECTION        
+remote:   —————————————————————————————————————————        
+remote:     Resolve the following violations before pushing again        
+remote: 
+remote:     - Push cannot contain secrets        
+remote: 
+remote:             
+remote:      (?) Learn how to resolve a blocked push        
+remote:      https://docs.github.com/code-security/secret-scanning/working-with-secret-scanning-and-push-protection/working-with-push-protection-from-the-command-line#resolving-a-blocked-push        
+remote:             
+remote:             
+remote:       —— Vercel Personal Access Token ——————————————————————        
+remote:        locations:        
+remote:          - commit: 5de1c21db6e567c46489dda8d5082ab124108bb4        
+remote:            path: CLAUDE.md:9        
+remote:          - commit: 5de1c21db6e567c46489dda8d5082ab124108bb4        
+remote:            path: CLAUDE.md:92        
+remote:             
+remote:        (?) To push, remove secret from commit(s) or follow this URL to allow the secret.        
+remote:        https://github.com/contatocardosoeo-sys/excalibur-hq/security/secret-scanning/unblock-secret/3CCVVkUGDgEmdqtTmkHbaUIKpab        
+remote:             
+remote: 
+remote: 
+To https://github.com/contatocardosoeo-sys/excalibur-hq.git
+ ! [remote rejected] main -> main (push declined due to repository rule violations)
+error: failed to push some refs to 'https://github.com/contatocardosoeo-sys/excalibur-hq.git'
+✅ Auto-save: 2026-04-11 03:57

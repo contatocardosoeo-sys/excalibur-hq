@@ -14,6 +14,7 @@ export const ETAPA_LABEL: Record<string, string> = {
   D60: '⭐ Dois meses',
   D90_RETENCAO: '👑 Retido',
   D90: '🏆 Três meses',
+  D90_EMBARCADO: '🚀 Embarcado (Escala)',
   RISCO: '⚠️ Em risco',
   CRITICO: '🚨 Crítico',
   CHURN: '💀 Churn',
@@ -29,6 +30,18 @@ export const FASE_LABEL: Record<string, string> = {
   'D15': 'Dia 15',
   'D15-D30': 'Dia 15–30',
   'D30': 'Dia 30',
+  'D90+': 'D90+ (Escala)',
+}
+
+// Categorias de tarefas pós-D90 (playbooks de Customer Marketing)
+export const D90_CATEGORIAS = ['indicacao', 'upsell', 'manutencao', 'novo_produto'] as const
+export type D90Categoria = typeof D90_CATEGORIAS[number]
+
+export const D90_CATEGORIA_LABEL: Record<D90Categoria, { emoji: string; label: string; cor: string }> = {
+  indicacao:    { emoji: '🤝', label: 'Pedir indicação', cor: '#22c55e' },
+  upsell:       { emoji: '📈', label: 'Upsell de plano', cor: '#f59e0b' },
+  manutencao:   { emoji: '🛠️', label: 'Manutenção da conta', cor: '#3b82f6' },
+  novo_produto: { emoji: '🆕', label: 'Novo produto', cor: '#a855f7' },
 }
 
 export function etapaLabel(etapa?: string | null): string {

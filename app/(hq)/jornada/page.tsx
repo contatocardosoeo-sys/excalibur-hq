@@ -10,6 +10,7 @@ import { AnimatedShinyText } from '@/components/ui/animated-shiny-text'
 type Cliente = {
   id: string; nome: string; data_inicio: string
   dias: number; faseMacro: string; etapa: string
+  avisoPrevio: boolean
   score: number; classificacao: string
   status: 'saudavel' | 'atencao' | 'risco'
   totalAlertas: number; alertasCriticos: number
@@ -19,8 +20,8 @@ type Cliente = {
 
 type KPIs = {
   total: number; onboarding: number; adocao: number
-  consolidacao: number; retencao: number; emRisco: number
-  atrasados: number; semInteracao: number; alertasCriticos: number
+  consolidacao: number; retencao: number; embarcados: number; avisoPrevio: number
+  emRisco: number; atrasados: number; semInteracao: number; alertasCriticos: number
 }
 
 const STATUS_COR = {
@@ -30,10 +31,11 @@ const STATUS_COR = {
 }
 
 const FASES = [
-  { key: 'D0-D7',   label: 'D0 → D7',   sub: 'Setup / Onboarding', cor: '#3b82f6' },
-  { key: 'D7-D15',  label: 'D7 → D15',  sub: 'Inicio da adocao',   cor: '#f59e0b' },
-  { key: 'D15-D30', label: 'D15 → D30', sub: 'Consolidacao / Valor', cor: '#a855f7' },
-  { key: 'D30+',    label: 'D30+',       sub: 'Retencao / Escala',   cor: '#22c55e' },
+  { key: 'D0-D7',   label: 'D0 → D7',   sub: 'Setup / Onboarding',     cor: '#3b82f6' },
+  { key: 'D7-D15',  label: 'D7 → D15',  sub: 'Inicio da adocao',       cor: '#f59e0b' },
+  { key: 'D15-D30', label: 'D15 → D30', sub: 'Consolidacao / Valor',   cor: '#a855f7' },
+  { key: 'D30+',    label: 'D30+',      sub: 'Retencao',               cor: '#22c55e' },
+  { key: 'D90+',    label: '🚀 D90+',   sub: 'Embarcado / Customer Mkt', cor: '#06b6d4' },
 ]
 
 const GARGALO_COR: Record<string, string> = {
@@ -87,6 +89,8 @@ export default function JornadaPage() {
     if (kpiFiltro === 'alertas' && c.alertasCriticos === 0) return false
     if (kpiFiltro === 'onboarding' && c.faseMacro !== 'D0-D7') return false
     if (kpiFiltro === 'semInteracao' && (c.ultimaInteracao || c.dias <= 5)) return false
+    if (kpiFiltro === 'avisoPrevio' && !c.avisoPrevio) return false
+    if (kpiFiltro === 'embarcados' && c.faseMacro !== 'D90+') return false
     return true
   })
 
@@ -101,8 +105,8 @@ export default function JornadaPage() {
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
           <div>
-            <h1 style={{ fontSize: 22, fontWeight: 700, color: '#fff', margin: 0 }}>Jornada da Carteira</h1>
-            <p style={{ color: '#6b7280', fontSize: 13, margin: '4px 0 0' }}>Visao geral de todos os clientes · Ordenado por prioridade</p>
+            <h1 style={{ fontSize: 22, fontWeight: 700, color: '#fff', margin: 0 }}>Jornada do Cliente</h1>
+            <p style={{ color: '#6b7280', fontSize: 13, margin: '4px 0 0' }}>D0 → Embarcado · 6 etapas · Aviso prévio destacado · Ordenado por prioridade</p>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             {temFiltro && <button onClick={limpar} style={{ background: 'transparent', border: '1px solid #374151', color: '#9ca3af', borderRadius: 8, padding: '7px 14px', cursor: 'pointer', fontSize: 12 }}>× Limpar filtros</button>}
@@ -116,11 +120,13 @@ export default function JornadaPage() {
           <>
             {/* KPIs */}
             {kpis && (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 20 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: 10, marginBottom: 20 }}>
                 {[
                   { key: '', label: 'Total ativos', val: kpis.total, cor: '#fff', icon: '🏥' },
+                  { key: 'embarcados', label: 'Embarcados', val: kpis.embarcados || 0, cor: '#06b6d4', icon: '🚀' },
                   { key: 'risco', label: 'Em risco', val: kpis.emRisco, cor: '#ef4444', icon: '🔴' },
-                  { key: 'atrasados', label: 'Atrasados', val: kpis.atrasados, cor: '#f59e0b', icon: '⚠️' },
+                  { key: 'avisoPrevio', label: 'Aviso prévio', val: kpis.avisoPrevio || 0, cor: '#dc2626', icon: '⚠️' },
+                  { key: 'atrasados', label: 'Atrasados', val: kpis.atrasados, cor: '#f59e0b', icon: '⏱' },
                   { key: 'alertas', label: 'Alertas criticos', val: kpis.alertasCriticos, cor: '#8b5cf6', icon: '🚨' },
                 ].map(k => (
                   <button key={k.key || 'total'} onClick={() => k.key && setKpiFiltro(kpiFiltro === k.key ? '' : k.key)}
@@ -133,7 +139,7 @@ export default function JornadaPage() {
             )}
 
             {/* Fases */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 20 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 10, marginBottom: 20 }}>
               {FASES.map(fase => {
                 const cl = carteira.filter(c => c.faseMacro === fase.key)
                 const risco = cl.filter(c => c.status === 'risco').length
@@ -194,11 +200,11 @@ export default function JornadaPage() {
                   const gCor = GARGALO_COR[c.gargalo] || '#374151'
                   return (
                     <BlurFade key={c.id} delay={0.05 + Math.min(idx, 10) * 0.02} inView>
-                    <div style={{ background: '#13131f', border: `1px solid ${scor.borda}40`, borderLeft: `3px solid ${scor.borda}`, borderRadius: 10, padding: '14px 16px', transition: 'all 0.15s' }}>
+                    <div style={{ background: c.avisoPrevio ? '#3f1212' : '#13131f', border: `1px solid ${c.avisoPrevio ? '#dc2626' : scor.borda + '40'}`, borderLeft: `3px solid ${c.avisoPrevio ? '#dc2626' : scor.borda}`, borderRadius: 10, padding: '14px 16px', transition: 'all 0.15s' }}>
                       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr auto', gap: 12, alignItems: 'center' }}>
                         {/* Nome */}
                         <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
                             <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{c.nome}</span>
                             {(() => {
                               const t = trafegoMap[c.id]
@@ -206,6 +212,16 @@ export default function JornadaPage() {
                               const titulo = t === 'ativo' ? 'Tráfego ativo' : t === 'pausado' ? 'Tráfego pausado' : t === 'problema' ? 'Problema de tráfego' : 'Sem tráfego configurado'
                               return <span title={titulo} style={{ fontSize: 11 }}>{icone}</span>
                             })()}
+                            {c.avisoPrevio && (
+                              <span title="Cliente em aviso prévio — risco de churn" style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 999, background: '#dc262630', border: '1px solid #dc2626', fontSize: 10, fontWeight: 800, color: '#fca5a5', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                ⚠️ Aviso prévio
+                              </span>
+                            )}
+                            {c.faseMacro === 'D90+' && !c.avisoPrevio && (
+                              <span title="Cliente embarcado — Customer Marketing" style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 999, background: '#06b6d430', border: '1px solid #06b6d4', fontSize: 10, fontWeight: 800, color: '#67e8f9', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                🚀 Embarcado
+                              </span>
+                            )}
                             <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 999, background: scor.bg, border: `1px solid ${scor.borda}40` }}>
                               <AnimatedShinyText className="!text-[10px] font-semibold" style={{ color: scor.texto }}>
                                 {scor.label}

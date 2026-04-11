@@ -13,7 +13,7 @@ const TITULOS: Record<string, string> = {
   '/cs': 'CS',
   '/cs/calendario': 'Calendário',
   '/clientes': 'Clientes',
-  '/jornada': 'Jornada',
+  '/jornada': 'Jornada do Cliente',
   '/financeiro': 'Financeiro',
   '/operacao/financeiro': 'Financeiro Operacional',
   '/operacao/colaboradores': 'Colaboradores',
@@ -30,6 +30,8 @@ const TITULOS: Record<string, string> = {
   '/ia/supervisor': 'Supervisor IA',
   '/ia/reactions': 'Event Reactions',
   '/admin/usuarios': 'Usuários',
+  '/trafego-clientes': 'Tráfego Clientes',
+  '/escritorio': 'Escritório 2D',
 }
 
 function resolverTitulo(pathname: string): string {

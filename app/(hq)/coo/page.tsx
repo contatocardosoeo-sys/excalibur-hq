@@ -14,16 +14,23 @@ type DashboardData = {
   alertas?: Array<{ tipo: string; titulo?: string }>
 }
 
+type Alerta = { id?: string; tipo: string; titulo?: string; descricao?: string; prioridade?: string }
+
 export default function CooPage() {
   const router = useRouter()
   const [data, setData] = useState<DashboardData | null>(null)
+  const [alertas, setAlertas] = useState<Alerta[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     ;(async () => {
       try {
-        const r = await fetch('/api/ceo/dashboard').then(r => r.json())
+        const [r, a] = await Promise.all([
+          fetch('/api/ceo/dashboard').then(r => r.json()),
+          fetch('/api/hq/alertas').then(r => r.json()).catch(() => ({ alertas: [] })),
+        ])
         setData(r)
+        setAlertas(a.alertas || [])
       } catch { /* */ }
       setLoading(false)
     })()
@@ -34,7 +41,7 @@ export default function CooPage() {
   const fechamentos = data?.funil?.fechamentos || 0
   const leads = data?.funil?.leads || 0
   const clientes = data?.crescimento?.novos_clientes || 0
-  const alertasCount = data?.alertas?.length || 0
+  const alertasCount = alertas.length || data?.alertas?.length || 0
 
   return (
     <div className="min-h-screen bg-gray-950 flex overflow-x-hidden">
@@ -114,32 +121,58 @@ export default function CooPage() {
           </div>
           {alertasCount === 0 ? (
             <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-center text-gray-500 text-sm">
-              Nenhum alerta ativo
+              Nenhum alerta ativo ✅
             </div>
           ) : (
-            <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-sm text-gray-300">
-              {alertasCount} alerta{alertasCount > 1 ? 's' : ''} ativo{alertasCount > 1 ? 's' : ''} — clique em &quot;Ver todos&quot; pra detalhes
+            <div className="space-y-2">
+              {alertas.slice(0, 5).map((a, i) => (
+                <div key={a.id || i} className={`rounded-xl p-3 flex gap-3 border ${a.prioridade === 'critica' ? 'bg-red-900/20 border-red-800/40' : a.prioridade === 'alta' ? 'bg-amber-900/20 border-amber-800/40' : 'bg-gray-900 border-gray-800'}`}>
+                  <span className="text-amber-400 text-lg">🚨</span>
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium text-white">{a.titulo || a.tipo}</div>
+                    {a.descricao && <div className="text-xs text-gray-400">{a.descricao.slice(0, 100)}</div>}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
 
         {/* Quick actions */}
-        <div className="mx-4 md:mx-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <button onClick={() => router.push('/cs')} className="bg-gray-900 border border-gray-800 hover:border-indigo-500/40 rounded-xl p-4 text-left transition group">
-            <div className="text-2xl mb-2">🎯</div>
-            <div className="text-sm font-bold text-white group-hover:text-indigo-400">Cockpit CS</div>
-            <div className="text-xs text-gray-500 mt-1">Ver clínicas e jornada</div>
-          </button>
-          <button onClick={() => router.push('/comercial')} className="bg-gray-900 border border-gray-800 hover:border-amber-500/40 rounded-xl p-4 text-left transition group">
-            <div className="text-2xl mb-2">💼</div>
-            <div className="text-sm font-bold text-white group-hover:text-amber-400">Pipeline Comercial</div>
-            <div className="text-xs text-gray-500 mt-1">Fechamentos e propostas</div>
-          </button>
-          <button onClick={() => router.push('/operacao/financeiro')} className="bg-gray-900 border border-gray-800 hover:border-green-500/40 rounded-xl p-4 text-left transition group">
-            <div className="text-2xl mb-2">💰</div>
-            <div className="text-sm font-bold text-white group-hover:text-green-400">Financeiro</div>
-            <div className="text-xs text-gray-500 mt-1">A receber e a pagar</div>
-          </button>
+        <div className="mx-4 md:mx-6 mt-6">
+          <h2 className="text-sm font-bold text-gray-300 uppercase tracking-wider mb-3">Acessos rápidos</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            <button onClick={() => router.push('/cs')} className="bg-gray-900 border border-gray-800 hover:border-indigo-500/40 rounded-xl p-4 text-left transition group">
+              <div className="text-2xl mb-2">🎯</div>
+              <div className="text-sm font-bold text-white group-hover:text-indigo-400">CS — Medina</div>
+              <div className="text-xs text-gray-500 mt-1">Jornada D0-D90</div>
+            </button>
+            <button onClick={() => router.push('/comercial')} className="bg-gray-900 border border-gray-800 hover:border-amber-500/40 rounded-xl p-4 text-left transition group">
+              <div className="text-2xl mb-2">💼</div>
+              <div className="text-sm font-bold text-white group-hover:text-amber-400">Pipeline</div>
+              <div className="text-xs text-gray-500 mt-1">Comercial</div>
+            </button>
+            <button onClick={() => router.push('/trafego-clientes')} className="bg-gray-900 border border-gray-800 hover:border-purple-500/40 rounded-xl p-4 text-left transition group">
+              <div className="text-2xl mb-2">📣</div>
+              <div className="text-sm font-bold text-white group-hover:text-purple-400">Tráfego Clientes</div>
+              <div className="text-xs text-gray-500 mt-1">Jéssica · 48 clínicas</div>
+            </button>
+            <button onClick={() => router.push('/operacao/financeiro')} className="bg-gray-900 border border-gray-800 hover:border-green-500/40 rounded-xl p-4 text-left transition group">
+              <div className="text-2xl mb-2">💰</div>
+              <div className="text-sm font-bold text-white group-hover:text-green-400">Financeiro</div>
+              <div className="text-xs text-gray-500 mt-1">A receber/pagar</div>
+            </button>
+            <button onClick={() => router.push('/operacao/colaboradores')} className="bg-gray-900 border border-gray-800 hover:border-blue-500/40 rounded-xl p-4 text-left transition group">
+              <div className="text-2xl mb-2">👥</div>
+              <div className="text-sm font-bold text-white group-hover:text-blue-400">Colaboradores</div>
+              <div className="text-xs text-gray-500 mt-1">Equipe e folha</div>
+            </button>
+            <button onClick={() => router.push('/escritorio')} className="bg-gray-900 border border-gray-800 hover:border-amber-500/40 rounded-xl p-4 text-left transition group">
+              <div className="text-2xl mb-2">🏢</div>
+              <div className="text-sm font-bold text-white group-hover:text-amber-400">Escritório 2D</div>
+              <div className="text-xs text-gray-500 mt-1">Equipe ao vivo</div>
+            </button>
+          </div>
         </div>
       </div>
     </div>
