@@ -133,13 +133,16 @@ export default function TrafegoBI() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <div>
             <h1 style={{ fontSize: 22, fontWeight: 700, color: '#fff', margin: 0 }}>BI Comercial — Funil de Vendas</h1>
-            <p style={{ color: '#6b7280', fontSize: 13, margin: '4px 0 0' }}>2 closers · 10 reunioes/dia · Ticket medio R$2.000</p>
+            <p style={{ color: '#6b7280', fontSize: 13, margin: '4px 0 0' }}>Guilherme · Meta Ads sincronizado automático + input manual</p>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={() => setShowInput(true)} style={{ background: '#f59e0b', color: '#000', border: 'none', borderRadius: 8, padding: '7px 14px', cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>+ Preencher meu dia</button>
             <button onClick={load} style={{ background: 'transparent', border: '1px solid #252535', color: '#9ca3af', borderRadius: 8, padding: '7px 10px', cursor: 'pointer' }}>🔄</button>
           </div>
         </div>
+
+        {/* Painel Meta Ads — integração com o gerenciador de anúncios */}
+        <MetaAdsPanel onSync={load} />
 
         {/* ABAS: BI | Diário */}
         <div style={{ display: 'flex', gap: 4, marginBottom: 14 }}>

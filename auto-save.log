@@ -410,3 +410,15 @@ To https://github.com/contatocardosoeo-sys/excalibur-hq.git
  ! [remote rejected] main -> main (push declined due to repository rule violations)
 error: failed to push some refs to 'https://github.com/contatocardosoeo-sys/excalibur-hq.git'
 ✅ Auto-save: 2026-04-11 15:15
+warning: in the working copy of 'app/(hq)/trafego/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/api/trafego/meta-sync/route.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/components/MetaAdsPanel.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'scripts/trafego-interno-audit.mjs', LF will be replaced by CRLF the next time Git touches it
+[main 3ec5420] auto-save: 2026-04-11 19:45 — app/(hq)/trafego/page.tsx,app/api/trafego/meta-sync/route.ts,app/components/MetaAdsPanel.tsx,scripts/trafego-interno-audit.mjs,
+ 4 files changed, 454 insertions(+)
+ create mode 100644 app/api/trafego/meta-sync/route.ts
+ create mode 100644 app/components/MetaAdsPanel.tsx
+ create mode 100644 scripts/trafego-interno-audit.mjs
+To https://github.com/contatocardosoeo-sys/excalibur-hq.git
+   1069205..3ec5420  main -> main
+✅ Auto-save: 2026-04-11 19:45
