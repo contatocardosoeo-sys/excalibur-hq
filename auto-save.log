@@ -214,3 +214,24 @@ warning: in the working copy of 'scripts/trafego-schema.mjs', LF will be replace
 To https://github.com/contatocardosoeo-sys/excalibur-hq.git
    bfa5ca5..8aec45d  main -> main
 ✅ Auto-save: 2026-04-11 02:27
+warning: in the working copy of 'app/api/trafego-clientes/clinicas/route.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/api/trafego-clientes/metricas/route.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/api/trafego-clientes/overview/route.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'auto-save.log', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/api/trafego-clientes/historico/route.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/api/trafego-clientes/otimizacao/route.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/api/trafego-clientes/relatorio-semanal/route.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/components/trafego-clientes/Sparkline.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/lib/trafego-clientes.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'scripts/trafego-migrate-v2.mjs', LF will be replaced by CRLF the next time Git touches it
+[main 9524308] auto-save: 2026-04-11 02:57 — app/api/trafego-clientes/clinicas/route.ts,app/api/trafego-clientes/historico/route.ts,app/api/trafego-clientes/metricas/route.ts,app/api/trafego-clientes/otimizacao/route.ts,app/api/trafego-clientes/overview/route.ts,
+ 10 files changed, 615 insertions(+), 33 deletions(-)
+ create mode 100644 app/api/trafego-clientes/historico/route.ts
+ create mode 100644 app/api/trafego-clientes/otimizacao/route.ts
+ create mode 100644 app/api/trafego-clientes/relatorio-semanal/route.ts
+ create mode 100644 app/components/trafego-clientes/Sparkline.tsx
+ create mode 100644 app/lib/trafego-clientes.ts
+ create mode 100644 scripts/trafego-migrate-v2.mjs
+To https://github.com/contatocardosoeo-sys/excalibur-hq.git
+   7ac2b8e..9524308  main -> main
+✅ Auto-save: 2026-04-11 02:57

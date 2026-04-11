@@ -9,19 +9,28 @@ export async function GET(req: NextRequest) {
   const mes = now.getMonth() + 1
   const ano = now.getFullYear()
 
-  const [{ data: pipeline }, { data: metas }] = await Promise.all([
+  const [{ data: pipeline }, { data: metas }, { data: funilMensal }] = await Promise.all([
     supabase.from('pipeline_closer').select('*').order('created_at', { ascending: false }),
-    supabase.from('metas_closer').select('*').eq('closer_email', email).eq('mes', mes).eq('ano', ano).single(),
+    supabase.from('metas_closer').select('*').eq('closer_email', email).eq('mes', mes).eq('ano', ano).maybeSingle(),
+    supabase.from('funil_trafego').select('*').eq('mes', mes).eq('ano', ano).maybeSingle(),
   ])
 
   const items = pipeline || []
-  const semana = new Date(); semana.setDate(semana.getDate() - 7)
-  const semanaStr = semana.toISOString().split('T')[0]
-  const reunioesSemana = items.filter(p => p.data_reuniao && p.data_reuniao >= semanaStr).length
-  const propostasEnviadas = items.filter(p => p.status === 'proposta_enviada').length
-  const fechamentos = items.filter(p => p.status === 'fechado').length
-  const mrrMes = items.filter(p => p.status === 'fechado').reduce((s, p) => s + Number(p.mrr_proposto || 0), 0)
-  const totalReunioes = items.length
+
+  // Reunioes do mes = todas que ja agendaram/avancaram (status reuniao_agendada/proposta/fechado)
+  let reunioesSemana = items.filter(p => ['reuniao_agendada', 'proposta_enviada', 'fechado'].includes(p.status)).length
+  let propostasEnviadas = items.filter(p => p.status === 'proposta_enviada').length
+  let fechamentos = items.filter(p => p.status === 'fechado').length
+  let mrrMes = items.filter(p => p.status === 'fechado').reduce((s, p) => s + Number(p.mrr_proposto || 0), 0)
+
+  // Fallback: se pipeline_closer esta vazio, usar funil_trafego (Guilherme preenche manualmente)
+  if (items.length === 0 && funilMensal) {
+    reunioesSemana = funilMensal.reunioes_realizadas || 0
+    fechamentos = funilMensal.fechamentos || 0
+    mrrMes = Number(funilMensal.faturamento) || 0
+  }
+
+  const totalReunioes = Math.max(reunioesSemana, items.length)
 
   return NextResponse.json({
     pipeline: items,
