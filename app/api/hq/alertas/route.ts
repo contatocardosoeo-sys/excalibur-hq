@@ -32,6 +32,11 @@ type ClinicaMin = {
   data_inicio: string | null
 }
 
+// Thresholds de caixa crítico
+const CAIXA_CRITICO_ALTO = 20000 // amarelo — caixa baixo
+const CAIXA_CRITICO = 10000      // vermelho — caixa crítico
+const CAIXA_NEGATIVO = 0         // vermelho profundo — no vermelho
+
 function nivelToPrioridade(nivel: number | null): 'critica' | 'alta' | 'media' | 'baixa' {
   const n = nivel ?? 5
   if (n <= 2) return 'critica'
@@ -121,6 +126,43 @@ function gerarAlertasDinamicos(clinicas: ClinicaMin[]): Alerta[] {
   return alertas
 }
 
+// Gera alerta de caixa quando saldo do mes abaixo de threshold
+function gerarAlertaCaixa(caixa: number, recebido: number, totalReceber: number): Alerta | null {
+  if (caixa >= CAIXA_CRITICO_ALTO) return null
+
+  const fmt = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)
+  let prioridade: Alerta['prioridade']
+  let descricao: string
+  let acao: string
+
+  if (caixa < CAIXA_NEGATIVO) {
+    prioridade = 'critica'
+    descricao = `Caixa no vermelho (${fmt(caixa)}). Despesas superaram receitas do mês.`
+    acao = 'Cortar despesas variáveis imediatamente e acelerar cobrança de inadimplentes'
+  } else if (caixa < CAIXA_CRITICO) {
+    prioridade = 'critica'
+    descricao = `Caixa crítico: apenas ${fmt(caixa)} disponível. Recebido ${fmt(recebido)} de ${fmt(totalReceber)} previstos.`
+    acao = 'Priorizar cobrança de recebíveis pendentes e revisar gastos do mês'
+  } else {
+    prioridade = 'alta'
+    descricao = `Caixa baixo: ${fmt(caixa)} disponível. Monitorar fluxo de recebimento.`
+    acao = 'Acompanhar recebimentos pendentes e evitar despesas não essenciais'
+  }
+
+  return {
+    id: 'dyn-caixa-mes',
+    cliente_id: '',
+    cliente_nome: 'Caixa da empresa',
+    tipo: 'caixa_critico',
+    prioridade,
+    descricao,
+    acao_sugerida: acao,
+    status: 'aberto',
+    responsavel: 'Financeiro',
+    created_at: new Date().toISOString(),
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -128,13 +170,35 @@ export async function GET(request: NextRequest) {
     const statusFilter = searchParams.get('status')
     const tipoFilter = searchParams.get('tipo')
 
-    const [{ data: clinicas }, { data: alertasManuais }] = await Promise.all([
+    // Range do mes atual pra calculo de caixa
+    const now = new Date()
+    const mesAtual = now.getMonth() + 1
+    const anoAtual = now.getFullYear()
+    const inicioMes = `${anoAtual}-${String(mesAtual).padStart(2, '0')}-01`
+    const fimMes = mesAtual === 12 ? `${anoAtual + 1}-01-01` : `${anoAtual}-${String(mesAtual + 1).padStart(2, '0')}-01`
+
+    const [
+      { data: clinicas },
+      { data: alertasManuais },
+      { data: receber },
+      { data: pagar },
+    ] = await Promise.all([
       supabase.from('clinicas').select('id, nome, aviso_previo_inicio, score_total, dias_sem_venda, sla_estourado, cs_responsavel, created_at, ativo, data_inicio'),
       supabase.from('alertas_clinica').select('id, clinica_id, tipo, nivel, titulo, descricao, resolvido, created_at').eq('resolvido', false),
+      supabase.from('financeiro_receber').select('valor, status').gte('data_vencimento', inicioMes).lt('data_vencimento', fimMes),
+      supabase.from('financeiro_pagar').select('valor, status').gte('data_vencimento', inicioMes).lt('data_vencimento', fimMes),
     ])
 
     const cls = (clinicas as ClinicaMin[]) || []
     const nomeMap = new Map(cls.map(c => [c.id, c.nome]))
+
+    // Calculo de caixa do mes (recebido - pago)
+    const r = receber || []
+    const p = pagar || []
+    const totalReceber = r.reduce((s, i) => s + Number(i.valor), 0)
+    const recebido = r.filter(i => i.status === 'pago').reduce((s, i) => s + Number(i.valor), 0)
+    const pago = p.filter(i => i.status === 'pago').reduce((s, i) => s + Number(i.valor), 0)
+    const caixa = recebido - pago
 
     // Manual (persistidos)
     const manuais: Alerta[] = (alertasManuais || []).map(a => ({
@@ -153,7 +217,10 @@ export async function GET(request: NextRequest) {
     // Dinâmicos (calculados em cada request)
     const dinamicos = gerarAlertasDinamicos(cls)
 
-    const todos = [...manuais, ...dinamicos]
+    // Alerta de caixa (global, nao atrelado a clinica)
+    const alertaCaixa = gerarAlertaCaixa(caixa, recebido, totalReceber)
+
+    const todos = [...manuais, ...dinamicos, ...(alertaCaixa ? [alertaCaixa] : [])]
 
     const filtered = todos
       .filter(a => !prioridadeFilter || a.prioridade === prioridadeFilter)
