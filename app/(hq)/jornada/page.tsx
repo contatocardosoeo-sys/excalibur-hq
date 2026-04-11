@@ -46,6 +46,7 @@ export default function JornadaPage() {
   const [carteira, setCarteira] = useState<Cliente[]>([])
   const [kpis, setKpis] = useState<KPIs | null>(null)
   const [loading, setLoading] = useState(true)
+  const [trafegoMap, setTrafegoMap] = useState<Record<string, string>>({})
   const [filtroFase, setFiltroFase] = useState('')
   const [filtroStatus, setFiltroStatus] = useState('')
   const [filtroAtrasado, setFiltroAtrasado] = useState(false)
@@ -55,10 +56,21 @@ export default function JornadaPage() {
 
   const carregar = useCallback(async () => {
     setLoading(true)
-    const res = await fetch('/api/jornada')
+    const [res, rTraf] = await Promise.all([
+      fetch('/api/jornada'),
+      fetch('/api/trafego-clientes/clinicas').catch(() => null),
+    ])
     const d = await res.json()
     setCarteira(d.carteira || [])
     setKpis(d.kpis || null)
+    try {
+      if (rTraf) {
+        const dt = await rTraf.json()
+        const map: Record<string, string> = {}
+        ;(dt.clinicas || []).forEach((c: { id: string; status_trafego: string }) => { map[c.id] = c.status_trafego })
+        setTrafegoMap(map)
+      }
+    } catch { /* */ }
     setLoading(false)
   }, [])
 
@@ -188,6 +200,12 @@ export default function JornadaPage() {
                         <div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                             <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{c.nome}</span>
+                            {(() => {
+                              const t = trafegoMap[c.id]
+                              const icone = t === 'ativo' ? '🟢' : t === 'pausado' || t === 'problema' ? '🔴' : '⚫'
+                              const titulo = t === 'ativo' ? 'Tráfego ativo' : t === 'pausado' ? 'Tráfego pausado' : t === 'problema' ? 'Problema de tráfego' : 'Sem tráfego configurado'
+                              return <span title={titulo} style={{ fontSize: 11 }}>{icone}</span>
+                            })()}
                             <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 999, background: scor.bg, border: `1px solid ${scor.borda}40` }}>
                               <AnimatedShinyText className="!text-[10px] font-semibold" style={{ color: scor.texto }}>
                                 {scor.label}
