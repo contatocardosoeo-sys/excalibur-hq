@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import Sidebar from '../../components/Sidebar'
+import MetaAdsPanel from '../../components/MetaAdsPanel'
 import { supabase } from '../../lib/supabase'
 import { NumberTicker } from '@/components/ui/number-ticker'
 
