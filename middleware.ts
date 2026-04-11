@@ -13,6 +13,7 @@ const ROUTE_ROLES: Record<string, string[]> = {
   '/sdr/feedbacks': ['admin', 'coo', 'sdr', 'closer'],
   '/comercial': ['admin', 'coo', 'closer'],
   '/trafego': ['admin', 'coo', 'cmo'],
+  '/trafego-clientes': ['admin', 'coo', 'cs', 'head_traffic'],
   '/planos': ['admin'],
   '/financeiro': ['admin', 'coo', 'financeiro'],
   '/operacao/financeiro': ['admin', 'coo', 'financeiro'],
@@ -23,7 +24,7 @@ const ROUTE_ROLES: Record<string, string[]> = {
   '/ceo': ['admin'],
   '/eventos': ['admin', 'coo'],
   '/coo': ['admin', 'coo'],
-  '/escritorio': ['admin', 'coo', 'cs', 'sdr', 'closer', 'cmo', 'financeiro'],
+  '/escritorio': ['admin', 'coo', 'cs', 'sdr', 'closer', 'cmo', 'financeiro', 'head_traffic'],
   '/pipeline': ['admin', 'coo', 'cs'],
   '/observabilidade': ['admin'],
   '/base': ['admin'],
@@ -39,6 +40,7 @@ const DEFAULT_ROUTE: Record<string, string> = {
   sdr: '/sdr',
   closer: '/comercial',
   cmo: '/trafego',
+  head_traffic: '/trafego-clientes',
   financeiro: '/financeiro',
 }
 

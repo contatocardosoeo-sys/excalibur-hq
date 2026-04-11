@@ -28,6 +28,7 @@ const allSections: MenuSection[] = [
       { href: '/onboarding', icon: '🚀', label: 'Novo Cliente', roles: ['admin', 'coo', 'cs'] },
       { href: '/clientes', icon: '👥', label: 'Clientes', roles: ['admin', 'coo', 'cs', 'closer'] },
       { href: '/jornada', icon: '📈', label: 'Jornada D0-D90', roles: ['admin', 'coo', 'cs'] },
+      { href: '/trafego-clientes', icon: '📣', label: 'Trafego Clientes', roles: ['admin', 'coo', 'cs', 'head_traffic'] },
       { href: '/cs/calendario', icon: '📅', label: 'Calendario', roles: ['admin', 'coo', 'cs'] },
       { href: '/operacao/financeiro', icon: '💰', label: 'Financeiro', roles: ['admin', 'coo', 'financeiro'] },
       { href: '/operacao/colaboradores', icon: '👥', label: 'Colaboradores', roles: ['admin', 'coo'] },
@@ -37,7 +38,7 @@ const allSections: MenuSection[] = [
   {
     label: 'Sistema',
     items: [
-      { href: '/escritorio', icon: '🏢', label: 'Escritório 2D', roles: ['admin', 'coo', 'cs', 'sdr', 'closer', 'cmo', 'financeiro'] },
+      { href: '/escritorio', icon: '🏢', label: 'Escritório 2D', roles: ['admin', 'coo', 'cs', 'sdr', 'closer', 'cmo', 'financeiro', 'head_traffic'] },
       { href: '/eventos', icon: '⚡', label: 'Eventos', roles: ['admin', 'coo'] },
       { href: '/admin/usuarios', icon: '🔐', label: 'Usuarios', roles: ['admin'] },
     ],
