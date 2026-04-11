@@ -31,7 +31,7 @@ const TITULOS: Record<string, string> = {
   '/ia/reactions': 'Event Reactions',
   '/admin/usuarios': 'Usuários',
   '/trafego-clientes': 'Tráfego Clientes',
-  '/escritorio': 'Escritório 2D',
+  '/escritorio': 'Escritório Online',
 }
 
 function resolverTitulo(pathname: string): string {

@@ -169,7 +169,7 @@ export default function CooPage() {
             </button>
             <button onClick={() => router.push('/escritorio')} className="bg-gray-900 border border-gray-800 hover:border-amber-500/40 rounded-xl p-4 text-left transition group">
               <div className="text-2xl mb-2">🏢</div>
-              <div className="text-sm font-bold text-white group-hover:text-amber-400">Escritório 2D</div>
+              <div className="text-sm font-bold text-white group-hover:text-amber-400">Escritório Online</div>
               <div className="text-xs text-gray-500 mt-1">Equipe ao vivo</div>
             </button>
           </div>

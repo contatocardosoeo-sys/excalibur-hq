@@ -138,7 +138,7 @@ export default function EscritorioPage() {
   const [toasts, setToasts] = useState<Array<{ id: number; text: string; type: string }>>([])
   const [chatOpen, setChatOpen] = useState(false)
   const [chatMsgs, setChatMsgs] = useState<Array<{ autor: string; texto: string; sistema?: boolean }>>([
-    { autor: 'Sistema HQ 🤖', texto: '🔔 Bem-vindo ao Escritório 2D! Use WASD pra andar, E pra interagir, arraste com Alt pra mover a câmera.', sistema: true },
+    { autor: 'Sistema HQ 🤖', texto: '🔔 Bem-vindo ao Escritório Online! Use WASD pra andar, E pra interagir, arraste com Alt pra mover a câmera.', sistema: true },
   ])
   const [chatInput, setChatInput] = useState('')
 
