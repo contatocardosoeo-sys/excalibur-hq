@@ -133,7 +133,7 @@ N8N      = AUTOMACAO (onde as rotinas rodam)`}</Code>
                   </tbody>
                 </table>
                 <div className="grid grid-cols-3 gap-3 mt-4">
-                  <div className="bg-gray-800/50 rounded-xl p-3 text-center"><p className="text-gray-500 text-[10px]">Meta Minima</p><p className="text-white font-bold">R$74.000</p><p className="text-gray-500 text-[10px]">37 vendas | 153 reun</p></div>
+                  <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-3 text-center"><p className="text-gray-500 text-[10px]">Meta Minima</p><p className="text-white font-bold">R$74.000</p><p className="text-gray-500 text-[10px]">37 vendas | 153 reun</p></div>
                   <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-3 text-center"><p className="text-gray-500 text-[10px]">Meta Normal</p><p className="text-amber-400 font-bold">R$90.000</p><p className="text-gray-500 text-[10px]">45 vendas | 187 reun</p></div>
                   <div className="bg-green-500/5 border border-green-500/20 rounded-xl p-3 text-center"><p className="text-gray-500 text-[10px]">Super Meta</p><p className="text-green-400 font-bold">R$106.000</p><p className="text-gray-500 text-[10px]">53 vendas | 220 reun</p></div>
                 </div>
@@ -153,19 +153,19 @@ N8N      = AUTOMACAO (onde as rotinas rodam)`}</Code>
               {/* INTELIGENCIA */}
               <Section id="inteligencia" active={activeSection} title="🤖 Camada de Inteligencia">
                 <div className="grid grid-cols-3 gap-3">
-                  <div className="bg-gray-800/50 rounded-xl p-3"><p className="text-amber-400 font-bold text-xs">Event System</p><p className="text-gray-300 text-[10px] mt-1">15 eventos tipados → reacoes em cadeia</p></div>
-                  <div className="bg-gray-800/50 rounded-xl p-3"><p className="text-amber-400 font-bold text-xs">Supervisor IA</p><p className="text-gray-300 text-[10px] mt-1">Claude API → resumo executivo diario</p></div>
-                  <div className="bg-gray-800/50 rounded-xl p-3"><p className="text-amber-400 font-bold text-xs">Event Reactions</p><p className="text-gray-300 text-[10px] mt-1">8 cadeias automaticas ativas</p></div>
+                  <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-3"><p className="text-amber-400 font-bold text-xs">Event System</p><p className="text-gray-300 text-[10px] mt-1">15 eventos tipados → reacoes em cadeia</p></div>
+                  <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-3"><p className="text-amber-400 font-bold text-xs">Supervisor IA</p><p className="text-gray-300 text-[10px] mt-1">Claude API → resumo executivo diario</p></div>
+                  <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-3"><p className="text-amber-400 font-bold text-xs">Event Reactions</p><p className="text-gray-300 text-[10px] mt-1">8 cadeias automaticas ativas</p></div>
                 </div>
               </Section>
 
               {/* ESTADO */}
               <Section id="estado" active={activeSection} title="📋 Estado Atual">
                 <div className="grid grid-cols-4 gap-3 mb-4">
-                  <div className="bg-gray-800/50 rounded-xl p-3 text-center"><p className="text-gray-500 text-[10px]">Tabelas Supabase</p><p className="text-white font-bold text-lg">40+</p></div>
-                  <div className="bg-gray-800/50 rounded-xl p-3 text-center"><p className="text-gray-500 text-[10px]">APIs criadas</p><p className="text-white font-bold text-lg">35+</p></div>
-                  <div className="bg-gray-800/50 rounded-xl p-3 text-center"><p className="text-gray-500 text-[10px]">Workflows N8N</p><p className="text-white font-bold text-lg">6</p></div>
-                  <div className="bg-gray-800/50 rounded-xl p-3 text-center"><p className="text-gray-500 text-[10px]">Linhas de codigo</p><p className="text-white font-bold text-lg">15k+</p></div>
+                  <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-3 text-center"><p className="text-gray-500 text-[10px]">Tabelas Supabase</p><p className="text-white font-bold text-lg">40+</p></div>
+                  <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-3 text-center"><p className="text-gray-500 text-[10px]">APIs criadas</p><p className="text-white font-bold text-lg">35+</p></div>
+                  <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-3 text-center"><p className="text-gray-500 text-[10px]">Workflows N8N</p><p className="text-white font-bold text-lg">6</p></div>
+                  <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-3 text-center"><p className="text-gray-500 text-[10px]">Linhas de codigo</p><p className="text-white font-bold text-lg">15k+</p></div>
                 </div>
                 <table className="w-full text-xs">
                   <thead><tr className="text-gray-500 border-b border-gray-800"><th className="text-left py-2 px-3">Produto</th><th className="text-left py-2 px-3">URL</th><th className="text-left py-2 px-3">Status</th></tr></thead>
@@ -223,7 +223,7 @@ N8N      = AUTOMACAO (onde as rotinas rodam)`}</Code>
                     { papel: 'Dev', nome: 'Lucas', funcao: 'Implementacao' },
                     { papel: 'Consultor', nome: 'GPT', funcao: 'Validacao estrategica' },
                   ].map((p) => (
-                    <div key={p.papel} className="bg-gray-800/50 rounded-xl p-3 text-center">
+                    <div key={p.papel} className="bg-gray-800/50 border border-gray-700 rounded-xl p-3 text-center">
                       <p className="text-amber-400 font-bold text-xs">{p.papel}</p>
                       <p className="text-white text-sm font-medium mt-1">{p.nome}</p>
                       <p className="text-gray-500 text-[10px]">{p.funcao}</p>

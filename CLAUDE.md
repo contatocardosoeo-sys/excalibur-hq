@@ -1,6 +1,25 @@
 # EXCALIBUR_OS — CLAUDE.md
 > Arquivo lido automaticamente pelo Claude Code a cada sessão.
-> Última atualização: 2026-04-10
+> Última atualização: 2026-04-11 (v1.5)
+
+## 📊 ESTADO DO SISTEMA (snapshot atual)
+
+- **Versão:** v1.5
+- **Clínicas ativas:** 48 (47 em D0_NOVO + 1 Demo em D7_ATIVADO)
+- **Adoção:** seed inicial aplicado (score médio 10.6 — mostra realidade operacional)
+- **Usuários:** Cardoso(admin), Luana(coo+admin), Medina(cs), Guilherme(closer+cmo), Trindade(sdr)
+- **Colaboradores:** 7 ativos — Gisele(R$1.700), Rodrigo(R$2.000), Jonathan(R$1.500), Vivi(R$7.000), Jessica, Lua, Medina
+- **Caixa mês atual:** R$1.840 — **CRÍTICO** (alerta automático ativo)
+- **MRR:** R$81.800 (meta mês)
+- **SDR Leads:** 0/300 (Wascript não configurado por Trindade)
+
+## 🎨 SISTEMA DE TÍTULOS DE ABA
+
+Títulos dinâmicos via `app/components/TitleSync.tsx` (client-side, montado no HQLayout).
+- Funciona via `useEffect` + `requestAnimationFrame` + `setTimeout` + `MutationObserver`
+- **Não usar `export const metadata`** nas pages `'use client'` — não funciona, por isso o MutationObserver
+- Formato: `"NomePágina | Excalibur HQ"`
+- 26 rotas mapeadas
 
 ---
 

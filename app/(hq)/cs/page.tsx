@@ -228,7 +228,8 @@ export default function CSPainel() {
             { key: 'log' as const, label: '📝 Log' },
           ].map(t => (
             <button key={t.key} onClick={() => setAba(t.key)}
-              style={{ flex: 1, background: aba === t.key ? '#f59e0b' : 'transparent', color: aba === t.key ? '#030712' : '#6b7280', border: 'none', borderRadius: 8, padding: '10px 16px', fontSize: 12, fontWeight: aba === t.key ? 700 : 500, cursor: 'pointer' }}>
+              className="min-h-[44px] md:min-h-[36px]"
+              style={{ flex: 1, background: aba === t.key ? '#f59e0b' : 'transparent', color: aba === t.key ? '#030712' : '#6b7280', border: 'none', borderRadius: 8, padding: '10px 16px', fontSize: 12, fontWeight: aba === t.key ? 700 : 500, cursor: 'pointer', whiteSpace: 'nowrap' }}>
               {t.label}
             </button>
           ))}
