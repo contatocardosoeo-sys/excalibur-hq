@@ -4,9 +4,9 @@ import Sidebar from '../../components/Sidebar'
 
 export default function VisaoGeralPage() {
   return (
-    <div className="min-h-screen bg-gray-950 flex">
+    <div className="min-h-screen bg-gray-950 flex overflow-x-hidden">
       <Sidebar />
-      <div className="flex-1 p-4 md:p-8 overflow-auto">
+      <div className="flex-1 p-4 md:p-8 overflow-auto min-w-0">
         <div className="flex flex-col items-center justify-center min-h-[70vh] gap-4 md:gap-6 text-center px-4">
           <div className="text-7xl">📊</div>
           <div>

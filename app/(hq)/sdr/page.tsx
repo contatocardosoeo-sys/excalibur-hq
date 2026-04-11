@@ -176,7 +176,7 @@ export default function SDRPage() {
   return (
     <div style={{ minHeight: '100vh', background: '#030712', display: 'flex', overflowX: 'hidden' }}>
       <Sidebar />
-      <div style={{ flex: 1, padding: '24px 32px', overflowY: 'auto', overflowX: 'hidden', maxWidth: '100%', minWidth: 0 }}>
+      <div style={{ flex: 1, padding: '16px 16px', overflowY: 'auto', overflowX: 'hidden', maxWidth: '100%', minWidth: 0 }}>
 
         {/* Card de acao do dia (imperativo) */}
         <AcaoHoje role="sdr" />
@@ -397,7 +397,7 @@ export default function SDRPage() {
                 Cada etapa tem fluxo automatico para disparar mensagens. Se a pessoa nao responder no fluxo: <strong>follow-up 1 no mesmo dia, follow-up 2 no dia seguinte</strong>.
               </p>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}>
               {[...ETAPAS_ACL].sort((a, b) => a.prioridade - b.prioridade).map(e => (
                 <div key={e.num} style={{ background: '#111827', border: `1px solid ${e.cor}30`, borderRadius: 12, padding: 16, borderLeft: `4px solid ${e.cor}` }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>

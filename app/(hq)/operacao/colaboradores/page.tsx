@@ -54,9 +54,9 @@ export default function ColaboradoresPage() {
   const totalMensal = ativos.reduce((s, c) => s + Number(c.valor_mensal), 0)
 
   return (
-    <div style={{ minHeight: '100vh', background: '#030712', display: 'flex' }}>
+    <div style={{ minHeight: '100vh', background: '#030712', display: 'flex', overflowX: 'hidden' }}>
       <Sidebar />
-      <div style={{ flex: 1, padding: '24px 32px', overflowY: 'auto' }}>
+      <div style={{ flex: 1, padding: '16px 16px', overflowY: 'auto', overflowX: 'hidden', minWidth: 0, maxWidth: '100%' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
           <div>
             <h1 style={{ fontSize: 22, fontWeight: 700, color: '#fff', margin: 0 }}>Colaboradores</h1>
@@ -67,7 +67,7 @@ export default function ColaboradoresPage() {
         </div>
 
         {/* KPIs */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10, marginBottom: 20 }}>
           <div style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 12, padding: 16 }}>
             <div style={{ fontSize: 10, color: '#6b7280', textTransform: 'uppercase' }}>Ativos</div>
             <div style={{ fontSize: 24, fontWeight: 800, color: '#4ade80' }}>{ativos.length}</div>

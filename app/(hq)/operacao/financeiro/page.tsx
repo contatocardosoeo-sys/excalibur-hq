@@ -114,7 +114,7 @@ const inp: React.CSSProperties = { width: '100%', background: '#1f2937', border:
 function Skeleton() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 12 }}>
         {[1, 2, 3, 4].map(i => <div key={i} style={{ background: '#111827', borderRadius: 12, height: 80, animation: 'pulse 1.5s infinite' }} />)}
       </div>
       <div style={{ background: '#111827', borderRadius: 12, height: 10, width: '100%', animation: 'pulse 1.5s infinite' }} />
@@ -417,9 +417,9 @@ export default function FinanceiroOperacao() {
 
   /* ══════════════ RENDER ══════════════ */
   return (
-    <div style={{ minHeight: '100vh', background: '#030712', display: 'flex' }}>
+    <div style={{ minHeight: '100vh', background: '#030712', display: 'flex', overflowX: 'hidden' }}>
       <Sidebar />
-      <div style={{ flex: 1, padding: '24px 32px', overflowY: 'auto', maxWidth: 1200 }}>
+      <div style={{ flex: 1, padding: '16px 16px', overflowY: 'auto', overflowX: 'hidden', minWidth: 0, maxWidth: '100%' }}>
 
         {/* ── Header ── */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
@@ -458,7 +458,7 @@ export default function FinanceiroOperacao() {
             {aba === 'receber' && (
               <>
                 {/* Cards */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 12 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10, marginBottom: 12 }}>
                   <Card icon="💰" label="Previsto" valor={totaisR.total_previsto} cor="#94a3b8" />
                   <Card icon="✅" label="Recebido" valor={totaisR.total_recebido} sub={`${pct(totaisR.total_recebido, totaisR.total_previsto)}% do previsto`} cor="#4ade80" border="#22c55e30" />
                   <Card icon="⏳" label="Pendente" valor={totaisR.total_pendente} cor="#fbbf24" border="#f59e0b30" />
@@ -531,7 +531,7 @@ export default function FinanceiroOperacao() {
             {/* ════════════════ ABA PAGAR ════════════════ */}
             {aba === 'pagar' && (
               <>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 12 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10, marginBottom: 12 }}>
                   <Card icon="📋" label="Total previsto" valor={totaisP.total_previsto} cor="#94a3b8" />
                   <Card icon="✅" label="Pago" valor={totaisP.total_pago} sub={`${pct(totaisP.total_pago, totaisP.total_previsto)}% executado`} cor="#4ade80" border="#22c55e30" />
                   <Card icon="⏳" label="A pagar" valor={totaisP.total_apagar} cor="#f87171" border="#ef444430" />
@@ -571,7 +571,7 @@ export default function FinanceiroOperacao() {
             {aba === 'resumo' && resumo && (
               <>
                 {/* Grid 2x3 */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 16 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10, marginBottom: 16 }}>
                   <Card icon="💰" label="A Receber" valor={resumo.total_receber} sub="previsto mensal" cor="#60a5fa" />
                   <Card icon="🔴" label="A Pagar" valor={resumo.total_pagar} sub="previsto mensal" cor="#f87171" />
                   <Card icon="💵" label="Caixa Atual" valor={resumo.caixa} sub="recebido - pago" cor={resumo.caixa >= 0 ? '#4ade80' : '#f87171'} border={resumo.caixa >= 0 ? '#22c55e30' : '#ef444430'} />

@@ -83,7 +83,7 @@ export default function OnboardingPage() {
   }, [])
 
   return (
-    <div className="flex-1 p-4 md:p-8 overflow-auto">
+    <div className="flex-1 p-4 md:p-8 overflow-auto min-w-0">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
         <span>⚔️</span>

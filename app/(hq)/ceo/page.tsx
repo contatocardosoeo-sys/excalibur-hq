@@ -141,7 +141,7 @@ export default function CEODashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-950 flex">
+      <div className="min-h-screen bg-gray-950 flex overflow-x-hidden">
         <Sidebar />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-amber-400 text-lg animate-pulse">Carregando Dashboard CEO...</div>
@@ -157,9 +157,9 @@ export default function CEODashboard() {
   const criticosCount = alertas.filter(a => a.nivel === 'critico').length
 
   return (
-    <div className="min-h-screen bg-gray-950 flex">
+    <div className="min-h-screen bg-gray-950 flex overflow-x-hidden">
       <Sidebar />
-      <div className="flex-1 p-4 md:p-6 overflow-auto">
+      <div className="flex-1 p-4 md:p-6 overflow-auto min-w-0">
 
         {/* ━━━ ADOÇÃO DA EQUIPE (primeiro elemento — monitoramento de execução) ━━━ */}
         <AdocaoEquipe />

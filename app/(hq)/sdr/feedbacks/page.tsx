@@ -69,9 +69,9 @@ export default function FeedbacksSDR() {
   const feedbackHoje = items.find(f => f.data === hoje)
 
   return (
-    <div style={{ minHeight: '100vh', background: '#030712', display: 'flex' }}>
+    <div style={{ minHeight: '100vh', background: '#030712', display: 'flex', overflowX: 'hidden' }}>
       <Sidebar />
-      <div style={{ flex: 1, padding: '24px 32px', overflowY: 'auto', maxWidth: 1200 }}>
+      <div style={{ flex: 1, padding: '16px 16px', overflowY: 'auto', overflowX: 'hidden', minWidth: 0, maxWidth: '100%' }}>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <div>
@@ -161,7 +161,7 @@ export default function FeedbacksSDR() {
                     </div>
                     <span style={{ fontSize: 9, color: '#4b5563' }}>{f.tipo}</span>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, marginTop: 8 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12, marginTop: 8 }}>
                     {f.o_que_funcionou && (
                       <div>
                         <div style={{ fontSize: 9, color: '#4ade80', fontWeight: 700, marginBottom: 2 }}>✅ FUNCIONOU</div>

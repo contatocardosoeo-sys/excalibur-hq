@@ -175,7 +175,7 @@ export default function NovoOnboarding() {
                 <label style={{ display: 'block', fontSize: 11, color: '#6b7280', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Foco principal * <span style={{ color: '#4b5563', fontWeight: 400, textTransform: 'none' }}>(pode marcar mais de um)</span>
                 </label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
                   {['Prótese / Implantes / Protocolo', 'Lentes de contato', 'Estética', 'Outros'].map(opcao => {
                     const marcado = focos.includes(opcao)
                     return (

@@ -63,9 +63,9 @@ export default function PipelinePage() {
   const fases = ['onboarding', 'adocao', 'escala']
 
   return (
-    <div className="min-h-screen bg-gray-950 flex">
+    <div className="min-h-screen bg-gray-950 flex overflow-x-hidden">
       <Sidebar />
-      <div className="flex-1 p-4 md:p-8 overflow-auto">
+      <div className="flex-1 p-4 md:p-8 overflow-auto min-w-0">
         <div className="mb-6">
           <h1 className="text-white text-xl md:text-2xl font-bold truncate">Pipeline D0-D90</h1>
           <p className="text-gray-400 text-sm mt-1">Jornada de sucesso dos clientes</p>

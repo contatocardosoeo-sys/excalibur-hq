@@ -132,9 +132,9 @@ export default function ComercialPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#09090f', display: 'flex' }}>
+    <div style={{ minHeight: '100vh', background: '#09090f', display: 'flex', overflowX: 'hidden' }}>
       <Sidebar />
-      <div style={{ flex: 1, padding: '20px 24px', overflowY: 'auto' }}>
+      <div style={{ flex: 1, padding: '16px 16px', overflowY: 'auto', overflowX: 'hidden', minWidth: 0, maxWidth: '100%' }}>
         {/* Card de acao do dia (imperativo) */}
         <AcaoHoje role="closer" />
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>

@@ -297,7 +297,7 @@ function PlanosContent() {
   }, [clinicaId])
 
   return (
-    <div className="min-h-screen bg-gray-950 p-8 overflow-auto">
+    <div className="min-h-screen bg-gray-950 p-4 md:p-8 overflow-auto overflow-x-hidden">
       {/* Clinica banner */}
       {clinicaId && (
         <div className="mb-6 flex items-center gap-2 rounded-xl border border-yellow-600/40 bg-yellow-500/10 px-5 py-3">

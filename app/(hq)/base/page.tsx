@@ -23,7 +23,7 @@ export default function BasePage() {
   return (
     <div className="flex h-screen bg-gray-950">
       <Sidebar />
-      <main className="flex-1 overflow-auto p-4 md:p-6">
+      <main className="flex-1 overflow-auto p-4 md:p-6 min-w-0">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="mb-6">

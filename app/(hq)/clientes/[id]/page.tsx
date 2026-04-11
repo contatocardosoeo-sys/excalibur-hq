@@ -197,7 +197,7 @@ export default function ClientePerfilPage() {
 
   if (loading || !dados) {
     return (
-      <div className="min-h-screen bg-gray-950 flex">
+      <div className="min-h-screen bg-gray-950 flex overflow-x-hidden">
         <Sidebar />
         <div className="flex-1 p-4 md:p-8">
           <div className="h-8 w-64 bg-gray-800 rounded mb-6 animate-pulse" />
@@ -217,9 +217,9 @@ export default function ClientePerfilPage() {
   const setField = <K extends keyof Clinica>(k: K, v: Clinica[K]) => setForm(f => ({ ...f, [k]: v }))
 
   return (
-    <div className="min-h-screen bg-gray-950 flex">
+    <div className="min-h-screen bg-gray-950 flex overflow-x-hidden">
       <Sidebar />
-      <div className="flex-1 p-4 md:p-8 overflow-auto">
+      <div className="flex-1 p-4 md:p-8 overflow-auto min-w-0">
         <button onClick={() => router.push('/clientes')} className="text-gray-500 text-sm mb-4 hover:text-amber-400 transition">
           ← Voltar para clientes
         </button>

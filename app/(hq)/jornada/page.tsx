@@ -98,9 +98,9 @@ export default function JornadaPage() {
   const temFiltro = filtroFase || filtroStatus || filtroAtrasado || filtroAlerta || busca || kpiFiltro
 
   return (
-    <div style={{ minHeight: '100vh', background: '#09090f', display: 'flex' }}>
+    <div style={{ minHeight: '100vh', background: '#09090f', display: 'flex', overflowX: 'hidden' }}>
       <Sidebar />
-      <div style={{ flex: 1, padding: '20px 24px', overflowY: 'auto' }}>
+      <div style={{ flex: 1, padding: '16px 16px', overflowY: 'auto', overflowX: 'hidden', minWidth: 0, maxWidth: '100%' }}>
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>

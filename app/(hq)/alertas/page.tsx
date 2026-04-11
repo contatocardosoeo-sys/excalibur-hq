@@ -82,9 +82,9 @@ export default function AlertasPage() {
   const responsavelOptions = [...new Set(alertas.map(a => a.responsavel).filter(Boolean))]
 
   return (
-    <div className="min-h-screen bg-gray-950 flex">
+    <div className="min-h-screen bg-gray-950 flex overflow-x-hidden">
       <Sidebar />
-      <div className="flex-1 p-4 md:p-8 overflow-auto">
+      <div className="flex-1 p-4 md:p-8 overflow-auto min-w-0">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
           <div>
             <h1 className="text-white text-xl md:text-2xl font-bold truncate">Alertas</h1>

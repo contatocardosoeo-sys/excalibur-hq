@@ -125,9 +125,9 @@ export default function TrafegoBI() {
   const maxChart = Math.max(...dadosDiarios.map(d => d.leads || 0), 1)
 
   return (
-    <div style={{ minHeight: '100vh', background: '#09090f', display: 'flex' }}>
+    <div style={{ minHeight: '100vh', background: '#09090f', display: 'flex', overflowX: 'hidden' }}>
       <Sidebar />
-      <div style={{ flex: 1, padding: '20px 24px', overflowY: 'auto' }}>
+      <div style={{ flex: 1, padding: '16px 16px', overflowY: 'auto', overflowX: 'hidden', minWidth: 0, maxWidth: '100%' }}>
         {/* HEADER */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <div>
@@ -354,7 +354,7 @@ export default function TrafegoBI() {
                   {(gargalo.acoes || []).map((a, i) => <div key={i} style={{ fontSize: 11, color: '#e5e7eb', paddingLeft: 16, padding: '2px 0 2px 16px' }}>→ {a}</div>)}
                 </div>
               )}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 8 }}>
                 {decisoes.map(d => (
                   <div key={d.metrica} style={{ background: `${d.cor}08`, border: `1px solid ${d.cor}25`, borderRadius: 8, padding: 10 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}><span style={{ fontSize: 10, color: '#6b7280', textTransform: 'uppercase' }}>{d.metrica}</span><span>{d.emoji}</span></div>
@@ -379,7 +379,7 @@ export default function TrafegoBI() {
                 </div>
                 {metaSel && (
                   <>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10 }}>
                       {[
                         { l: 'Leads', atual: funil?.leads || 0, meta: metaSel.leads, dia: metaSel.leadsDia },
                         { l: 'Agendamentos', atual: funil?.agendamentos || 0, meta: metaSel.agendamentos, dia: metaSel.agendDia },

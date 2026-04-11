@@ -149,7 +149,7 @@ export default function CSPainel() {
         <Sidebar />
         <div style={{ flex: 1, padding: 32 }}>
           <div style={{ height: 28, width: 200, background: '#111827', borderRadius: 8, animation: 'pulse 1.5s infinite', marginBottom: 24 }} />
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 10, marginBottom: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: 10, marginBottom: 16 }}>
             {[1, 2, 3, 4, 5, 6].map(i => <div key={i} style={{ background: '#111827', borderRadius: 12, height: 80, animation: 'pulse 1.5s infinite' }} />)}
           </div>
           {[1, 2, 3].map(i => <div key={i} style={{ background: '#111827', borderRadius: 12, height: 200, marginBottom: 12, animation: 'pulse 1.5s infinite' }} />)}
@@ -185,9 +185,9 @@ export default function CSPainel() {
   )
 
   return (
-    <div style={{ minHeight: '100vh', background: '#030712', display: 'flex' }}>
+    <div style={{ minHeight: '100vh', background: '#030712', display: 'flex', overflowX: 'hidden' }}>
       <Sidebar />
-      <div style={{ flex: 1, padding: '24px 32px', overflowY: 'auto', maxWidth: 1400 }}>
+      <div style={{ flex: 1, padding: '16px 16px', overflowY: 'auto', overflowX: 'hidden', minWidth: 0, maxWidth: '100%' }}>
 
         {/* Card de acao do dia (imperativo) */}
         <AcaoHoje role="cs" />
@@ -205,7 +205,7 @@ export default function CSPainel() {
         </div>
 
         {/* ── KPIs principais ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 10, marginBottom: 12 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: 10, marginBottom: 12 }}>
           <KPICard icon="👥" label="Clientes ativos" valor={<NumberTicker value={kpis.total_ativos} style={{ color: '#60a5fa' }} />} sub={`MRR ${fmt(kpis.mrr_total)}`} cor="#60a5fa" />
           <KPICard icon="💚" label="Saudaveis" valor={<NumberTicker value={kpis.saudaveis} style={{ color: '#4ade80' }} />} sub="score >= 80" cor="#4ade80" onClick={() => { setAba('clientes'); setFiltroScore('saudavel') }} />
           <KPICard icon="⚠️" label="Em atencao" valor={<NumberTicker value={kpis.em_atencao} style={{ color: '#fbbf24' }} />} sub="60-79" cor="#fbbf24" onClick={() => { setAba('clientes'); setFiltroScore('atencao') }} />
@@ -215,7 +215,7 @@ export default function CSPainel() {
         </div>
 
         {/* ── KPIs secundarios ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10, marginBottom: 20 }}>
           <KPICard icon="📊" label="Score medio" valor={`${kpis.score_medio}%`} cor={scoreCor(kpis.score_medio)} />
           <KPICard icon="💰" label="Faturamento mes" valor={fmt(kpis.faturamento_mes)} sub="dos clientes" cor="#fbbf24" />
           <KPICard icon="⏳" label="Sem interacao" valor={kpis.sem_interacao} sub=">= 5 dias" cor={kpis.sem_interacao > 0 ? '#f97316' : '#4ade80'} />

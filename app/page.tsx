@@ -76,11 +76,21 @@ export default function LoginHQ() {
               className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500 placeholder-gray-500 transition" />
           </div>
 
-          {erro && <p className="text-red-400 text-xs bg-red-500/10 border border-red-700/40 rounded-lg px-3 py-2">{erro}</p>}
+          <label className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer select-none">
+            <input type="checkbox" defaultChecked className="accent-amber-500 w-4 h-4" />
+            Lembrar de mim por 30 dias
+          </label>
 
-          <button type="submit" disabled={loading}
-            className="w-full bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-gray-950 font-bold py-3 rounded-lg transition text-sm">
-            {loading ? 'Entrando...' : 'Acessar HQ'}
+          {erro && <p className="text-red-400 text-xs bg-red-500/10 border border-red-700/40 rounded-lg px-3 py-2" role="alert">{erro}</p>}
+
+          <button type="submit" disabled={loading} aria-busy={loading}
+            className="w-full bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-gray-950 font-bold py-3 rounded-lg transition text-sm min-h-[44px] flex items-center justify-center gap-2">
+            {loading ? (
+              <>
+                <span className="inline-block w-4 h-4 border-2 border-gray-950 border-t-transparent rounded-full animate-spin" aria-hidden="true" />
+                Entrando...
+              </>
+            ) : 'Acessar HQ'}
           </button>
         </form>
 
