@@ -169,6 +169,15 @@ main, .min-h-screen {
   animation: toastSlideIn 0.25s ease-out;
 }
 
+/* Onboarding modal — entrada suave com bounce */
+@keyframes onboardingIn {
+  from { transform: scale(0.95) translateY(10px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+.onboarding-modal {
+  animation: onboardingIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
 /* Tooltip para sidebar colapsada — aparece ao hover nos icones */
 .sidebar-collapsed-link {
   position: relative;
