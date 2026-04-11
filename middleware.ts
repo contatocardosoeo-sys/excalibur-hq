@@ -23,6 +23,7 @@ const ROUTE_ROLES: Record<string, string[]> = {
   '/ceo': ['admin'],
   '/eventos': ['admin'],
   '/coo': ['admin', 'coo'],
+  '/escritorio': ['admin', 'coo', 'cs', 'sdr', 'closer', 'cmo', 'financeiro'],
   '/pipeline': ['admin', 'coo', 'cs'],
   '/observabilidade': ['admin'],
   '/base': ['admin'],
