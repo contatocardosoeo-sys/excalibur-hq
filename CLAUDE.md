@@ -7,7 +7,7 @@
 - **Versão:** v1.5
 - **Clínicas ativas:** 48 (47 em D0_NOVO + 1 Demo em D7_ATIVADO)
 - **Adoção:** seed inicial aplicado (score médio 10.6 — mostra realidade operacional)
-- **Usuários:** Cardoso(admin), Luana(coo+admin), Medina(cs), Guilherme(closer+cmo), Trindade(sdr)
+- **Usuários:** Cardoso(admin), Luana(coo+admin), Medina(cs), Guilherme(closer+cmo), Trindade(sdr) — **senha padrão `excalibur10`**
 - **Colaboradores:** 7 ativos — Gisele(R$1.700), Rodrigo(R$2.000), Jonathan(R$1.500), Vivi(R$7.000), Jessica, Lua, Medina
 - **Caixa mês atual:** R$1.840 — **CRÍTICO** (alerta automático ativo)
 - **MRR:** R$81.800 (meta mês)
@@ -104,15 +104,21 @@ npx shadcn@latest add @magicui/[nome-do-componente] --yes
 
 ## 👥 USUÁRIOS DO SISTEMA
 
+**🔑 SENHA PADRÃO DE TODOS: `excalibur10`**
+(Última rotação: 2026-04-11 — usar essa em TODOS os testes/acessos)
+
 | Nome | Email | Senha | Role | Tela inicial |
 |---|---|---|---|---|
-| Cardoso (CEO) | contato.cardosoeo@gmail.com | 123456 | admin | /ceo |
-| Luana | luanacaira.excalibur@gmail.com | 123456 | admin | /ceo |
-| Medina | brunomedina.contato@gmail.com | 123456 | cs | /cs |
-| Guilherme | guilherme.excalibur@gmail.com | 123456 | closer+cmo | /comercial |
-| Trindade | trindade.excalibur@gmail.com | 123456 | sdr | /sdr |
+| Cardoso (CEO) | contato.cardosoeo@gmail.com | `excalibur10` | admin | /ceo |
+| Luana | luanacaira.excalibur@gmail.com | `excalibur10` | coo+admin | /coo |
+| Medina | brunomedina.contato@gmail.com | `excalibur10` | cs | /cs |
+| Guilherme | guilherme.excalibur@gmail.com | `excalibur10` | closer+cmo | /comercial |
+| Trindade | trindade.excalibur@gmail.com | `excalibur10` | sdr | /sdr |
 
-Senha mínima Supabase: 6 caracteres. Padrão atual: `123456`.
+Senha mínima Supabase: 6 caracteres. Padrão atual: `excalibur10`.
+Autenticação via Supabase Auth (não tabela própria). Reset só via Admin API
+(`supabase.auth.admin.updateUserById`). Flag `must_reset_password` em
+`usuarios_internos` força redirect pra `/reset-password` no próximo login.
 
 ---
 
