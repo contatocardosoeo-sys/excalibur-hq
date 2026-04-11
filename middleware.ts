@@ -18,6 +18,7 @@ const ROUTE_ROLES: Record<string, string[]> = {
   '/importar': ['admin', 'coo', 'cs', 'sdr', 'closer', 'cmo', 'financeiro', 'head_traffic'],
   '/coo/migracao': ['admin', 'coo'],
   '/sistema': ['admin'],
+  '/design': ['admin', 'coo', 'cs', 'sdr', 'closer', 'cmo', 'head_traffic', 'editor_video', 'designer'],
   '/planos': ['admin'],
   '/financeiro': ['admin', 'coo', 'financeiro'],
   '/operacao/financeiro': ['admin', 'coo', 'financeiro'],
@@ -28,7 +29,7 @@ const ROUTE_ROLES: Record<string, string[]> = {
   '/ceo': ['admin'],
   '/eventos': ['admin', 'coo'],
   '/coo': ['admin', 'coo'],
-  '/escritorio': ['admin', 'coo', 'cs', 'sdr', 'closer', 'cmo', 'financeiro', 'head_traffic'],
+  '/escritorio': ['admin', 'coo', 'cs', 'sdr', 'closer', 'cmo', 'financeiro', 'head_traffic', 'editor_video', 'designer'],
   '/pipeline': ['admin', 'coo', 'cs'],
   '/observabilidade': ['admin'],
   '/base': ['admin'],
@@ -45,6 +46,8 @@ const DEFAULT_ROUTE: Record<string, string> = {
   closer: '/comercial',
   cmo: '/trafego',
   head_traffic: '/trafego-clientes',
+  editor_video: '/design',
+  designer: '/design',
   financeiro: '/financeiro',
 }
 

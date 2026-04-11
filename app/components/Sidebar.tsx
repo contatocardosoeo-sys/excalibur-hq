@@ -25,11 +25,12 @@ const allSections: MenuSection[] = [
   {
     label: 'Operacao',
     items: [
-      { href: '/escritorio', icon: '🏢', label: 'Escritório Online', roles: ['admin', 'coo', 'cs', 'sdr', 'closer', 'cmo', 'financeiro', 'head_traffic'] },
+      { href: '/escritorio', icon: '🏢', label: 'Escritório Online', roles: ['admin', 'coo', 'cs', 'sdr', 'closer', 'cmo', 'financeiro', 'head_traffic', 'editor_video', 'designer'] },
       { href: '/onboarding', icon: '🚀', label: 'Novo Cliente', roles: ['admin', 'coo', 'cs'] },
       { href: '/clientes', icon: '👥', label: 'Clientes', roles: ['admin', 'coo', 'cs', 'closer', 'sdr'] },
       { href: '/jornada', icon: '📈', label: 'Jornada do Cliente', roles: ['admin', 'coo', 'cs', 'sdr'] },
       { href: '/trafego-clientes', icon: '📣', label: 'Trafego Clientes', roles: ['admin', 'coo', 'cs', 'head_traffic'] },
+      { href: '/design', icon: '🎨', label: 'Design & Vídeo', roles: ['admin', 'coo', 'cs', 'sdr', 'closer', 'cmo', 'head_traffic', 'editor_video', 'designer'] },
       { href: '/cs/calendario', icon: '📅', label: 'Calendario', roles: ['admin', 'coo', 'cs'] },
       { href: '/operacao/financeiro', icon: '💰', label: 'Financeiro', roles: ['admin', 'coo', 'financeiro'] },
       { href: '/operacao/colaboradores', icon: '👥', label: 'Colaboradores', roles: ['admin', 'coo'] },
@@ -39,10 +40,10 @@ const allSections: MenuSection[] = [
   {
     label: 'Migração HQ-only',
     items: [
-      { href: '/migracao', icon: '⚔️', label: 'Minha trilha', roles: ['admin', 'coo', 'cs', 'sdr', 'closer', 'cmo', 'financeiro', 'head_traffic'] },
-      { href: '__MIGRACAO_ROLE__', icon: '📍', label: 'Trilha detalhada', roles: ['admin', 'coo', 'cs', 'sdr', 'closer', 'cmo', 'financeiro', 'head_traffic'] },
-      { href: '/migracao/checkin', icon: '✅', label: 'Checkin do dia', roles: ['admin', 'coo', 'cs', 'sdr', 'closer', 'cmo', 'financeiro', 'head_traffic'] },
-      { href: '/importar', icon: '📥', label: 'Importar dados', roles: ['admin', 'coo', 'cs', 'sdr', 'closer', 'cmo', 'financeiro', 'head_traffic'] },
+      { href: '/migracao', icon: '⚔️', label: 'Minha trilha', roles: ['admin', 'coo', 'cs', 'sdr', 'closer', 'cmo', 'financeiro', 'head_traffic', 'editor_video', 'designer'] },
+      { href: '__MIGRACAO_ROLE__', icon: '📍', label: 'Minha trilha detalhada', roles: ['admin', 'coo', 'cs', 'sdr', 'closer', 'cmo', 'financeiro', 'head_traffic', 'editor_video', 'designer'] },
+      { href: '/migracao/checkin', icon: '✅', label: 'Checkin do dia', roles: ['admin', 'coo', 'cs', 'sdr', 'closer', 'cmo', 'financeiro', 'head_traffic', 'editor_video', 'designer'] },
+      { href: '/importar', icon: '📥', label: 'Importar dados', roles: ['admin', 'coo', 'cs', 'sdr', 'closer', 'cmo', 'financeiro', 'head_traffic', 'editor_video', 'designer'] },
       { href: '/coo/migracao', icon: '📊', label: 'Adoção equipe', roles: ['admin', 'coo'] },
     ],
   },
