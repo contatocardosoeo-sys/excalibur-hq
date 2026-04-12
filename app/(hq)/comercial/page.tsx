@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import Sidebar from '../../components/Sidebar'
 import AcaoHoje from '../../components/AcaoHoje'
+import ComissoesPanel from '../../components/ComissoesPanel'
 import { useToast } from '../../components/Toast'
 import { supabase } from '../../lib/supabase'
 import { useDispararEvento } from '../../hooks/useDispararEvento'
@@ -138,6 +139,11 @@ export default function ComercialPage() {
       <div style={{ flex: 1, padding: '16px 16px', overflowY: 'auto', overflowX: 'hidden', minWidth: 0, maxWidth: '100%' }}>
         {/* Card de acao do dia (imperativo) */}
         <AcaoHoje role="closer" />
+
+        {/* Comissões do closer */}
+        <div style={{ marginBottom: 14 }}>
+          <ComissoesPanel visao="closer" />
+        </div>
 
         {/* Card funil alvo — vindo do config (fonte única) */}
         <div style={{ background: '#111827', border: '1px solid #22c55e30', borderRadius: 12, padding: '14px 18px', marginBottom: 14 }}>

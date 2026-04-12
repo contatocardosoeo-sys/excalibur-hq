@@ -68,7 +68,62 @@ export async function POST(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   const { id, ...updates } = await req.json()
-  const { data, error } = await supabase.from('pipeline_closer').update(updates).eq('id', id).select().single()
+
+  // Estado anterior para detectar transição para "fechado"
+  const { data: anterior } = await supabase
+    .from('pipeline_closer')
+    .select('status, nome_clinica, mrr_proposto')
+    .eq('id', id)
+    .maybeSingle()
+
+  const { data, error } = await supabase
+    .from('pipeline_closer')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single()
+
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ success: true, data })
+
+  // Se moveu para "fechado" agora, dispara comissão
+  const virouFechado = updates.status === 'fechado' && anterior?.status !== 'fechado'
+  if (virouFechado) {
+    try {
+      // Chamada direta à função de cálculo (evita fetch self-loop em serverless)
+      await supabase.from('comissoes').insert([
+        // Closer 5% da primeira mensalidade
+        {
+          colaborador_email: 'guilherme.excalibur@gmail.com',
+          colaborador_nome: 'Guilherme',
+          role: 'closer',
+          tipo: 'venda',
+          valor: Math.round(Number(data.mrr_proposto || 2400) * 0.05),
+          mes: new Date().getMonth() + 1,
+          ano: new Date().getFullYear(),
+          data_evento: new Date().toISOString().slice(0, 10),
+          pipeline_card_id: id,
+          lead_nome: data.nome_clinica || anterior?.nome_clinica || null,
+          ticket_venda: Number(data.mrr_proposto || 2400),
+        },
+        // SDR bônus R$40
+        {
+          colaborador_email: 'trindade.excalibur@gmail.com',
+          colaborador_nome: 'Trindade',
+          role: 'sdr',
+          tipo: 'venda',
+          valor: 40,
+          mes: new Date().getMonth() + 1,
+          ano: new Date().getFullYear(),
+          data_evento: new Date().toISOString().slice(0, 10),
+          pipeline_card_id: id,
+          lead_nome: data.nome_clinica || anterior?.nome_clinica || null,
+          ticket_venda: Number(data.mrr_proposto || 2400),
+        },
+      ])
+    } catch {
+      /* não bloqueia o update */
+    }
+  }
+
+  return NextResponse.json({ success: true, data, comissao_gerada: virouFechado })
 }

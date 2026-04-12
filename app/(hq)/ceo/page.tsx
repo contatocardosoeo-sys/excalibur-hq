@@ -12,6 +12,7 @@ import { NumberTicker } from '@/components/ui/number-ticker'
 import AdocaoEquipe from '../../components/AdocaoEquipe'
 import ResumoDia from '../../components/ResumoDia'
 import FunilUnificado from '../../components/FunilUnificado'
+import ComissoesPanel from '../../components/ComissoesPanel'
 
 interface Receita {
   dia: number
@@ -168,6 +169,11 @@ export default function CEODashboard() {
 
         {/* ━━━ FUNIL UNIFICADO — real vs meta (alvo R$90k) ━━━ */}
         <FunilUnificado />
+
+        {/* ━━━ COMISSÕES DA EQUIPE ━━━ */}
+        <div className="mb-6">
+          <ComissoesPanel compacto />
+        </div>
 
         {/* ━━━ ADOÇÃO DA EQUIPE (primeiro elemento — monitoramento de execução) ━━━ */}
         <AdocaoEquipe />

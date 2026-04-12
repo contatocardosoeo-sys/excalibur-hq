@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Sidebar from '../../components/Sidebar'
 import AdocaoEquipe from '../../components/AdocaoEquipe'
+import ComissoesPanel from '../../components/ComissoesPanel'
 import { NumberTicker } from '@/components/ui/number-ticker'
 
 type DashboardData = {
@@ -49,6 +50,11 @@ export default function CooPage() {
       <div className="flex-1 p-4 md:p-6 overflow-auto min-w-0">
         {/* Painel adoção equipe (mesmo do CEO) */}
         <AdocaoEquipe />
+
+        {/* Comissões da equipe comercial */}
+        <div className="mx-4 md:mx-6 mb-6">
+          <ComissoesPanel compacto />
+        </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6 mx-4 md:mx-6">
           <div>

@@ -181,19 +181,102 @@ export async function POST(req: NextRequest) {
   const data = body.data || new Date().toISOString().split('T')[0]
   const sdr_email = body.sdr_email || 'trindade.excalibur@gmail.com'
 
+  // Estado anterior pra saber quanto cresceu (e gerar comissão só no delta)
+  const { data: anterior } = await supabase
+    .from('sdr_metricas_diarias')
+    .select('agendamentos, comparecimentos, vendas')
+    .eq('data', data)
+    .eq('sdr_email', sdr_email)
+    .maybeSingle()
+
+  const novoAgend = Number(body.agendamentos) || 0
+  const novoComp = Number(body.comparecimentos) || 0
+  const novoVendas = Number(body.vendas) || 0
+
   const { data: result, error } = await supabase.from('sdr_metricas_diarias').upsert({
     data,
     sdr_email,
     leads_recebidos: Number(body.leads_recebidos) || 0,
     contatos_realizados: Number(body.contatos_realizados) || 0,
-    agendamentos: Number(body.agendamentos) || 0,
-    comparecimentos: Number(body.comparecimentos) || 0,
-    vendas: Number(body.vendas) || 0,
+    agendamentos: novoAgend,
+    comparecimentos: novoComp,
+    vendas: novoVendas,
     valor_vendas: Number(body.valor_vendas) || 0,
     observacao: body.observacao || null,
     updated_at: new Date().toISOString(),
   }, { onConflict: 'data,sdr_email' }).select().single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ success: true, data: result })
+
+  // Gerar comissões pelo delta (não re-conta o que já tinha)
+  const deltaAgend = Math.max(0, novoAgend - Number(anterior?.agendamentos || 0))
+  const deltaComp = Math.max(0, novoComp - Number(anterior?.comparecimentos || 0))
+  const deltaVendas = Math.max(0, novoVendas - Number(anterior?.vendas || 0))
+
+  if (deltaAgend + deltaComp + deltaVendas > 0) {
+    try {
+      const { data: cfg } = await supabase
+        .from('config_comissoes')
+        .select('sdr_valor_agendamento, sdr_bonus_comparecimento, sdr_bonus_venda, closer_pct_venda')
+        .order('atualizado_em', { ascending: false })
+        .limit(1)
+        .single()
+
+      const cfgSafe = cfg || {
+        sdr_valor_agendamento: 8,
+        sdr_bonus_comparecimento: 12,
+        sdr_bonus_venda: 40,
+        closer_pct_venda: 0.05,
+      }
+
+      const d = new Date(data + 'T12:00:00')
+      const mes = d.getMonth() + 1
+      const ano = d.getFullYear()
+      const base = {
+        colaborador_email: sdr_email,
+        colaborador_nome: 'Trindade',
+        role: 'sdr' as const,
+        mes,
+        ano,
+        data_evento: data,
+        observacao: 'gerado via lançamento SDR',
+      }
+
+      const rows: Record<string, unknown>[] = []
+      for (let i = 0; i < deltaAgend; i++) {
+        rows.push({ ...base, tipo: 'agendamento', valor: Number(cfgSafe.sdr_valor_agendamento) })
+      }
+      for (let i = 0; i < deltaComp; i++) {
+        rows.push({ ...base, tipo: 'comparecimento', valor: Number(cfgSafe.sdr_bonus_comparecimento) })
+      }
+      for (let i = 0; i < deltaVendas; i++) {
+        rows.push({ ...base, tipo: 'venda', valor: Number(cfgSafe.sdr_bonus_venda) })
+        // Closer também recebe quando venda é lançada pelo SDR
+        rows.push({
+          colaborador_email: 'guilherme.excalibur@gmail.com',
+          colaborador_nome: 'Guilherme',
+          role: 'closer',
+          tipo: 'venda',
+          valor: Math.round(2400 * Number(cfgSafe.closer_pct_venda)),
+          mes,
+          ano,
+          data_evento: data,
+          ticket_venda: 2400,
+          observacao: 'gerado via lançamento SDR (ticket médio default)',
+        })
+      }
+
+      if (rows.length > 0) {
+        await supabase.from('comissoes').insert(rows)
+      }
+    } catch {
+      /* não bloqueia lançamento */
+    }
+  }
+
+  return NextResponse.json({
+    success: true,
+    data: result,
+    delta: { agendamentos: deltaAgend, comparecimentos: deltaComp, vendas: deltaVendas },
+  })
 }

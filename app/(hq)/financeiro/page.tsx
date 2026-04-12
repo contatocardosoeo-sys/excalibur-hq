@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Sidebar from '../../components/Sidebar'
 import AsaasPanel from '../../components/AsaasPanel'
+import ComissoesPanel from '../../components/ComissoesPanel'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -246,6 +247,12 @@ export default function FinanceiroPage() {
 
         {/* Painel Asaas — saldo ao vivo */}
         <AsaasPanel />
+
+        {/* Comissões da equipe comercial */}
+        <div className="mt-6 mb-6">
+          <h3 className="text-white text-sm font-bold mb-3">💰 Comissões comerciais — mês atual</h3>
+          <ComissoesPanel visao="admin" />
+        </div>
 
         {/* BLOCO 1: KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
