@@ -94,7 +94,7 @@ CREATE INDEX IF NOT EXISTS idx_trafego_clinica_gestor ON trafego_clinica(gestor_
 `
 
 const client = new Client({
-  connectionString: 'postgresql://postgres:Excalibur%402026%21DB@db.hluhlsnodndpskrkbjuw.supabase.co:5432/postgres',
+  connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
 })
 

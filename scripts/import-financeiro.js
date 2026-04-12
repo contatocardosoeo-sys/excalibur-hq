@@ -1,7 +1,7 @@
 const https = require('https');
 const { Client } = require('pg');
 
-const DB = 'postgresql://postgres:Excalibur%402026%21DB@db.hluhlsnodndpskrkbjuw.supabase.co:5432/postgres';
+const DB = process.env.DATABASE_URL;
 const SHEET = '1kBuhI6W5l2-EkiT-v8rNL-2EGyw12_gMoq-d7l15dB0';
 
 const ABAS = [

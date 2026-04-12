@@ -2,7 +2,7 @@
 // Adiciona campos operacionais a clinicas, migra dados, atualiza FKs
 
 const { Client } = require('pg')
-const DB = 'postgresql://postgres:Excalibur%402026%21DB@db.hluhlsnodndpskrkbjuw.supabase.co:5432/postgres'
+const DB = process.env.DATABASE_URL
 
 ;(async () => {
   const c = new Client({ connectionString: DB })

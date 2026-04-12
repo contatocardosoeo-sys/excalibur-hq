@@ -1,5 +1,6 @@
-// lib/wascript.ts — Excalibur OS Wascript Client
-// Integracao com Wascript API para envio de mensagens WhatsApp
+// lib/wascript.ts — Excalibur OS Wascript Client (CLÍNICAS)
+// Usado por: /api/wascript/send (envio por clínica com token via DB wascript_connections)
+// NÃO confundir com app/lib/wascript.ts que é pra uso interno do HQ (token global do Trindade)
 
 const WASCRIPT_BASE = 'https://api-whatsapp.wascript.com.br'
 

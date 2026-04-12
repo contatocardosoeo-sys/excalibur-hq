@@ -4,7 +4,7 @@
 // - funil_metas recalculado para os 3 níveis
 import pg from 'pg'
 const c = new pg.Client({
-  connectionString: 'postgresql://postgres:Excalibur%402026%21DB@db.hluhlsnodndpskrkbjuw.supabase.co:5432/postgres',
+  connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
 })
 
