@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import Sidebar from '../../components/Sidebar'
 import AcaoHoje from '../../components/AcaoHoje'
 import IndicacoesCS from '../../components/IndicacoesCS'
+import TourGuiado from '../../components/TourGuiado'
+import { getTourSteps } from '../../lib/tour-engine'
 import { useToast } from '../../components/Toast'
 import Modal, { ModalButton } from '../../components/Modal'
 import { supabase } from '../../lib/supabase'
@@ -98,12 +100,32 @@ export default function CSPainel() {
   const [aba, setAba] = useState<'overview' | 'clientes' | 'tarefas' | 'acoes' | 'log'>('overview')
   const [busca, setBusca] = useState('')
   const [filtroScore, setFiltroScore] = useState('')
+  const [tourAtivo, setTourAtivo] = useState(false)
+  const [userEmail, setUserEmail] = useState('')
 
   // Modal contato
   const [modalCliente, setModalCliente] = useState<Cliente | null>(null)
   const [contatoTipo, setContatoTipo] = useState('mensagem')
   const [contatoDesc, setContatoDesc] = useState('')
   const [salvando, setSalvando] = useState(false)
+
+  // Tour guiado — detectar ?tour=1 na URL ou checar se nunca concluiu
+  useEffect(() => {
+    ;(async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      const email = session?.user?.email
+      if (!email) return
+      setUserEmail(email)
+      const params = new URLSearchParams(window.location.search)
+      if (params.get('tour') === '1') {
+        setTourAtivo(true)
+        window.history.replaceState({}, '', '/cs')
+      } else {
+        const r = await fetch(`/api/tour/status?email=${encodeURIComponent(email)}&pagina=/cs`).then(r => r.json()).catch(() => ({ deve_mostrar: false }))
+        if (r.deve_mostrar) setTourAtivo(true)
+      }
+    })()
+  }, [])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -172,8 +194,8 @@ export default function CSPainel() {
   })
 
   /* ── Card ── */
-  const KPICard = ({ icon, label, valor, sub, cor, onClick }: { icon: string; label: string; valor: React.ReactNode; sub?: string; cor: string; onClick?: () => void }) => (
-    <div onClick={onClick} style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 12, padding: '12px 14px', cursor: onClick ? 'pointer' : 'default', transition: 'border 0.2s' }}
+  const KPICard = ({ icon, label, valor, sub, cor, onClick, id: elId }: { icon: string; label: string; valor: React.ReactNode; sub?: string; cor: string; onClick?: () => void; id?: string }) => (
+    <div id={elId} onClick={onClick} style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 12, padding: '12px 14px', cursor: onClick ? 'pointer' : 'default', transition: 'border 0.2s' }}
       onMouseEnter={e => { if (onClick) (e.currentTarget as HTMLDivElement).style.borderColor = cor + '60' }}
       onMouseLeave={e => { if (onClick) (e.currentTarget as HTMLDivElement).style.borderColor = '#1f2937' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
@@ -214,13 +236,13 @@ export default function CSPainel() {
           <KPICard icon="💚" label="Saudaveis" valor={<NumberTicker value={kpis.saudaveis} style={{ color: '#4ade80' }} />} sub="score >= 80" cor="#4ade80" onClick={() => { setAba('clientes'); setFiltroScore('saudavel') }} />
           <KPICard icon="⚠️" label="Em atencao" valor={<NumberTicker value={kpis.em_atencao} style={{ color: '#fbbf24' }} />} sub="60-79" cor="#fbbf24" onClick={() => { setAba('clientes'); setFiltroScore('atencao') }} />
           <KPICard icon="🔴" label="Em risco" valor={<NumberTicker value={kpis.em_risco} style={{ color: '#f87171' }} />} sub="< 60" cor="#f87171" onClick={() => { setAba('clientes'); setFiltroScore('risco') }} />
-          <KPICard icon="🚨" label="Alertas criticos" valor={<NumberTicker value={kpis.alertas_criticos} style={{ color: kpis.alertas_criticos > 0 ? '#f87171' : '#4ade80' }} />} sub={`${kpis.alertas_total} totais`} cor={kpis.alertas_criticos > 0 ? '#f87171' : '#4ade80'} />
+          <KPICard id="kpi-alertas" icon="🚨" label="Alertas criticos" valor={<NumberTicker value={kpis.alertas_criticos} style={{ color: kpis.alertas_criticos > 0 ? '#f87171' : '#4ade80' }} />} sub={`${kpis.alertas_total} totais`} cor={kpis.alertas_criticos > 0 ? '#f87171' : '#4ade80'} />
           <KPICard icon="📅" label="Tarefas semana" valor={<NumberTicker value={kpis.tarefas_semana} style={{ color: kpis.tarefas_bloqueantes > 0 ? '#fbbf24' : '#9ca3af' }} />} sub={`${kpis.tarefas_bloqueantes} bloqueantes`} cor={kpis.tarefas_bloqueantes > 0 ? '#fbbf24' : '#9ca3af'} onClick={() => router.push('/cs/calendario')} />
         </div>
 
         {/* ── KPIs secundarios ── */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10, marginBottom: 20 }}>
-          <KPICard icon="📊" label="Score medio" valor={`${kpis.score_medio}%`} sub={kpis.score_medio >= 80 ? '🟢 Saudável · meta 80' : kpis.score_medio >= 60 ? '🟡 Atenção · meta 80' : kpis.score_medio >= 40 ? '🟠 Ação hoje · meta 80' : '🔴 Crítico · agir já'} cor={scoreCor(kpis.score_medio)} />
+          <KPICard id="kpi-score-medio" icon="📊" label="Score medio" valor={`${kpis.score_medio}%`} sub={kpis.score_medio >= 80 ? '🟢 Saudável · meta 80' : kpis.score_medio >= 60 ? '🟡 Atenção · meta 80' : kpis.score_medio >= 40 ? '🟠 Ação hoje · meta 80' : '🔴 Crítico · agir já'} cor={scoreCor(kpis.score_medio)} />
           <KPICard icon="💰" label="Faturamento mes" valor={fmt(kpis.faturamento_mes)} sub="dos clientes" cor="#fbbf24" />
           <KPICard icon="⏳" label="Sem interacao" valor={kpis.sem_interacao} sub=">= 5 dias" cor={kpis.sem_interacao > 0 ? '#f97316' : '#4ade80'} />
           <KPICard icon="🎯" label="Acoes pendentes" valor={acoes.length} sub="obrigatorias" cor={acoes.length > 0 ? '#fbbf24' : '#4ade80'} />
@@ -427,7 +449,7 @@ export default function CSPainel() {
                 </button>
               )}
             </div>
-            <div style={{ background: '#0d1117', border: '1px solid #1f2937', borderRadius: 12, overflow: 'hidden' }}>
+            <div id="lista-clientes" style={{ background: '#0d1117', border: '1px solid #1f2937', borderRadius: 12, overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead><tr>
                   {['Cliente', 'Etapa', 'Dias', 'Score', 'Tarefas', 'Alertas', 'Faturamento', 'Acao'].map(h => (
@@ -436,7 +458,7 @@ export default function CSPainel() {
                 </tr></thead>
                 <tbody>
                   {clientesFiltrados.map(c => (
-                    <tr key={c.id} style={{ borderBottom: '1px solid #1f293730', cursor: 'pointer' }} onClick={() => router.push(`/jornada/${c.id}`)}>
+                    <tr key={c.id} className="client-row" style={{ borderBottom: '1px solid #1f293730', cursor: 'pointer' }} onClick={() => router.push(`/jornada/${c.id}`)}>
                       <td style={{ padding: '10px 14px' }}>
                         <div style={{ color: '#fff', fontSize: 12, fontWeight: 600 }}>{c.nome}</div>
                         <div style={{ color: '#6b7280', fontSize: 9 }}>{c.plano} · {c.cs_responsavel}</div>
@@ -564,6 +586,16 @@ export default function CSPainel() {
           <textarea value={contatoDesc} onChange={e => setContatoDesc(e.target.value)} placeholder="Descreva o contato realizado..."
             style={{ width: '100%', background: '#1f2937', border: '1px solid #374151', borderRadius: 8, padding: '10px 14px', color: '#fff', fontSize: 12, outline: 'none', minHeight: 80, resize: 'vertical' }} />
         </Modal>
+
+        {/* Tour guiado — balões interativos sobre cada elemento */}
+        {tourAtivo && userEmail && (
+          <TourGuiado
+            steps={getTourSteps('cs', '/cs')}
+            pagina="/cs"
+            userEmail={userEmail}
+            onComplete={() => setTourAtivo(false)}
+          />
+        )}
       </div>
     </div>
   )
