@@ -10,6 +10,8 @@ import ComissoesHero from '../../components/ComissoesHero'
 import WascriptLive from '../../components/WascriptLive'
 import WascriptEnvioRapido from '../../components/WascriptEnvioRapido'
 import EtapasDistribuicao from '../../components/EtapasDistribuicao'
+import TourGuiado from '../../components/TourGuiado'
+import { getTourSteps } from '../../lib/tour-engine'
 import { useToast } from '../../components/Toast'
 import { supabase } from '../../lib/supabase'
 import { useDispararEvento } from '../../hooks/useDispararEvento'
@@ -73,6 +75,7 @@ export default function SDRPage() {
   const [loading, setLoading] = useState(true)
   const [aba, setAba] = useState<'rotina' | 'etapas' | 'historico' | 'overview'>('rotina')
   const [userEmail, setUserEmail] = useState('trindade.excalibur@gmail.com')
+  const [tourAtivo, setTourAtivo] = useState(false)
 
   // Filtros de periodo
   const [periodo, setPeriodo] = useState<'hoje' | 'semana' | 'mes' | 'personalizado'>('mes')
@@ -117,6 +120,20 @@ export default function SDRPage() {
   }, [periodo, dataInicio, dataFim])
 
   useEffect(() => { load(); const iv = setInterval(load, 120000); return () => clearInterval(iv) }, [load])
+
+  // Tour guiado
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('tour') === '1') {
+      setTourAtivo(true)
+      window.history.replaceState({}, '', '/sdr')
+    } else {
+      fetch(`/api/tour/status?email=${encodeURIComponent(userEmail)}&pagina=/sdr`)
+        .then(r => r.json())
+        .then(d => { if (d.deve_mostrar) setTourAtivo(true) })
+        .catch(() => {})
+    }
+  }, [userEmail])
 
   const salvarMetricas = async () => {
     setSalvando(true)
@@ -229,16 +246,22 @@ export default function SDRPage() {
       <div style={{ flex: 1, padding: '16px 16px', overflowY: 'auto', overflowX: 'hidden', maxWidth: '100%', minWidth: 0 }}>
 
         {/* ⚔️ COMISSÃO GIGANTE — pedido do Trindade, no topo da tela */}
-        <ComissoesHero role="sdr" nome="Trindade" email="trindade.excalibur@gmail.com" />
+        <div id="painel-comissao">
+          <ComissoesHero role="sdr" nome="Trindade" email="trindade.excalibur@gmail.com" />
+        </div>
 
         {/* 🎯 Distribuição de leads pelas 10 etapas reais (CRM Waseller espelhado) */}
-        <EtapasDistribuicao />
+        <div id="etapas-funil">
+          <EtapasDistribuicao />
+        </div>
 
         {/* 📲 WhatsApp etiquetas ao vivo (contador Wascript) */}
         <WascriptLive />
 
         {/* 📱 Envio manual WhatsApp — só quando o Trindade clicar */}
-        <WascriptEnvioRapido />
+        <div id="integracao-wascript">
+          <WascriptEnvioRapido />
+        </div>
 
         {/* Card de acao do dia (imperativo) */}
         <AcaoHoje role="sdr" />
@@ -775,6 +798,10 @@ export default function SDRPage() {
               </table>
             )}
           </div>
+        )}
+
+        {tourAtivo && (
+          <TourGuiado steps={getTourSteps('sdr', '/sdr')} pagina="/sdr" userEmail={userEmail} onComplete={() => setTourAtivo(false)} />
         )}
       </div>
     </div>

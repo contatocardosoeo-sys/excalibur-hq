@@ -131,6 +131,7 @@ export default function OnboardingWizard() {
   const [role, setRole] = useState('')
   const [email, setEmail] = useState('')
   const [ferramentas, setFerramentas] = useState<string[]>([])
+  const [ferramentasOutro, setFerramentasOutro] = useState('')
   const [dificuldades, setDificuldades] = useState<string[]>([])
   const [expectativa, setExpectativa] = useState('')
   const [salvando, setSalvando] = useState(false)
@@ -168,15 +169,20 @@ export default function OnboardingWizard() {
 
   const finalizar = async () => {
     setSalvando(true)
-    await fetch('/api/onboarding-wizard', {
+    const r = await fetch('/api/onboarding/completar', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        email,
-        dados: { ferramentas, dificuldades, expectativa, completado_em: new Date().toISOString() },
+        userEmail: email,
+        role,
+        ferramentas,
+        ferramentas_outro: ferramentasOutro,
+        dificuldades,
+        expectativa,
       }),
     })
-    router.replace(`${info.tela}?tour=1`)
+    const j = await r.json().catch(() => ({ redirect: `${info.tela}?tour=1` }))
+    router.replace(j.redirect || `${info.tela}?tour=1`)
   }
 
   const steps = [
@@ -238,6 +244,18 @@ export default function OnboardingWizard() {
           </button>
         ))}
       </div>
+      <input
+        type="text"
+        placeholder="Outros — escreva aqui..."
+        value={ferramentasOutro}
+        onChange={e => setFerramentasOutro(e.target.value)}
+        style={{
+          width: '100%', marginTop: 10, background: '#0a0f1a',
+          border: '2px solid #1f2937', borderRadius: 12,
+          padding: '12px 16px', color: '#fff', fontSize: 13,
+          minHeight: 48,
+        }}
+      />
     </div>,
 
     // TELA 3 — Dificuldades
