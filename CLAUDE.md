@@ -1,28 +1,56 @@
-# Excalibur HQ — Sistema Operacional Interno v2.0
+# Excalibur HQ — Sistema Operacional Interno v3.0
 > Arquivo lido automaticamente pelo Claude Code a cada sessão.
-> Última atualização: 2026-04-11 (v2.0)
+> Última atualização: 2026-04-12 (v3.0)
 
 ## Stack
 Next.js 16 + React 19 + Supabase + Tailwind 4 + shadcn/ui + Magic UI
-URL prod: https://excalibur-hq.vercel.app
 Repo: ~/Desktop/excalibur/excalibur-hq
+
+## Ambientes (REGRA OBRIGATÓRIA)
+| Ambiente | Branch | URL | Quem usa |
+|----------|--------|-----|----------|
+| PRODUCTION | `main` | https://excaliburhq.com.br | Toda equipe (Trindade, Guilherme, Medina, etc.) |
+| STAGING | `staging` | https://staging.excaliburhq.com.br | Só CEO + Claude (teste) |
+
+### Fluxo de desenvolvimento
+1. **NUNCA** commitar direto na `main` — sempre trabalhar na `staging`
+2. Push na `staging` → deploy automático em staging.excaliburhq.com.br
+3. CEO testa e aprova → merge `staging` → `main`
+4. Deploy automático em excaliburhq.com.br (produção)
+
+### Comandos
+```bash
+# Ir pra staging e trabalhar
+git checkout staging
+
+# Quando terminar a feature
+git push
+
+# Quando CEO aprovar: merge pra main
+git checkout main && git merge staging && git push
+```
+
+## Credenciais
 Vercel token: ver .env.local (VERCEL_TOKEN)
+Vercel project ID: prj_8VnzsviMnc1v3YCNCcf9gYAMTu4C
 DB: postgresql://postgres:Excalibur%402026%21DB@db.hluhlsnodndpskrkbjuw.supabase.co:5432/postgres
 
 ## Usuários (todos: excalibur10)
-| Nome | Email | Role | Tela inicial |
+| Nome | Email | Roles | Tela inicial |
 |---|---|---|---|
-| Matheus Cardoso | contato.cardosoeo@gmail.com | admin | /ceo |
+| Matheus Cardoso (CEO) | contato.cardosoeo@gmail.com | admin, closer | /ceo |
 | Luana Caira | luanacaira.excalibur@gmail.com | coo | /coo |
 | Bruno Medina | brunomedina.contato@gmail.com | cs | /cs |
-| Guilherme | guilherme.excalibur@gmail.com | closer | /comercial |
+| Guilherme | guilherme.excalibur@gmail.com | closer, cmo | /comercial |
 | Trindade | trindade.excalibur@gmail.com | sdr | /sdr |
 | Jéssica | jessica.excalibur@gmail.com | head_traffic | /trafego-clientes |
+| Vinicius | vinicius.excalibur@gmail.com | designer | /design |
+| Juan | juan.excalibur@gmail.com | editor_video | /design |
 
 ## Rotas em produção
 Dashboards: /ceo /coo /financeiro /comercial /trafego /sdr /cs
-Operação: /clientes /jornada /trafego-clientes /cs/calendario /onboarding/novo /operacao/financeiro /operacao/colaboradores /alertas
-Sistema: /escritorio /eventos /admin/usuarios /sdr/feedbacks /visao-geral
+Operação: /clientes /jornada /trafego-clientes /cs/calendario /onboarding/novo /operacao/financeiro /operacao/colaboradores /alertas /design
+Sistema: /escritorio /eventos /admin/usuarios /admin/metas /admin/comissoes /sdr/feedbacks /sistema/apis /sistema/webhooks
 Dinâmica: /jornada/[id] /clientes/[id]
 
 ## APIs principais
