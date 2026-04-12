@@ -114,26 +114,27 @@
   html {
     @apply font-sans bg-background text-foreground;
     font-family: var(--font-geist-sans), 'Inter', system-ui, -apple-system, sans-serif;
-    /* overflow-x hidden mata o vazamento residual de 5px */
-    overflow-x: hidden;
-    width: 100%;
-    max-width: 100vw;
+    overflow-x: hidden !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    overscroll-behavior-x: none;
   }
   body {
     @apply bg-background text-foreground;
-    overflow-x: hidden;
-    width: 100%;
-    max-width: 100vw;
+    overflow-x: hidden !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    overscroll-behavior-x: none;
   }
 }
 
-/* Containers globais — nenhum elemento deve estourar horizontalmente */
-.page-transition {
-  overflow-x: clip;
-  max-width: 100%;
-}
-main, .min-h-screen {
-  max-width: 100%;
+/* Kill overflow universalmente */
+.page-transition,
+main,
+.min-h-screen,
+#__next {
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
 }
 
 /* Touch targets universais: todos os botões ≥ 44x44 (mobile E desktop).
