@@ -13,6 +13,7 @@ import AdocaoEquipe from '../../components/AdocaoEquipe'
 import ResumoDia from '../../components/ResumoDia'
 import FunilUnificado from '../../components/FunilUnificado'
 import ComissoesPanel from '../../components/ComissoesPanel'
+import PropostasPendentes from '../../components/PropostasPendentes'
 
 interface Receita {
   dia: number
@@ -166,6 +167,9 @@ export default function CEODashboard() {
 
         {/* ━━━ RESUMO DO DIA (uma linha — pagamentos, leads, alertas) ━━━ */}
         <ResumoDia />
+
+        {/* ━━━ PROPOSTAS DE AJUSTE (Guilherme propõe → CEO decide) ━━━ */}
+        <PropostasPendentes />
 
         {/* ━━━ FUNIL UNIFICADO — real vs meta (alvo R$90k) ━━━ */}
         <FunilUnificado />

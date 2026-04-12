@@ -5,6 +5,7 @@ import Sidebar from '../../components/Sidebar'
 import AcaoHoje from '../../components/AcaoHoje'
 import ComissoesPanel from '../../components/ComissoesPanel'
 import ComissoesHero from '../../components/ComissoesHero'
+import ProporAjuste from '../../components/ProporAjuste'
 import { useToast } from '../../components/Toast'
 import { supabase } from '../../lib/supabase'
 import { useDispararEvento } from '../../hooks/useDispararEvento'
@@ -181,7 +182,7 @@ export default function ComercialPage() {
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <div><h1 style={{ fontSize: 22, fontWeight: 700, color: '#fff', margin: 0 }}>Comercial — Pipeline de Fechamento</h1><p style={{ color: '#6b7280', fontSize: 13, margin: '4px 0 0' }}>Gestao de propostas e fechamentos</p></div>
-          <div style={{ display: 'flex', gap: 8 }}><button onClick={() => setModal(true)} style={{ background: '#f59e0b', color: '#000', border: 'none', borderRadius: 8, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 700 }}>+ Nova Proposta</button><button onClick={load} style={{ background: 'transparent', border: '1px solid #252535', color: '#9ca3af', borderRadius: 8, padding: '8px 12px', cursor: 'pointer' }}>🔄</button></div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}><ProporAjuste autorEmail="guilherme.excalibur@gmail.com" autorNome="Guilherme" autorRole="cmo" categoriaFiltro="comercial" /><button onClick={() => setModal(true)} style={{ background: '#f59e0b', color: '#000', border: 'none', borderRadius: 8, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 700, minHeight: 44 }}>+ Nova Proposta</button><button onClick={load} style={{ background: 'transparent', border: '1px solid #252535', color: '#9ca3af', borderRadius: 8, padding: '8px 12px', cursor: 'pointer', minHeight: 44 }}>🔄</button></div>
         </div>
 
         {msg && <div style={{ background: msg.includes('✅') ? '#22c55e20' : '#ef444420', border: `1px solid ${msg.includes('✅') ? '#22c55e' : '#ef4444'}40`, borderRadius: 8, padding: '8px 14px', marginBottom: 16, color: msg.includes('✅') ? '#22c55e' : '#ef4444', fontSize: 13 }}>{msg}</div>}
