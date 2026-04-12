@@ -70,7 +70,7 @@ export default function ComissoesHero({ role, email, nome }: Props) {
 
   useEffect(() => {
     carregar()
-    const i = setInterval(carregar, 15_000)
+    const i = setInterval(carregar, 30_000)
     return () => clearInterval(i)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [periodo, role, email])

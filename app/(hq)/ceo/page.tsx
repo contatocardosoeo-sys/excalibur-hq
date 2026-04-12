@@ -136,7 +136,7 @@ export default function CEODashboard() {
     }
   }, [])
 
-  useEffect(() => { fetchData(); const iv = setInterval(fetchData, 120000); return () => clearInterval(iv) }, [fetchData])
+  useEffect(() => { fetchData(); const iv = setInterval(fetchData, 60000); return () => clearInterval(iv) }, [fetchData])
 
   useEffect(() => {
     const ch1 = supabase.channel('ceo_metricas').on('postgres_changes', { event: '*', schema: 'public', table: 'metricas_ceo' }, () => fetchData()).subscribe()
