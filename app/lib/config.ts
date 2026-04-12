@@ -61,7 +61,7 @@ export const TAXAS_META = {
   qualificacao: 0.70,
   agendamento: 0.35,
   comparecimento: 0.70,
-  fechamento: 0.25,
+  fechamento: 0.24,
 }
 
 // Taxas reais (Fev/Mar 2026) — comparativo + gargalo
@@ -396,8 +396,8 @@ export function gerarAlertas(opts: {
   }
 
   if (opts.taxa_agend !== undefined) {
-    if (opts.taxa_agend < 0.30) {
-      alertas.push({ etapa: 'agendamento', nivel: 'critico', valor_real: opts.taxa_agend, limite: 0.30,
+    if (opts.taxa_agend < 0.32) {
+      alertas.push({ etapa: 'agendamento', nivel: 'critico', valor_real: opts.taxa_agend, limite: 0.32,
         mensagem: `Agendamento ${(opts.taxa_agend * 100).toFixed(0)}% — GARGALO CRÍTICO`,
         acao: 'Parar escala e corrigir script SDR' })
     } else if (opts.taxa_agend < 0.35) {
@@ -408,8 +408,8 @@ export function gerarAlertas(opts: {
   }
 
   if (opts.taxa_comp !== undefined) {
-    if (opts.taxa_comp < 0.65) {
-      alertas.push({ etapa: 'comparecimento', nivel: 'critico', valor_real: opts.taxa_comp, limite: 0.65,
+    if (opts.taxa_comp < 0.66) {
+      alertas.push({ etapa: 'comparecimento', nivel: 'critico', valor_real: opts.taxa_comp, limite: 0.66,
         mensagem: `Comparecimento ${(opts.taxa_comp * 100).toFixed(0)}% — falha operacional`,
         acao: 'Rever cadência de lembretes (D-1, H-3, H-1)' })
     } else if (opts.taxa_comp < 0.70) {
@@ -420,31 +420,37 @@ export function gerarAlertas(opts: {
   }
 
   if (opts.taxa_fech !== undefined) {
-    if (opts.taxa_fech < 0.20) {
-      alertas.push({ etapa: 'fechamento', nivel: 'critico', valor_real: opts.taxa_fech, limite: 0.20,
+    if (opts.taxa_fech < 0.21) {
+      alertas.push({ etapa: 'fechamento', nivel: 'critico', valor_real: opts.taxa_fech, limite: 0.21,
         mensagem: `Fechamento ${(opts.taxa_fech * 100).toFixed(0)}% — problema estrutural`,
         acao: 'Rever oferta/produto — possível problema de produto/mercado' })
-    } else if (opts.taxa_fech < 0.25) {
-      alertas.push({ etapa: 'fechamento', nivel: 'atencao', valor_real: opts.taxa_fech, limite: 0.25,
-        mensagem: `Fechamento ${(opts.taxa_fech * 100).toFixed(0)}% — abaixo da meta 25%`,
+    } else if (opts.taxa_fech < 0.24) {
+      alertas.push({ etapa: 'fechamento', nivel: 'atencao', valor_real: opts.taxa_fech, limite: 0.24,
+        mensagem: `Fechamento ${(opts.taxa_fech * 100).toFixed(0)}% — abaixo da meta 24%`,
         acao: 'Revisar pitch de vendas e tratamento de objeções' })
     }
   }
 
-  if (opts.cac !== undefined && opts.cac > CAC_ZONAS.atencao_max) {
-    alertas.push({ etapa: 'cac', nivel: 'critico', valor_real: opts.cac, limite: CAC_ZONAS.atencao_max,
-      mensagem: `CAC R$${Math.round(opts.cac)} — acima do teto R$${CAC_ZONAS.atencao_max}`,
-      acao: 'PARAR escala imediatamente e corrigir funil antes de investir mais' })
+  if (opts.cac !== undefined) {
+    if (opts.cac > CAC_ZONAS.atencao_max) {
+      alertas.push({ etapa: 'cac', nivel: 'critico', valor_real: opts.cac, limite: CAC_ZONAS.atencao_max,
+        mensagem: `CAC R$${Math.round(opts.cac)} — acima do teto R$${CAC_ZONAS.atencao_max}`,
+        acao: 'PARAR escala imediatamente e corrigir funil antes de investir mais' })
+    } else if (opts.cac > CAC_ZONAS.saudavel_max) {
+      alertas.push({ etapa: 'cac', nivel: 'atencao', valor_real: opts.cac, limite: CAC_ZONAS.saudavel_max,
+        mensagem: `CAC R$${Math.round(opts.cac)} — zona de atenção (> R$${CAC_ZONAS.saudavel_max})`,
+        acao: 'Monitorar de perto antes de escalar mais investimento' })
+    }
   }
 
   if (opts.custo_reuniao !== undefined) {
-    if (opts.custo_reuniao > 65) {
-      alertas.push({ etapa: 'custo_reuniao', nivel: 'critico', valor_real: opts.custo_reuniao, limite: 65,
+    if (opts.custo_reuniao > 70) {
+      alertas.push({ etapa: 'custo_reuniao', nivel: 'critico', valor_real: opts.custo_reuniao, limite: 70,
         mensagem: `Custo/reunião R$${Math.round(opts.custo_reuniao)} — gargalo no meio do funil`,
         acao: 'Auditar qualificação + agendamento (leads chegando ruim ou SDR agendando errado)' })
-    } else if (opts.custo_reuniao > 55) {
-      alertas.push({ etapa: 'custo_reuniao', nivel: 'atencao', valor_real: opts.custo_reuniao, limite: 55,
-        mensagem: `Custo/reunião R$${Math.round(opts.custo_reuniao)} — acima do ideal R$55`,
+    } else if (opts.custo_reuniao > 60) {
+      alertas.push({ etapa: 'custo_reuniao', nivel: 'atencao', valor_real: opts.custo_reuniao, limite: 60,
+        mensagem: `Custo/reunião R$${Math.round(opts.custo_reuniao)} — acima do ideal R$60`,
         acao: 'Ajustar taxa de agendamento' })
     }
   }

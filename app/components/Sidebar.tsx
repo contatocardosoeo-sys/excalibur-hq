@@ -18,7 +18,7 @@ const allSections: MenuSection[] = [
       { href: '/financeiro', icon: '💰', label: 'Financeiro', roles: ['admin', 'coo', 'financeiro'] },
       { href: '/comercial', icon: '💼', label: 'Comercial', roles: ['admin', 'coo', 'closer'] },
       { href: '/trafego', icon: '📣', label: 'Trafego', roles: ['admin', 'coo', 'cmo', 'closer'] },
-      { href: '/sdr', icon: '📞', label: 'SDR', roles: ['admin', 'coo', 'sdr', 'closer'] },
+      { href: '/sdr', icon: '📲', label: 'SDR', roles: ['admin', 'coo', 'sdr', 'closer'] },
       { href: '/cs', icon: '🎯', label: 'CS', roles: ['admin', 'coo', 'cs'] },
     ],
   },
