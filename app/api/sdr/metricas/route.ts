@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
 
   const metricas = metricasRes.data || []
   const metricasMes = mesRes.data || []
-  const meta = metaRes.data || { meta_leads: 300, meta_agendamentos: 90, meta_comparecimentos: 54, meta_vendas: 3 }
+  const meta = metaRes.data || { meta_leads: 1100, meta_leads_dia: 50, meta_agendamentos: 330, meta_agendamentos_min: 220, meta_agendamentos_max: 440, meta_agendamentos_dia: 15, meta_agendamentos_dia_min: 10, meta_agendamentos_dia_max: 20, meta_comparecimentos: 176, meta_vendas: 22 }
 
   // Acumulados do periodo selecionado
   const totalLeads = metricas.reduce((s, m) => s + (m.leads_recebidos || 0), 0)
@@ -88,10 +88,16 @@ export async function GET(req: NextRequest) {
       conversao: taxaConversao,
     },
     metas: {
-      leads: meta.meta_leads || 300,
-      agendamentos: meta.meta_agendamentos || 90,
-      comparecimentos: meta.meta_comparecimentos || 54,
-      vendas: meta.meta_vendas || 3,
+      leads: meta.meta_leads || 1100,
+      leads_dia: meta.meta_leads_dia || 50,
+      agendamentos: meta.meta_agendamentos || 330,
+      agendamentos_min: meta.meta_agendamentos_min || 220,
+      agendamentos_max: meta.meta_agendamentos_max || 440,
+      agendamentos_dia: meta.meta_agendamentos_dia || 15,
+      agendamentos_dia_min: meta.meta_agendamentos_dia_min || 10,
+      agendamentos_dia_max: meta.meta_agendamentos_dia_max || 20,
+      comparecimentos: meta.meta_comparecimentos || 176,
+      vendas: meta.meta_vendas || 22,
     },
   })
 }

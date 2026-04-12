@@ -17,7 +17,18 @@ interface Metricas {
   metricas_periodo?: Array<{ data: string; leads_recebidos: number; contatos_realizados: number; agendamentos: number; comparecimentos: number; vendas: number; valor_vendas?: number }>
   acumulado: { leads: number; contatos: number; agendamentos: number; comparecimentos: number; vendas: number; valor_vendas?: number }
   taxas: { contato: number; agendamento: number; comparecimento: number; conversao: number }
-  metas: { leads: number; agendamentos: number; comparecimentos: number; vendas: number }
+  metas: {
+    leads: number
+    leads_dia?: number
+    agendamentos: number
+    agendamentos_min?: number
+    agendamentos_max?: number
+    agendamentos_dia?: number
+    agendamentos_dia_min?: number
+    agendamentos_dia_max?: number
+    comparecimentos: number
+    vendas: number
+  }
 }
 
 // 10 etapas reais do CRM (ACL — Acelera CRM)
@@ -57,7 +68,7 @@ export default function SDRPage() {
   const { disparar } = useDispararEvento()
   const [data, setData] = useState<Metricas | null>(null)
   const [loading, setLoading] = useState(true)
-  const [aba, setAba] = useState<'overview' | 'rotina' | 'etapas' | 'historico'>('overview')
+  const [aba, setAba] = useState<'rotina' | 'etapas' | 'historico' | 'overview'>('rotina')
   const [userEmail, setUserEmail] = useState('trindade.excalibur@gmail.com')
 
   // Filtros de periodo
@@ -153,8 +164,11 @@ export default function SDRPage() {
 
   const { acumulado, taxas, metas, metricas_mes } = data
 
-  const KPI = ({ icon, label, atual, meta, cor }: { icon: string; label: string; atual: number; meta: number; cor: string }) => {
+  // KPI com cor SEMPRE dinâmica baseada em % da meta (vermelho → amarelo → verde)
+  // param `cor` virou opcional e só é usado como fallback do ícone
+  const KPI = ({ icon, label, atual, meta }: { icon: string; label: string; atual: number; meta: number }) => {
     const p = pct(atual, meta)
+    const cor = corPct(p) // dinâmica: 0 vermelho, subindo amarelo, alto verde
     return (
       <div style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 12, padding: 14 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
@@ -166,9 +180,9 @@ export default function SDRPage() {
           <span style={{ fontSize: 11, color: '#4b5563', fontFamily: 'monospace' }}>/ {fmt(meta)}</span>
         </div>
         <div style={{ height: 4, background: '#1f2937', borderRadius: 2, overflow: 'hidden', marginTop: 8 }}>
-          <div style={{ height: '100%', background: corPct(p), width: `${Math.min(p, 100)}%`, transition: 'width 0.5s' }} />
+          <div style={{ height: '100%', background: cor, width: `${Math.min(p, 100)}%`, transition: 'width 0.5s' }} />
         </div>
-        <div style={{ fontSize: 9, color: corPct(p), marginTop: 4, fontWeight: 700 }}>{p}% da meta mensal</div>
+        <div style={{ fontSize: 9, color: cor, marginTop: 4, fontWeight: 700 }}>{p}% da meta mensal</div>
       </div>
     )
   }
@@ -227,11 +241,11 @@ export default function SDRPage() {
 
         {/* KPIs com metas — 6 cards (5 numericos + 1 valor) */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: 10, marginBottom: 20 }}>
-          <KPI icon="📥" label="Leads" atual={acumulado.leads} meta={metas.leads} cor="#60a5fa" />
-          <KPI icon="📞" label="Contatos" atual={acumulado.contatos} meta={metas.leads} cor="#a78bfa" />
-          <KPI icon="📅" label="Agendamentos" atual={acumulado.agendamentos} meta={metas.agendamentos} cor="#fbbf24" />
-          <KPI icon="✅" label="Comparecimentos" atual={acumulado.comparecimentos} meta={metas.comparecimentos} cor="#fb923c" />
-          <KPI icon="🎯" label="Vendas" atual={acumulado.vendas} meta={metas.vendas} cor="#4ade80" />
+          <KPI icon="📥" label="Leads" atual={acumulado.leads} meta={metas.leads} />
+          <KPI icon="📞" label="Contatos" atual={acumulado.contatos} meta={metas.leads} />
+          <KPI icon="📅" label="Agendamentos" atual={acumulado.agendamentos} meta={metas.agendamentos} />
+          <KPI icon="✅" label="Comparecimentos" atual={acumulado.comparecimentos} meta={metas.comparecimentos} />
+          <KPI icon="🎯" label="Vendas" atual={acumulado.vendas} meta={metas.vendas} />
           {/* Card de valor de vendas — destaque */}
           <div style={{ background: 'linear-gradient(135deg, #14532d 0%, #166534 100%)', border: '1px solid #22c55e40', borderRadius: 12, padding: 14 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
@@ -266,10 +280,10 @@ export default function SDRPage() {
         {/* Abas */}
         <div style={{ display: 'flex', gap: 2, marginBottom: 16, background: '#111827', borderRadius: 10, padding: 3 }}>
           {[
-            { key: 'overview' as const, label: '📊 Lancar dia' },
             { key: 'rotina' as const, label: '⏰ Rotina' },
             { key: 'etapas' as const, label: '🎯 Etapas ACL' },
             { key: 'historico' as const, label: '📅 Historico' },
+            { key: 'overview' as const, label: '📊 Lancar dia' },
           ].map(t => (
             <button key={t.key} onClick={() => setAba(t.key)}
               style={{ flex: 1, background: aba === t.key ? '#f59e0b' : 'transparent', color: aba === t.key ? '#030712' : '#6b7280', border: 'none', borderRadius: 8, padding: '10px 16px', fontSize: 12, fontWeight: aba === t.key ? 700 : 500, cursor: 'pointer' }}>
@@ -438,16 +452,28 @@ export default function SDRPage() {
                   ))}
                 </tr></thead>
                 <tbody>
-                  {[...metricas_mes].reverse().map(m => (
-                    <tr key={m.data} style={{ borderBottom: '1px solid #1f293730' }}>
-                      <td style={{ padding: '10px 14px', color: '#9ca3af', fontSize: 11, fontFamily: 'monospace' }}>{new Date(m.data + 'T12:00:00').toLocaleDateString('pt-BR')}</td>
-                      <td style={{ padding: '10px 14px', color: '#60a5fa', fontSize: 12, fontWeight: 700, fontFamily: 'monospace' }}>{m.leads_recebidos}</td>
-                      <td style={{ padding: '10px 14px', color: '#a78bfa', fontSize: 12, fontWeight: 700, fontFamily: 'monospace' }}>{m.contatos_realizados}</td>
-                      <td style={{ padding: '10px 14px', color: '#fbbf24', fontSize: 12, fontWeight: 700, fontFamily: 'monospace' }}>{m.agendamentos}</td>
-                      <td style={{ padding: '10px 14px', color: '#fb923c', fontSize: 12, fontWeight: 700, fontFamily: 'monospace' }}>{m.comparecimentos}</td>
-                      <td style={{ padding: '10px 14px', color: '#4ade80', fontSize: 12, fontWeight: 700, fontFamily: 'monospace' }}>{m.vendas}</td>
-                    </tr>
-                  ))}
+                  {[...metricas_mes].reverse().map(m => {
+                    // Cores dinâmicas por dia: compara valor diário vs meta diária
+                    const metaLeadsDia = metas.leads_dia || 50
+                    const metaAgendDia = metas.agendamentos_dia || 15
+                    const metaCompDia = Math.round(metas.comparecimentos / 22) || 8
+                    const metaVendasDia = Math.round(metas.vendas / 22) || 1
+                    const corLead = corPct(pct(m.leads_recebidos, metaLeadsDia))
+                    const corCont = corPct(pct(m.contatos_realizados, metaLeadsDia))
+                    const corAg = corPct(pct(m.agendamentos, metaAgendDia))
+                    const corComp = corPct(pct(m.comparecimentos, metaCompDia))
+                    const corVendas = corPct(pct(m.vendas, metaVendasDia))
+                    return (
+                      <tr key={m.data} style={{ borderBottom: '1px solid #1f293730' }}>
+                        <td style={{ padding: '10px 14px', color: '#9ca3af', fontSize: 11, fontFamily: 'monospace' }}>{new Date(m.data + 'T12:00:00').toLocaleDateString('pt-BR')}</td>
+                        <td style={{ padding: '10px 14px', color: corLead, fontSize: 12, fontWeight: 700, fontFamily: 'monospace' }}>{m.leads_recebidos}</td>
+                        <td style={{ padding: '10px 14px', color: corCont, fontSize: 12, fontWeight: 700, fontFamily: 'monospace' }}>{m.contatos_realizados}</td>
+                        <td style={{ padding: '10px 14px', color: corAg, fontSize: 12, fontWeight: 700, fontFamily: 'monospace' }}>{m.agendamentos}</td>
+                        <td style={{ padding: '10px 14px', color: corComp, fontSize: 12, fontWeight: 700, fontFamily: 'monospace' }}>{m.comparecimentos}</td>
+                        <td style={{ padding: '10px 14px', color: corVendas, fontSize: 12, fontWeight: 700, fontFamily: 'monospace' }}>{m.vendas}</td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             )}
