@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { checkRateLimit } from '@/app/lib/rate-limit'
 
 const sb = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -104,6 +105,11 @@ async function verificarBonusEquipe(mes: number, ano: number, cfg: CfgComissoes)
 }
 
 export async function POST(req: NextRequest) {
+  // Rate limit: 20 req/min (prevenir comissões falsas)
+  const ip = req.headers.get('x-forwarded-for') || 'unknown'
+  const blocked = checkRateLimit(`comissao-calc-${ip}`, 20, 60_000)
+  if (blocked) return blocked as unknown as NextResponse
+
   let body: {
     tipo: 'agendamento' | 'comparecimento' | 'venda'
     ticket?: number

@@ -1,3 +1,6 @@
+// Cache 5 min — funil muda raramente
+export const revalidate = 300
+
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import {

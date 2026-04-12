@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { checkRateLimit } from '@/app/lib/rate-limit'
 import { avancarEtapa } from '@/app/lib/wascript'
 import {
   WASELLER_EVENTO_ETAPA,
@@ -64,6 +65,11 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  // Rate limit: 60 req/min por IP (proteção contra spam)
+  const ip = req.headers.get('x-forwarded-for') || 'unknown'
+  const blocked = checkRateLimit(`webhook-waseller-${ip}`, 60, 60_000)
+  if (blocked) return blocked as unknown as NextResponse
+
   // 1. Auth (opcional — mas validamos se o env estiver setado)
   const tokenEnv = process.env.WASELLER_WEBHOOK_TOKEN
   const tokenHeader = req.headers.get('x-waseller-token') || req.nextUrl.searchParams.get('token')

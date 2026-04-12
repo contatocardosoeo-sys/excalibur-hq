@@ -8,6 +8,9 @@ import {
   TICKET_MEDIO, CPL_MEDIO, CPL_MAX,
 } from '../../lib/config'
 
+// Cache 5 min — config muda raramente
+export const revalidate = 300
+
 export async function GET() {
   const agora = new Date()
   const ano = agora.getFullYear()
