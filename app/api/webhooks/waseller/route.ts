@@ -198,14 +198,20 @@ export async function POST(req: NextRequest) {
     }
     if (marcosRelevantes[etapaHQ]) {
       try {
+        // Schema eventos_hq: tipo, titulo, mensagem (NOT NULL), usuario_nome, camada (NOT NULL default 'todos'), metadata
+        const mensagem =
+          `${clinica || ''}${cidade ? ` · ${cidade}` : ''}${evento ? ` · evento:${evento}` : ''}`.trim() ||
+          `${nome} avançou para ${etapaHQ}`
         await sb.from('eventos_hq').insert({
           tipo: etapaHQ,
           titulo: marcosRelevantes[etapaHQ],
-          descricao: `${clinica || ''} ${cidade ? `· ${cidade}` : ''}`.trim(),
-          criado_por: 'waseller-webhook',
+          mensagem,
+          usuario_nome: 'waseller-webhook',
+          camada: 'sdr',
+          metadata: { nome, telefone, clinica, cidade, evento },
         })
-      } catch {
-        /* */
+      } catch (e) {
+        console.error('[eventos_hq insert]', e)
       }
     }
 

@@ -96,15 +96,16 @@ export async function POST(req: NextRequest) {
           })
         }
 
-        // Evento em tempo real no HQ (best-effort — tabela eventos_hq pode variar)
+        // Evento em tempo real no HQ (schema real: tipo/titulo/mensagem/usuario_nome/valor/camada/metadata)
         try {
           await sb.from('eventos_hq').insert({
             tipo: 'pagamento_recebido',
             titulo: 'Pagamento recebido!',
-            descricao: `${customerName || 'Cliente'} pagou R$ ${valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} via ${payment.billingType}`,
-            severidade: 'sucesso',
-            origem: 'asaas',
-            metadata: { asaas_id: payment.id, valor, forma: payment.billingType },
+            mensagem: `${customerName || 'Cliente'} pagou R$ ${valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} via ${payment.billingType}`,
+            usuario_nome: 'asaas-webhook',
+            valor,
+            camada: 'financeiro',
+            metadata: { asaas_id: payment.id, valor, forma: payment.billingType, origem: 'asaas' },
           })
         } catch { /* */ }
 

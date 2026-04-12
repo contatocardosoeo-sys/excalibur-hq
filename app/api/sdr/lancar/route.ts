@@ -147,14 +147,20 @@ export async function POST(req: NextRequest) {
       venda: `💰 Venda fechada: ${lead_nome || clinica || telefone || 'sem nome'}`,
     }
     try {
+      // eventos_hq.mensagem é NOT NULL — garantir que sempre tem valor
+      const mensagem =
+        `${clinica || ''}${cidade ? ` · ${cidade}` : ''}${observacao ? ` · ${observacao}` : ''}`.trim() ||
+        `${lead_nome || telefone || 'lead'} em ${etapaNova}`
       await sb.from('eventos_hq').insert({
         tipo: etapaNova,
         titulo: titulos[etapaNova],
-        descricao: `${clinica || ''} ${cidade ? `· ${cidade}` : ''} ${observacao || ''}`.trim(),
-        criado_por: 'sdr-hq',
+        mensagem,
+        usuario_nome: 'sdr-hq',
+        camada: 'sdr',
+        metadata: { lead_nome, telefone, clinica, cidade, etapa: etapaNova },
       })
-    } catch {
-      /* */
+    } catch (e) {
+      console.error('[eventos_hq insert]', e)
     }
   }
 

@@ -66,13 +66,17 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ success: true, data })
 }
 
+// Fallback quando o card não tem closer_id preenchido
+const CLOSER_DEFAULT_EMAIL = 'guilherme.excalibur@gmail.com'
+const CLOSER_DEFAULT_NOME = 'Guilherme'
+
 export async function PATCH(req: NextRequest) {
   const { id, ...updates } = await req.json()
 
-  // Estado anterior para detectar transição para "fechado"
+  // Estado anterior + closer dono do card
   const { data: anterior } = await supabase
     .from('pipeline_closer')
-    .select('status, nome_clinica, mrr_proposto')
+    .select('status, nome_clinica, mrr_proposto, closer_id')
     .eq('id', id)
     .maybeSingle()
 
@@ -89,21 +93,42 @@ export async function PATCH(req: NextRequest) {
   const virouFechado = updates.status === 'fechado' && anterior?.status !== 'fechado'
   if (virouFechado) {
     try {
-      // Chamada direta à função de cálculo (evita fetch self-loop em serverless)
+      // Resolver qual closer leva a comissão: preferência pro closer_id do card
+      let closerEmail = CLOSER_DEFAULT_EMAIL
+      let closerNome = CLOSER_DEFAULT_NOME
+      const closerId = (data?.closer_id || anterior?.closer_id) as string | null | undefined
+      if (closerId) {
+        const { data: u } = await supabase
+          .from('usuarios_internos')
+          .select('email, nome')
+          .eq('id', closerId)
+          .maybeSingle()
+        if (u?.email) {
+          closerEmail = u.email
+          closerNome = u.nome || closerEmail
+        }
+      }
+
+      const ticket = Number(data.mrr_proposto || 2400)
+      const hoje = new Date().toISOString().slice(0, 10)
+      const mes = new Date().getMonth() + 1
+      const ano = new Date().getFullYear()
+
       await supabase.from('comissoes').insert([
-        // Closer 5% da primeira mensalidade
+        // Closer 5% da primeira mensalidade (dinâmico via closer_id)
         {
-          colaborador_email: 'guilherme.excalibur@gmail.com',
-          colaborador_nome: 'Guilherme',
+          colaborador_email: closerEmail,
+          colaborador_nome: closerNome,
           role: 'closer',
           tipo: 'venda',
-          valor: Math.round(Number(data.mrr_proposto || 2400) * 0.05),
-          mes: new Date().getMonth() + 1,
-          ano: new Date().getFullYear(),
-          data_evento: new Date().toISOString().slice(0, 10),
+          valor: Math.round(ticket * 0.05),
+          mes,
+          ano,
+          data_evento: hoje,
           pipeline_card_id: id,
           lead_nome: data.nome_clinica || anterior?.nome_clinica || null,
-          ticket_venda: Number(data.mrr_proposto || 2400),
+          ticket_venda: ticket,
+          observacao: 'pipeline fechado',
         },
         // SDR bônus R$40
         {
@@ -112,12 +137,13 @@ export async function PATCH(req: NextRequest) {
           role: 'sdr',
           tipo: 'venda',
           valor: 40,
-          mes: new Date().getMonth() + 1,
-          ano: new Date().getFullYear(),
-          data_evento: new Date().toISOString().slice(0, 10),
+          mes,
+          ano,
+          data_evento: hoje,
           pipeline_card_id: id,
           lead_nome: data.nome_clinica || anterior?.nome_clinica || null,
-          ticket_venda: Number(data.mrr_proposto || 2400),
+          ticket_venda: ticket,
+          observacao: 'bônus fechamento via pipeline',
         },
       ])
     } catch {
