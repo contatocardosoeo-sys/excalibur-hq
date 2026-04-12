@@ -24,14 +24,25 @@ type Comissao = {
 
 export async function GET(req: NextRequest) {
   const url = req.nextUrl
-  const mes = Number(url.searchParams.get('mes')) || new Date().getMonth() + 1
-  const ano = Number(url.searchParams.get('ano')) || new Date().getFullYear()
   const email = url.searchParams.get('email')
   const role = url.searchParams.get('role')
   const status = url.searchParams.get('status')
   const resumo = url.searchParams.get('resumo') === 'true'
+  const inicio = url.searchParams.get('inicio') // YYYY-MM-DD
+  const fim = url.searchParams.get('fim')       // YYYY-MM-DD
 
-  let q = sb.from('comissoes').select('*').eq('mes', mes).eq('ano', ano)
+  let q = sb.from('comissoes').select('*')
+
+  // Range por data_evento tem prioridade sobre mes/ano
+  if (inicio || fim) {
+    if (inicio) q = q.gte('data_evento', inicio)
+    if (fim) q = q.lte('data_evento', fim)
+  } else {
+    const mes = Number(url.searchParams.get('mes')) || new Date().getMonth() + 1
+    const ano = Number(url.searchParams.get('ano')) || new Date().getFullYear()
+    q = q.eq('mes', mes).eq('ano', ano)
+  }
+
   if (email) q = q.eq('colaborador_email', email)
   if (role) q = q.eq('role', role)
   if (status) q = q.eq('status', status)
@@ -57,32 +68,61 @@ export async function GET(req: NextRequest) {
   const sdr = agregar(c => c.role === 'sdr')
   const totalGeral = closer.total + sdr.total
 
-  // Bônus de equipe do mês
+  // Bônus de equipe (do mês atual sempre — é um conceito mensal)
+  const mesRef = items[0]
+    ? new Date(items[0].data_evento).getMonth() + 1
+    : new Date().getMonth() + 1
+  const anoRef = items[0]
+    ? new Date(items[0].data_evento).getFullYear()
+    : new Date().getFullYear()
   const { data: bonusEquipe } = await sb
     .from('bonus_equipe')
     .select('*')
-    .eq('mes', mes)
-    .eq('ano', ano)
+    .eq('mes', mesRef)
+    .eq('ano', anoRef)
     .order('patamar')
+
+  // Breakdown por tipo (útil pro Hero)
+  const porTipo = {
+    agendamento: items.filter(c => c.tipo === 'agendamento'),
+    comparecimento: items.filter(c => c.tipo === 'comparecimento'),
+    venda: items.filter(c => c.tipo === 'venda'),
+  }
+  const breakdown = {
+    agendamento: {
+      qtd: porTipo.agendamento.length,
+      valor: porTipo.agendamento.reduce((s, c) => s + Number(c.valor), 0),
+    },
+    comparecimento: {
+      qtd: porTipo.comparecimento.length,
+      valor: porTipo.comparecimento.reduce((s, c) => s + Number(c.valor), 0),
+    },
+    venda: {
+      qtd: porTipo.venda.length,
+      valor: porTipo.venda.reduce((s, c) => s + Number(c.valor), 0),
+    },
+  }
 
   if (resumo) {
     return NextResponse.json({
-      mes,
-      ano,
+      mes: mesRef,
+      ano: anoRef,
       closer,
       sdr,
       total: totalGeral,
+      breakdown,
       bonus_equipe: bonusEquipe || [],
     })
   }
 
   return NextResponse.json({
-    mes,
-    ano,
+    mes: mesRef,
+    ano: anoRef,
     comissoes: items,
     closer,
     sdr,
     total: totalGeral,
+    breakdown,
     bonus_equipe: bonusEquipe || [],
   })
 }

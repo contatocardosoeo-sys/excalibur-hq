@@ -6,6 +6,7 @@ import Sidebar from '../../components/Sidebar'
 import AcaoHoje from '../../components/AcaoHoje'
 import CrmAoVivo from '../../components/CrmAoVivo'
 import ComissoesPanel from '../../components/ComissoesPanel'
+import ComissoesHero from '../../components/ComissoesHero'
 import { useToast } from '../../components/Toast'
 import { supabase } from '../../lib/supabase'
 import { useDispararEvento } from '../../hooks/useDispararEvento'
@@ -224,13 +225,16 @@ export default function SDRPage() {
       <Sidebar />
       <div style={{ flex: 1, padding: '16px 16px', overflowY: 'auto', overflowX: 'hidden', maxWidth: '100%', minWidth: 0 }}>
 
+        {/* ⚔️ COMISSÃO GIGANTE — pedido do Trindade, no topo da tela */}
+        <ComissoesHero role="sdr" nome="Trindade" email="trindade.excalibur@gmail.com" />
+
         {/* Card de acao do dia (imperativo) */}
         <AcaoHoje role="sdr" />
 
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <div>
-            <h1 style={{ fontSize: 22, fontWeight: 700, color: '#fff', margin: 0 }}>📞 SDR — Prospeccao</h1>
+            <h1 style={{ fontSize: 22, fontWeight: 700, color: '#fff', margin: 0 }}>📲 SDR — Prospeccao</h1>
             <p style={{ color: '#4b5563', fontSize: 12, margin: '4px 0 0' }}>Operacao diaria + metas + rotina + etapas ACL</p>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
@@ -589,7 +593,7 @@ export default function SDRPage() {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: 10, marginBottom: 12 }}>
                   {[
                     { l: '📥 Leads', v: data.metricas_dia.leads_recebidos, formato: 'num' },
-                    { l: '📞 Contatos', v: data.metricas_dia.contatos_realizados, formato: 'num' },
+                    { l: '💬 Contatos', v: data.metricas_dia.contatos_realizados, formato: 'num' },
                     { l: '📅 Agendamentos', v: data.metricas_dia.agendamentos, formato: 'num' },
                     { l: '✅ Comparecimentos', v: data.metricas_dia.comparecimentos, formato: 'num' },
                     { l: '🎯 Vendas', v: data.metricas_dia.vendas, formato: 'num' },
@@ -614,7 +618,7 @@ export default function SDRPage() {
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 mb-3">
                   {[
                     { k: 'leads_recebidos', l: '📥 Leads', aria: 'Leads recebidos' },
-                    { k: 'contatos_realizados', l: '📞 Contatos', aria: 'Contatos realizados' },
+                    { k: 'contatos_realizados', l: '💬 Contatos', aria: 'Contatos realizados' },
                     { k: 'agendamentos', l: '📅 Agendam.', aria: 'Agendamentos' },
                     { k: 'comparecimentos', l: '✅ Comparec.', aria: 'Comparecimentos' },
                     { k: 'vendas', l: '🎯 Vendas', aria: 'Vendas fechadas' },

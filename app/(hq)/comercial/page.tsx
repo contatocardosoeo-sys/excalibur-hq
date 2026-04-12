@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import Sidebar from '../../components/Sidebar'
 import AcaoHoje from '../../components/AcaoHoje'
 import ComissoesPanel from '../../components/ComissoesPanel'
+import ComissoesHero from '../../components/ComissoesHero'
 import { useToast } from '../../components/Toast'
 import { supabase } from '../../lib/supabase'
 import { useDispararEvento } from '../../hooks/useDispararEvento'
@@ -137,10 +138,13 @@ export default function ComercialPage() {
     <div style={{ minHeight: '100vh', background: '#09090f', display: 'flex', overflowX: 'hidden' }}>
       <Sidebar />
       <div style={{ flex: 1, padding: '16px 16px', overflowY: 'auto', overflowX: 'hidden', minWidth: 0, maxWidth: '100%' }}>
+        {/* ⚔️ COMISSÃO GIGANTE — no topo pro Guilherme */}
+        <ComissoesHero role="closer" nome="Guilherme" email="guilherme.excalibur@gmail.com" />
+
         {/* Card de acao do dia (imperativo) */}
         <AcaoHoje role="closer" />
 
-        {/* Comissões do closer */}
+        {/* Comissões do closer — histórico detalhado */}
         <div style={{ marginBottom: 14 }}>
           <ComissoesPanel visao="closer" />
         </div>
