@@ -8,6 +8,7 @@ import { useToast } from '../../components/Toast'
 import { supabase } from '../../lib/supabase'
 import { useDispararEvento } from '../../hooks/useDispararEvento'
 import { NumberTicker } from '@/components/ui/number-ticker'
+import { FUNIL_ATIVO, RECEITA_METAS, META_ATIVA, TAXAS_REAIS, TAXAS_META, detectarGargalo } from '../../lib/config'
 
 type Acumulado = { leads: number; contatos: number; agendamentos: number; comparecimentos: number; vendas: number; valor_vendas?: number }
 type MetasSet = { leads: number; contatos: number; agendamentos: number; comparecimentos: number; vendas: number }
@@ -235,6 +236,59 @@ export default function SDRPage() {
             <button onClick={load} style={{ background: '#1f2937', color: '#9ca3af', border: '1px solid #374151', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontSize: 13 }}>🔄</button>
           </div>
         </div>
+
+        {/* Card funil visual integrado — 5 etapas + gargalo */}
+        {(() => {
+          const garg = detectarGargalo()
+          return (
+            <div style={{ background: '#111827', border: '1px solid #f59e0b30', borderRadius: 12, padding: '16px 18px', marginBottom: 14 }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+                <div>
+                  <span style={{ fontSize: 11, color: '#f59e0b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    🎯 Meta {META_ATIVA} — R$ {RECEITA_METAS[META_ATIVA].toLocaleString('pt-BR')}/mês
+                  </span>
+                  <span style={{ fontSize: 10, color: '#6b7280', marginLeft: 8 }}>
+                    {FUNIL_ATIVO.mensal.vendas} vendas · ticket R$ 2.000
+                  </span>
+                </div>
+                <div style={{ display: 'flex', gap: 12, fontSize: 10, color: '#6b7280' }}>
+                  <span>CPL: <span style={{ color: '#fff' }}>R$ 10,70</span></span>
+                  <span>CAC: <span style={{ color: '#4ade80' }}>R$ {FUNIL_ATIVO.custos.cac}</span> &lt; R$300 ✓</span>
+                  <span>Invest/mês: <span style={{ color: '#fff' }}>R$ {FUNIL_ATIVO.custos.investimento_mensal.toLocaleString('pt-BR')}</span></span>
+                </div>
+              </div>
+
+              {/* 5 etapas do funil */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 6 }}>
+                {[
+                  { emoji: '📥', label: 'Leads', mes: FUNIL_ATIVO.mensal.leads, dia: FUNIL_ATIVO.diario.leads },
+                  { emoji: '✅', label: 'Qualif.', mes: FUNIL_ATIVO.mensal.qualificados, dia: FUNIL_ATIVO.diario.qualificados },
+                  { emoji: '📅', label: 'Agend.', mes: FUNIL_ATIVO.mensal.agendamentos, dia: FUNIL_ATIVO.diario.agendamentos },
+                  { emoji: '🤝', label: 'Comparec.', mes: FUNIL_ATIVO.mensal.comparecimentos, dia: FUNIL_ATIVO.diario.comparecimentos },
+                  { emoji: '💰', label: 'Vendas', mes: FUNIL_ATIVO.mensal.vendas, dia: FUNIL_ATIVO.diario.vendas },
+                ].map((et, i) => (
+                  <div key={i} style={{ background: '#0a0f1a', border: '1px solid #1f2937', borderRadius: 8, padding: '10px 6px', textAlign: 'center' }}>
+                    <div style={{ fontSize: 18 }}>{et.emoji}</div>
+                    <div style={{ fontSize: 9, color: '#6b7280', textTransform: 'uppercase', fontWeight: 600, marginTop: 2 }}>{et.label}</div>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', fontFamily: 'monospace', marginTop: 3 }}>{et.mes}<span style={{ fontSize: 9, color: '#6b7280', fontWeight: 400 }}>/mês</span></div>
+                    <div style={{ fontSize: 9, color: '#f59e0b', fontWeight: 700, marginTop: 1 }}>{et.dia}/dia</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Gargalo detectado */}
+              {garg && (
+                <div style={{ marginTop: 10, padding: '8px 12px', background: '#ea580c20', border: '1px solid #ea580c40', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8, fontSize: 10 }}>
+                  <span style={{ color: '#fb923c' }}>⚠️ Gargalo: {garg.etapa}</span>
+                  <span style={{ color: '#6b7280' }}>
+                    real {(garg.real * 100).toFixed(0)}% vs meta {(garg.meta * 100).toFixed(0)}%
+                    — cada 1% = +{Math.round(FUNIL_ATIVO.mensal.agendamentos * 0.01)} agendamentos/mês
+                  </span>
+                </div>
+              )}
+            </div>
+          )
+        })()}
 
         {/* Contexto do período + meta visível */}
         {(() => {

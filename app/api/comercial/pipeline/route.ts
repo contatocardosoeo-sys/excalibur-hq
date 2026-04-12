@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { COMERCIAL_METAS } from '../../../lib/config'
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
@@ -32,16 +33,29 @@ export async function GET(req: NextRequest) {
 
   const totalReunioes = Math.max(reunioesSemana, items.length)
 
+  // Metas do config (fonte única) — não mais da tabela metas_closer
+  const metaReunioes = COMERCIAL_METAS.reunioes_mes
+  const metaFechamentos = COMERCIAL_METAS.fechamentos_mes
+  const metaMrr = COMERCIAL_METAS.mrr_meta
+  const comissaoPct = COMERCIAL_METAS.comissao_pct * 100
+  const comissaoValor = mrrMes * COMERCIAL_METAS.comissao_pct
+  void metas // banco mantido como log mas não usado
+
   return NextResponse.json({
     pipeline: items,
     kpis: { reunioesSemana, propostasEnviadas, fechamentos, mrrMes },
-    metas: metas ? {
-      reunioes: { atual: totalReunioes, meta: metas.meta_reunioes },
-      fechamentos: { atual: fechamentos, meta: metas.meta_fechamentos },
-      mrr: { atual: mrrMes, meta: Number(metas.meta_mrr) },
-      comissao_pct: Number(metas.comissao_pct),
-      comissao_valor: mrrMes * Number(metas.comissao_pct) / 100,
-    } : null,
+    metas: {
+      reunioes: { atual: totalReunioes, meta: metaReunioes },
+      fechamentos: { atual: fechamentos, meta: metaFechamentos },
+      mrr: { atual: mrrMes, meta: metaMrr },
+      comissao_pct: comissaoPct,
+      comissao_valor: comissaoValor,
+      reunioes_dia: COMERCIAL_METAS.reunioes_dia,
+      fechamentos_dia: COMERCIAL_METAS.fechamentos_dia,
+      reunioes_semana: COMERCIAL_METAS.reunioes_semana,
+      fechamentos_semana: COMERCIAL_METAS.fechamentos_semana,
+    },
+    fonte_metas: 'config.ts (funil alvo R$90k)',
   })
 }
 

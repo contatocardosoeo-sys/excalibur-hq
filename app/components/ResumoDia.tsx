@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { isHojeDiaUtil, DIAS_UTEIS_MES, diasUteisPassados, diasUteisFaltando } from '../lib/config'
 
 type Resumo = {
   pagamentos: number
@@ -51,10 +52,27 @@ export default function ResumoDia() {
     })()
   }, [])
 
-  if (!r) return null
-
-  const hoje = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
+  // Detecção de dia útil: se for final de semana, mostra aviso diferente
+  const ehDiaUtil = isHojeDiaUtil()
+  const nowD = new Date()
+  const ano = nowD.getFullYear()
+  const mes = nowD.getMonth() + 1
+  const passados = diasUteisPassados(ano, mes, nowD)
+  const faltando = diasUteisFaltando(ano, mes, nowD)
+  const hoje = nowD.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
   const fmtR = (v: number) => 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+  // Final de semana/feriado: mostra aviso e oculta metas
+  if (!ehDiaUtil) {
+    return (
+      <div className="mb-4 mx-4 md:mx-6 px-4 py-3 bg-gray-800/30 border border-gray-700/50 rounded-xl text-sm text-gray-400">
+        🏖️ <span className="text-gray-500">Hoje, {hoje} — sem metas (final de semana / feriado).</span>
+        <span className="text-gray-600 ml-2">Próximo dia útil: {faltando > 0 ? `${faltando} restantes no mês` : 'próximo mês'}</span>
+      </div>
+    )
+  }
+
+  if (!r) return null
 
   const partes: React.ReactNode[] = []
   partes.push(
@@ -76,6 +94,7 @@ export default function ResumoDia() {
   return (
     <div className="mb-4 mx-4 md:mx-6 px-4 py-3 bg-gray-800/30 border border-gray-700/50 rounded-xl text-sm text-gray-400">
       <span className="text-gray-500">Hoje, {hoje}:</span>{' '}{partes}
+      <span className="text-gray-600 ml-3 text-xs">· dia útil {passados}/{DIAS_UTEIS_MES}</span>
     </div>
   )
 }

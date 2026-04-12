@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { COMERCIAL_METAS, RECEITA_METAS, META_ATIVA } from '../../../lib/config'
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
@@ -34,10 +35,13 @@ export async function GET() {
     reunioes,
     fechamentos,
     mrr_gerado: mrr,
-    meta_reunioes: metas?.meta_reunioes || 20,
-    meta_fechamentos: metas?.meta_fechamentos || 5,
-    meta_mrr: metas?.meta_mrr || 10000,
+    // Metas vêm do config (fonte única) — NÃO mais da tabela metas_closer
+    meta_reunioes: COMERCIAL_METAS.reunioes_mes,       // 150
+    meta_fechamentos: COMERCIAL_METAS.fechamentos_mes, // 45
+    meta_mrr: COMERCIAL_METAS.mrr_meta,                // 90000
+    comissao_pct: COMERCIAL_METAS.comissao_pct,
     fonte_fallback: all.length === 0 && funilMensal ? 'funil_trafego' : 'pipeline_closer',
+    fonte_metas: 'config.ts (funil alvo R$90k)',
     esfriando: esfriando.map(p => ({ nome: p.nome_clinica || 'Clinica', dias: Math.floor((Date.now() - new Date(p.updated_at).getTime()) / 86400000) })),
   })
 }

@@ -7,6 +7,7 @@ import { useToast } from '../../components/Toast'
 import { supabase } from '../../lib/supabase'
 import { useDispararEvento } from '../../hooks/useDispararEvento'
 import { NumberTicker } from '@/components/ui/number-ticker'
+import { COMERCIAL_METAS, RECEITA_METAS, META_ATIVA } from '../../lib/config'
 
 type PipeItem = { id: string; lead_id: string; nome_clinica: string; plano: string; mrr_proposto: number; status: string; data_reuniao: string; data_fechamento: string; observacoes: string; created_at: string }
 type MetaBar = { atual: number; meta: number }
@@ -137,6 +138,37 @@ export default function ComercialPage() {
       <div style={{ flex: 1, padding: '16px 16px', overflowY: 'auto', overflowX: 'hidden', minWidth: 0, maxWidth: '100%' }}>
         {/* Card de acao do dia (imperativo) */}
         <AcaoHoje role="closer" />
+
+        {/* Card funil alvo — vindo do config (fonte única) */}
+        <div style={{ background: '#111827', border: '1px solid #22c55e30', borderRadius: 12, padding: '14px 18px', marginBottom: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, flexWrap: 'wrap', gap: 6 }}>
+            <span style={{ fontSize: 11, color: '#4ade80', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              💰 Meta {META_ATIVA} — R$ {RECEITA_METAS[META_ATIVA].toLocaleString('pt-BR')} MRR
+            </span>
+            <div style={{ display: 'flex', gap: 14, fontSize: 10, color: '#6b7280' }}>
+              <span>Fechar: <span style={{ color: '#fff', fontWeight: 700 }}>{COMERCIAL_METAS.fechamentos_mes} vendas</span></span>
+              <span>Ticket: <span style={{ color: '#fff' }}>R$ 2.000</span></span>
+              <span>Comissão (10%): <span style={{ color: '#4ade80', fontWeight: 700 }}>R$ {(RECEITA_METAS[META_ATIVA] * COMERCIAL_METAS.comissao_pct).toLocaleString('pt-BR')}</span></span>
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+            <div style={{ background: '#0a0f1a', border: '1px solid #1f2937', borderRadius: 8, padding: '10px 12px', textAlign: 'center' }}>
+              <div style={{ fontSize: 9, color: '#6b7280', textTransform: 'uppercase' }}>Reuniões necessárias</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: '#fff' }}>{COMERCIAL_METAS.reunioes_mes}<span style={{ fontSize: 9, color: '#6b7280' }}>/mês</span></div>
+              <div style={{ fontSize: 9, color: '#f59e0b' }}>{COMERCIAL_METAS.reunioes_dia}/dia · {COMERCIAL_METAS.reunioes_semana}/semana</div>
+            </div>
+            <div style={{ background: '#0a0f1a', border: '1px solid #1f2937', borderRadius: 8, padding: '10px 12px', textAlign: 'center' }}>
+              <div style={{ fontSize: 9, color: '#6b7280', textTransform: 'uppercase' }}>Fechamentos</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: '#4ade80' }}>{COMERCIAL_METAS.fechamentos_mes}<span style={{ fontSize: 9, color: '#6b7280' }}>/mês</span></div>
+              <div style={{ fontSize: 9, color: '#f59e0b' }}>{COMERCIAL_METAS.fechamentos_dia}/dia · {COMERCIAL_METAS.fechamentos_semana}/semana</div>
+            </div>
+            <div style={{ background: '#0a0f1a', border: '1px solid #1f2937', borderRadius: 8, padding: '10px 12px', textAlign: 'center' }}>
+              <div style={{ fontSize: 9, color: '#6b7280', textTransform: 'uppercase' }}>Taxa de fechamento meta</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: '#fff' }}>30%</div>
+              <div style={{ fontSize: 9, color: '#6b7280' }}>real Fev/Mar: 32.5%</div>
+            </div>
+          </div>
+        </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <div><h1 style={{ fontSize: 22, fontWeight: 700, color: '#fff', margin: 0 }}>Comercial — Pipeline de Fechamento</h1><p style={{ color: '#6b7280', fontSize: 13, margin: '4px 0 0' }}>Gestao de propostas e fechamentos</p></div>
           <div style={{ display: 'flex', gap: 8 }}><button onClick={() => setModal(true)} style={{ background: '#f59e0b', color: '#000', border: 'none', borderRadius: 8, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 700 }}>+ Nova Proposta</button><button onClick={load} style={{ background: 'transparent', border: '1px solid #252535', color: '#9ca3af', borderRadius: 8, padding: '8px 12px', cursor: 'pointer' }}>🔄</button></div>

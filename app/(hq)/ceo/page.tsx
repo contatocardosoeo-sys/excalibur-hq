@@ -11,6 +11,7 @@ import { Separator } from '@/components/ui/separator'
 import { NumberTicker } from '@/components/ui/number-ticker'
 import AdocaoEquipe from '../../components/AdocaoEquipe'
 import ResumoDia from '../../components/ResumoDia'
+import FunilUnificado from '../../components/FunilUnificado'
 
 interface Receita {
   dia: number
@@ -164,6 +165,9 @@ export default function CEODashboard() {
 
         {/* ━━━ RESUMO DO DIA (uma linha — pagamentos, leads, alertas) ━━━ */}
         <ResumoDia />
+
+        {/* ━━━ FUNIL UNIFICADO — real vs meta (alvo R$90k) ━━━ */}
+        <FunilUnificado />
 
         {/* ━━━ ADOÇÃO DA EQUIPE (primeiro elemento — monitoramento de execução) ━━━ */}
         <AdocaoEquipe />

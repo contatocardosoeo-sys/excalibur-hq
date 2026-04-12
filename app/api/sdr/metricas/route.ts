@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { FUNIL_METAS, metaPorPeriodo, type Periodo } from '../../../lib/metas-funil'
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
@@ -50,28 +51,24 @@ export async function GET(req: NextRequest) {
 
   const metricas = metricasRes.data || []
   const metricasMes = mesRes.data || []
-  const meta = metaRes.data || { meta_leads: 300, meta_leads_dia: 14, meta_contatos: 90, meta_contatos_dia: 5, meta_agendamentos: 30, meta_agendamentos_dia: 2, meta_comparecimentos: 20, meta_vendas: 3 }
+  // ═══ FONTE ÚNICA DE VERDADE: lib/metas-funil.ts (nível ALVO = R$90k) ═══
+  // Valores calculados a partir da meta de receita, não mais hardcoded:
+  // leads=879, qualificados=615, agendamentos=215, comparec=150, vendas=45
+  const FUNIL = FUNIL_METAS.alvo
+  const metaLeadsM = FUNIL.mensal.leads
+  const metaContatosM = FUNIL.mensal.leads  // contatos = leads (100%)
+  const metaAgendM = FUNIL.mensal.agendamentos
+  const metaCompM = FUNIL.mensal.comparecimentos
+  const metaVendasM = FUNIL.mensal.vendas
+  // _meta (da tabela banco) mantido apenas como referência para futuras overrides
+  void metaRes // ignorar linting
 
-  // Helper: calcular meta por período a partir da meta mensal.
-  // Empresa opera seg-sex (22 dias úteis/mês aprox), semana ~= 4.33.
-  // Dias selecionados no range (pra personalizado)
   const diasRangeMs = new Date(dataFim + 'T12:00:00').getTime() - new Date(dataInicio + 'T12:00:00').getTime()
   const diasRange = Math.max(1, Math.round(diasRangeMs / 86400000) + 1)
 
-  function metaPorPeriodo(metaMensal: number): number {
-    const mm = Number(metaMensal || 0)
-    if (periodo === 'hoje') return Math.ceil(mm / 22)
-    if (periodo === 'semana') return Math.ceil(mm / 4.33)
-    if (periodo === 'mes') return mm
-    if (periodo === 'personalizado') return Math.ceil((mm / 22) * diasRange)
-    return mm
+  function metaPorFiltro(metaMensal: number): number {
+    return metaPorPeriodo(metaMensal, periodo as Periodo, diasRange)
   }
-
-  const metaLeadsM = Number(meta.meta_leads || 300)
-  const metaContatosM = Number(meta.meta_contatos || 90)
-  const metaAgendM = Number(meta.meta_agendamentos || 30)
-  const metaCompM = Number(meta.meta_comparecimentos || 20)
-  const metaVendasM = Number(meta.meta_vendas || 3)
 
   // Acumulados do periodo selecionado
   const totalLeads = metricas.reduce((s, m) => s + (m.leads_recebidos || 0), 0)
@@ -108,37 +105,47 @@ export async function GET(req: NextRequest) {
       comparecimento: taxaComparecimento,
       conversao: taxaConversao,
     },
-    // Metas dinâmicas por período (exatamente o que o SDR precisa bater pro filtro selecionado)
+    // Metas dinâmicas por período (vêm de FUNIL_METAS.alvo)
     metas: {
-      leads: metaPorPeriodo(metaLeadsM),
-      contatos: metaPorPeriodo(metaContatosM),
-      agendamentos: metaPorPeriodo(metaAgendM),
-      comparecimentos: metaPorPeriodo(metaCompM),
-      vendas: metaPorPeriodo(metaVendasM),
+      leads: metaPorFiltro(metaLeadsM),
+      contatos: metaPorFiltro(metaContatosM),
+      qualificados: metaPorFiltro(FUNIL.mensal.qualificados),
+      agendamentos: metaPorFiltro(metaAgendM),
+      comparecimentos: metaPorFiltro(metaCompM),
+      vendas: metaPorFiltro(metaVendasM),
     },
-    // Metas mensais totais (sempre pra referência, independente do filtro)
+    // Metas mensais (referência total)
     metas_mensais: {
       leads: metaLeadsM,
       contatos: metaContatosM,
+      qualificados: FUNIL.mensal.qualificados,
       agendamentos: metaAgendM,
       comparecimentos: metaCompM,
       vendas: metaVendasM,
     },
-    // Metas diárias (pra mostrar nos botões "Hoje — 14 leads")
+    // Metas diárias (direto do FUNIL — pra botão "Hoje / meta X")
     metas_diarias: {
-      leads: Math.ceil(metaLeadsM / 22),
-      contatos: Math.ceil(metaContatosM / 22),
-      agendamentos: Math.ceil(metaAgendM / 22),
-      comparecimentos: Math.ceil(metaCompM / 22),
-      vendas: Math.ceil(metaVendasM / 22),
+      leads: FUNIL.diario.leads,
+      contatos: FUNIL.diario.leads,
+      agendamentos: FUNIL.diario.agendamentos,
+      comparecimentos: FUNIL.diario.comparecimentos,
+      vendas: FUNIL.diario.vendas,
     },
-    // Metas semanais
+    // Metas semanais (direto do FUNIL)
     metas_semanais: {
-      leads: Math.ceil(metaLeadsM / 4.33),
-      contatos: Math.ceil(metaContatosM / 4.33),
-      agendamentos: Math.ceil(metaAgendM / 4.33),
-      comparecimentos: Math.ceil(metaCompM / 4.33),
-      vendas: Math.ceil(metaVendasM / 4.33),
+      leads: FUNIL.semanal.leads,
+      contatos: FUNIL.semanal.leads,
+      agendamentos: FUNIL.semanal.agendamentos,
+      comparecimentos: FUNIL.semanal.comparecimentos,
+      vendas: FUNIL.semanal.vendas,
+    },
+    // Contexto do funil (receita/cac/invest) pra card visual
+    funil_contexto: {
+      receita_meta: FUNIL.receita,
+      ticket_medio: 2000,
+      investimento_mensal: FUNIL.custos.investimento_mensal,
+      cac: FUNIL.custos.cac,
+      custo_reuniao: FUNIL.custos.custo_reuniao,
     },
     // Acumulado TOTAL do mês (pra mostrar nas referências mesmo filtrando "hoje")
     acumulado_mes: {

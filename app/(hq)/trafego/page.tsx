@@ -5,6 +5,7 @@ import Sidebar from '../../components/Sidebar'
 import MetaAdsPanel from '../../components/MetaAdsPanel'
 import { supabase } from '../../lib/supabase'
 import { NumberTicker } from '@/components/ui/number-ticker'
+import { TRAFEGO_METAS, RECEITA_METAS, META_ATIVA, LIMITES, CPL_MEDIO } from '../../lib/config'
 
 type Etapa = { nome: string; valor: number; custo: number | null; custoLabel: string | null; taxa: number | null; diag: { cor: string; status: string; emoji: string } | null; baseline: number | null }
 type Decisao = { metrica: string; valor: number; cor: string; status: string; emoji: string; acoes: string[]; baseline: number; unidade: string }
@@ -143,6 +144,35 @@ export default function TrafegoBI() {
 
         {/* Painel Meta Ads — integração com o gerenciador de anúncios */}
         <MetaAdsPanel onSync={load} />
+
+        {/* Card metas de tráfego — vindas do config (alinhadas com funil alvo) */}
+        <div style={{ background: '#111827', border: '1px solid #3b82f630', borderRadius: 12, padding: '14px 18px', marginBottom: 14 }}>
+          <div style={{ fontSize: 11, color: '#60a5fa', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>
+            📣 Metas de marketing — derivadas do funil {META_ATIVA.toUpperCase()} (R$ {RECEITA_METAS[META_ATIVA].toLocaleString('pt-BR')}/mês)
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10 }}>
+            <div style={{ background: '#0a0f1a', border: '1px solid #1f2937', borderRadius: 8, padding: '10px 12px', textAlign: 'center' }}>
+              <div style={{ fontSize: 9, color: '#6b7280', textTransform: 'uppercase' }}>Leads a entregar/mês</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: '#fff' }}>{TRAFEGO_METAS.leads_mes}</div>
+              <div style={{ fontSize: 9, color: '#f59e0b' }}>{TRAFEGO_METAS.leads_dia}/dia · {TRAFEGO_METAS.leads_semana}/semana</div>
+            </div>
+            <div style={{ background: '#0a0f1a', border: '1px solid #1f2937', borderRadius: 8, padding: '10px 12px', textAlign: 'center' }}>
+              <div style={{ fontSize: 9, color: '#6b7280', textTransform: 'uppercase' }}>CPL alvo</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: '#4ade80' }}>R$ {CPL_MEDIO.toFixed(2)}</div>
+              <div style={{ fontSize: 9, color: '#6b7280' }}>máx: R$ {TRAFEGO_METAS.cpl_max.toFixed(2)}</div>
+            </div>
+            <div style={{ background: '#0a0f1a', border: '1px solid #1f2937', borderRadius: 8, padding: '10px 12px', textAlign: 'center' }}>
+              <div style={{ fontSize: 9, color: '#6b7280', textTransform: 'uppercase' }}>Investimento mês</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: '#fff' }}>R$ {TRAFEGO_METAS.investimento_mensal.toLocaleString('pt-BR')}</div>
+              <div style={{ fontSize: 9, color: '#6b7280' }}>R$ {TRAFEGO_METAS.investimento_dia}/dia</div>
+            </div>
+            <div style={{ background: '#0a0f1a', border: '1px solid #1f2937', borderRadius: 8, padding: '10px 12px', textAlign: 'center' }}>
+              <div style={{ fontSize: 9, color: '#6b7280', textTransform: 'uppercase' }}>CAC máximo</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: '#fff' }}>R$ {LIMITES.cac_max}</div>
+              <div style={{ fontSize: 9, color: '#4ade80' }}>alvo: R$ {TRAFEGO_METAS.investimento_mensal && TRAFEGO_METAS.leads_mes ? Math.round(TRAFEGO_METAS.investimento_mensal / (TRAFEGO_METAS.leads_mes / 879 * 45)) : 209} ✓</div>
+            </div>
+          </div>
+        </div>
 
         {/* ABAS: BI | Diário */}
         <div style={{ display: 'flex', gap: 4, marginBottom: 14 }}>
