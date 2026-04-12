@@ -260,7 +260,7 @@ export default function Sidebar() {
         </div>
       </div>
 
-      <nav className="p-3 flex flex-col gap-0.5 flex-1 overflow-auto">
+      <nav id="sidebar-nav" className="p-3 flex flex-col gap-0.5 flex-1 overflow-auto">
         {filteredSections.map((section, sectionIdx) => (
           <div key={section.label} className="mb-3">
             {sectionIdx > 0 && <div className="border-t border-gray-800/60 mb-3 -mx-1" />}

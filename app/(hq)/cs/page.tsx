@@ -318,7 +318,7 @@ export default function CSPainel() {
                             <div style={{ height: '100%', background: scoreCor(c.score), width: `${c.score}%` }} />
                           </div>
                         </div>
-                        <button onClick={e => { e.stopPropagation(); setModalCliente(c) }} style={{ background: '#f59e0b15', color: '#f59e0b', border: '1px solid #f59e0b30', borderRadius: 6, padding: '4px 10px', fontSize: 9, fontWeight: 600, cursor: 'pointer' }}>Contato</button>
+                        <button id="btn-checkin" onClick={e => { e.stopPropagation(); setModalCliente(c) }} style={{ background: '#f59e0b15', color: '#f59e0b', border: '1px solid #f59e0b30', borderRadius: 6, padding: '4px 10px', fontSize: 9, fontWeight: 600, cursor: 'pointer' }}>Contato</button>
                       </div>
                     </div>
                   ))
@@ -352,7 +352,7 @@ export default function CSPainel() {
             {/* Coluna direita */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {/* Distribuicao por etapa */}
-              <div style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 12, padding: 16 }}>
+              <div id="etapas-jornada" style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 12, padding: 16 }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 12 }}>📈 Distribuicao por etapa</div>
                 {Object.keys(distribuicao_etapas).length === 0 ? (
                   <div style={{ color: '#6b7280', fontSize: 11, textAlign: 'center', padding: 12 }}>Sem dados</div>
