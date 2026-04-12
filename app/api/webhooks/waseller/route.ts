@@ -1,55 +1,109 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { avancarEtapa, enviarTexto, MSGS } from '@/app/lib/wascript'
 
 const sb = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 )
 
-// Mapa de etapa do CRM Waseller → etapa canonical HQ
-const ETAPA_MAP: Record<string, string> = {
-  novo: 'lead', lead: 'lead', recebido: 'lead', entrada: 'lead',
-  contato: 'contato', conversa: 'contato', em_contato: 'contato',
-  qualificado: 'qualificado', qualificacao: 'qualificado',
-  agendado: 'agendamento', agendamento: 'agendamento', reuniao_marcada: 'agendamento',
-  compareceu: 'comparecimento', comparecimento: 'comparecimento', reuniao_realizada: 'comparecimento',
-  fechado: 'venda', ganho: 'venda', deal_won: 'venda', venda: 'venda',
-  perdido: 'perdido', sem_interesse: 'perdido', nao_qualificado: 'perdido',
+// ═══════════════════════════════════════════════════════════
+// MAPEAMENTO EVENTO WASELLER → ETAPA HQ
+// ═══════════════════════════════════════════════════════════
+const EVENTO_MAP: Record<string, string> = {
+  // Evento CRM (novo lead entrando)
+  'crm': 'lead',
+  'novo_lead': 'lead',
+  'lead': 'lead',
+  'novo': 'lead',
+  'recebido': 'lead',
+  // Agendamento
+  'agendamento': 'agendamento',
+  'agendado': 'agendamento',
+  'reuniao_marcada': 'agendamento',
+  // Encerrar atendimento = compareceu (reunião realizada)
+  'encerrar_atendimento': 'comparecimento',
+  'atendimento_encerrado': 'comparecimento',
+  'compareceu': 'comparecimento',
+  'reuniao_realizada': 'comparecimento',
+  // Follow Up = qualificado
+  'follow_up': 'qualificado',
+  'followup': 'qualificado',
+  // Fechamento
+  'venda': 'venda',
+  'fechado': 'venda',
+  'ganho': 'venda',
+  'deal_won': 'venda',
+  // Perdido
+  'perdido': 'perdido',
+  'sem_interesse': 'perdido',
+  'nao_qualificado': 'perdido',
+}
+
+// ═══════════════════════════════════════════════════════════
+// MAPEAMENTO ETIQUETA → ETAPA HQ (quando event=etiqueta)
+// ═══════════════════════════════════════════════════════════
+const ETIQUETA_MAP: Record<string, string> = {
+  'lead': 'lead',
+  'acompanhar': 'agendamento',
+  'novo cliente': 'comparecimento',
+  'novo pedido': 'agendamento',
+  'pago': 'venda',
+  'pedido finalizado': 'venda',
+  'pagamento pendente': 'agendamento',
+  'importante': 'qualificado',
 }
 
 type WasellerPayload = {
   event?: string
+  evento?: string
+  type?: string
   lead_id?: string
   id?: string
-  name?: string
+  numero?: string
   phone?: string
+  number?: string
+  name?: string
+  nome?: string
   company?: string
+  clinica?: string
   city?: string
+  cidade?: string
   stage?: string
   etapa?: string
+  etiqueta?: string
+  label?: string
   source?: string
   value?: number
+  valor?: number
   lost_reason?: string
+  dados_do_evento?: unknown
 }
 
-function mapEtapa(raw: string | undefined): string {
-  if (!raw) return 'lead'
-  const key = raw.toLowerCase().trim().replace(/\s+/g, '_')
-  return ETAPA_MAP[key] || 'lead'
+function limparTelefone(tel: string): string {
+  return (tel || '').replace(/\D/g, '')
 }
 
 export async function GET() {
   return NextResponse.json({
     ok: true,
-    endpoint: 'waseller-webhook',
-    url: '/api/webhooks/waseller',
-    auth: 'header x-waseller-token ou ?token=',
-    etapas_conhecidas: Object.keys(ETAPA_MAP),
+    url: 'https://excalibur-hq.vercel.app/api/webhooks/waseller',
+    auth: 'opcional — header x-waseller-token OU ?token=',
+    eventos_suportados: Object.keys(EVENTO_MAP),
+    etiquetas_suportadas: Object.keys(ETIQUETA_MAP),
+    mapping_etapas_hq: {
+      lead: 'Lead (novo)',
+      qualificado: 'Follow Up / Acompanhar',
+      agendamento: 'Reunião marcada',
+      comparecimento: 'Reunião realizada',
+      venda: 'Fechado / Pago',
+      perdido: 'Sem interesse',
+    },
   })
 }
 
 export async function POST(req: NextRequest) {
-  // 1. Auth
+  // 1. Auth (opcional — mas validamos se o env estiver setado)
   const tokenEnv = process.env.WASELLER_WEBHOOK_TOKEN
   const tokenHeader = req.headers.get('x-waseller-token') || req.nextUrl.searchParams.get('token')
   if (tokenEnv && tokenHeader !== tokenEnv) {
@@ -63,82 +117,122 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
-  const evento = body.event || 'unknown'
-  const leadId = body.lead_id || body.id || null
-  const leadNome = body.name || null
-  const etapaRaw = body.stage || body.etapa
-  const etapaHq = mapEtapa(etapaRaw)
+  const evento = (body.event || body.evento || body.type || '').toLowerCase().trim().replace(/\s+/g, '_')
+  const telefoneRaw = body.numero || body.phone || body.number || ''
+  const telefone = limparTelefone(telefoneRaw)
+  const nome = body.name || body.nome || 'Lead'
+  const clinica = body.company || body.clinica || null
+  const cidade = body.city || body.cidade || null
+  const etiquetaRaw = (body.etiqueta || body.label || '').toLowerCase().trim()
+  const stageRaw = (body.stage || body.etapa || '').toLowerCase().trim()
+  const valor = body.value || body.valor || null
 
-  // 2. Sempre logar o raw (mesmo sem mapear)
-  await sb.from('waseller_webhooks_log').insert({
-    evento,
-    payload: body,
-    lead_id: leadId,
-    lead_nome: leadNome,
-    etapa_nova: etapaHq,
-    processado: false,
-  })
+  // Sempre logar o payload cru (mesmo se não mapear)
+  const { data: logInserido } = await sb
+    .from('waseller_webhooks_log')
+    .insert({
+      evento,
+      payload: body as unknown as object,
+      lead_id: telefone || body.lead_id || body.id || null,
+      lead_nome: nome,
+      etapa_nova: null,
+      processado: false,
+    })
+    .select('id')
+    .maybeSingle()
+
+  // 2. Determinar etapa HQ
+  let etapaHQ: string | null = EVENTO_MAP[evento] || null
+  if (!etapaHQ && evento === 'etiqueta' && etiquetaRaw) {
+    etapaHQ = ETIQUETA_MAP[etiquetaRaw] || null
+  }
+  if (!etapaHQ && stageRaw) {
+    etapaHQ = EVENTO_MAP[stageRaw] || null
+  }
+
+  if (!etapaHQ || !telefone) {
+    // Salvar log com aviso mas sempre retornar 200
+    if (logInserido) {
+      await sb
+        .from('waseller_webhooks_log')
+        .update({ erro: `evento não mapeado (evento=${evento}, etiqueta=${etiquetaRaw})` })
+        .eq('id', logInserido.id)
+    }
+    return NextResponse.json({ ok: true, aviso: 'evento não mapeado', evento, etiqueta: etiquetaRaw })
+  }
 
   try {
-    if (!leadId) {
-      return NextResponse.json({ ok: true, warning: 'no lead_id — just logged' })
-    }
-
-    // 3. Upsert em sdr_leads_crm
-    const now = new Date().toISOString()
-    const timestamps: Record<string, string> = {}
-    if (etapaHq === 'lead') timestamps.ts_lead_criado = now
-    if (etapaHq === 'qualificado') timestamps.ts_qualificado = now
-    if (etapaHq === 'agendamento') timestamps.ts_agendado = now
-    if (etapaHq === 'comparecimento') timestamps.ts_compareceu = now
-    if (etapaHq === 'venda') timestamps.ts_fechado = now
-    if (etapaHq === 'perdido') timestamps.ts_perdido = now
-
-    const upsertPayload = {
-      waseller_id: leadId,
-      nome: leadNome,
-      telefone: body.phone || null,
-      clinica: body.company || null,
-      cidade: body.city || null,
-      etapa_atual: etapaRaw || null,
-      etapa_hq: etapaHq,
-      valor_contrato: body.value || null,
-      motivo_perda: body.lost_reason || null,
-      fonte: body.source || 'waseller',
-      updated_at: now,
-      ...timestamps,
-    }
-
-    await sb.from('sdr_leads_crm').upsert(upsertPayload, { onConflict: 'waseller_id' })
-
-    // 4. Incrementar métricas do dia (fonte=waseller)
-    const hoje = now.slice(0, 10)
-    const { data: existente } = await sb
-      .from('sdr_metricas_diarias')
-      .select('*')
-      .eq('data', hoje)
-      .eq('fonte', 'waseller')
+    // 3. Buscar etapa anterior pelo telefone
+    const { data: leadExistente } = await sb
+      .from('sdr_leads_crm')
+      .select('id, etapa_hq, waseller_id')
+      .eq('telefone', telefone)
       .maybeSingle()
 
-    const camposPorEtapa: Record<string, string> = {
-      lead: 'leads',
-      qualificado: 'qualificados',
+    const etapaAnterior = leadExistente?.etapa_hq || null
+
+    // 4. Upsert lead CRM espelhado
+    const agora = new Date().toISOString()
+    const tsMap: Record<string, string> = {
+      lead: 'ts_lead_criado',
+      qualificado: 'ts_qualificado',
+      agendamento: 'ts_agendado',
+      comparecimento: 'ts_compareceu',
+      venda: 'ts_fechado',
+      perdido: 'ts_perdido',
+    }
+    const tsField = tsMap[etapaHQ]
+
+    const upsertPayload: Record<string, unknown> = {
+      telefone,
+      waseller_id: leadExistente?.waseller_id || body.lead_id || body.id || `waseller-${telefone}`,
+      nome,
+      clinica,
+      cidade,
+      etapa_atual: evento,
+      etapa_hq: etapaHQ,
+      valor_contrato: valor,
+      motivo_perda: body.lost_reason || null,
+      fonte: 'waseller',
+      updated_at: agora,
+    }
+    if (tsField) upsertPayload[tsField] = agora
+
+    if (leadExistente) {
+      await sb.from('sdr_leads_crm').update(upsertPayload).eq('id', leadExistente.id)
+    } else {
+      await sb.from('sdr_leads_crm').insert(upsertPayload)
+    }
+
+    // 5. Incrementar métrica do dia (fonte=waseller, evita double-count com manual)
+    const hoje = agora.slice(0, 10)
+    const campoPorEtapa: Record<string, string> = {
+      lead: 'leads_recebidos',
+      qualificado: 'contatos_realizados',
       agendamento: 'agendamentos',
       comparecimento: 'comparecimentos',
       venda: 'vendas',
     }
-    const campo = camposPorEtapa[etapaHq]
+    const campo = campoPorEtapa[etapaHQ]
 
     if (campo) {
-      if (existente) {
-        const atual = Number((existente as Record<string, unknown>)[campo] || 0)
+      const { data: mHoje } = await sb
+        .from('sdr_metricas_diarias')
+        .select('*')
+        .eq('data', hoje)
+        .eq('fonte', 'waseller')
+        .maybeSingle()
+
+      if (mHoje) {
+        const atual = Number((mHoje as Record<string, unknown>)[campo] || 0)
         await sb
           .from('sdr_metricas_diarias')
           .update({ [campo]: atual + 1, waseller_sync: true })
-          .eq('id', existente.id as string)
+          .eq('id', mHoje.id as string)
       } else {
         await sb.from('sdr_metricas_diarias').insert({
           data: hoje,
+          sdr_email: 'trindade.excalibur@gmail.com',
           fonte: 'waseller',
           waseller_sync: true,
           [campo]: 1,
@@ -146,33 +240,154 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 5. Criar evento HQ em marcos importantes
-    if (etapaHq === 'agendamento' || etapaHq === 'venda') {
-      const titulo =
-        etapaHq === 'agendamento'
-          ? `📅 Novo agendamento: ${leadNome || leadId}`
-          : `🎉 Venda fechada: ${leadNome || leadId}`
-      await sb.from('eventos').insert({
-        tipo: etapaHq === 'venda' ? 'venda' : 'agendamento',
-        titulo,
-        descricao: `Waseller · ${body.company || 'sem clínica'} · ${body.city || ''}`,
-        criado_por: 'waseller-webhook',
-      }).throwOnError?.()
-        .then?.(() => {}, () => {})
+    // 6. Criar evento HQ nos marcos importantes
+    if (etapaHQ === 'agendamento' || etapaHQ === 'comparecimento' || etapaHQ === 'venda') {
+      const titulos: Record<string, string> = {
+        agendamento: `📅 Novo agendamento (Waseller): ${nome}`,
+        comparecimento: `🤝 Reunião realizada (Waseller): ${nome}`,
+        venda: `💰 Venda fechada (Waseller): ${nome}`,
+      }
+      try {
+        await sb.from('eventos').insert({
+          tipo: etapaHQ,
+          titulo: titulos[etapaHQ],
+          descricao: `${clinica || ''} ${cidade ? `· ${cidade}` : ''}`.trim(),
+          criado_por: 'waseller-webhook',
+        })
+      } catch {
+        /* */
+      }
     }
 
-    // 6. Marcar log como processado
-    await sb
-      .from('waseller_webhooks_log')
-      .update({ processado: true })
-      .eq('lead_id', leadId)
-      .eq('evento', evento)
-      .eq('processado', false)
+    // 7. Disparar comissões no fluxo correto (fire-and-forget)
+    if (etapaHQ === 'agendamento') {
+      Promise.resolve().then(async () => {
+        try {
+          await sb.from('comissoes').insert({
+            colaborador_email: 'trindade.excalibur@gmail.com',
+            colaborador_nome: 'Trindade',
+            role: 'sdr',
+            tipo: 'agendamento',
+            valor: 8,
+            mes: new Date(agora).getMonth() + 1,
+            ano: new Date(agora).getFullYear(),
+            data_evento: hoje,
+            lead_nome: nome,
+            observacao: 'gerado via webhook Waseller',
+          })
+        } catch {
+          /* */
+        }
+      })
+    }
+    if (etapaHQ === 'comparecimento') {
+      Promise.resolve().then(async () => {
+        try {
+          await sb.from('comissoes').insert({
+            colaborador_email: 'trindade.excalibur@gmail.com',
+            colaborador_nome: 'Trindade',
+            role: 'sdr',
+            tipo: 'comparecimento',
+            valor: 12,
+            mes: new Date(agora).getMonth() + 1,
+            ano: new Date(agora).getFullYear(),
+            data_evento: hoje,
+            lead_nome: nome,
+            observacao: 'gerado via webhook Waseller',
+          })
+        } catch {
+          /* */
+        }
+      })
+    }
+    if (etapaHQ === 'venda') {
+      Promise.resolve().then(async () => {
+        try {
+          await sb.from('comissoes').insert([
+            {
+              colaborador_email: 'guilherme.excalibur@gmail.com',
+              colaborador_nome: 'Guilherme',
+              role: 'closer',
+              tipo: 'venda',
+              valor: Math.round(Number(valor || 2400) * 0.05),
+              mes: new Date(agora).getMonth() + 1,
+              ano: new Date(agora).getFullYear(),
+              data_evento: hoje,
+              lead_nome: nome,
+              ticket_venda: valor || 2400,
+              observacao: 'webhook Waseller',
+            },
+            {
+              colaborador_email: 'trindade.excalibur@gmail.com',
+              colaborador_nome: 'Trindade',
+              role: 'sdr',
+              tipo: 'venda',
+              valor: 40,
+              mes: new Date(agora).getMonth() + 1,
+              ano: new Date(agora).getFullYear(),
+              data_evento: hoje,
+              lead_nome: nome,
+              ticket_venda: valor || 2400,
+              observacao: 'webhook Waseller',
+            },
+          ])
+        } catch {
+          /* */
+        }
+      })
+    }
 
-    return NextResponse.json({ ok: true, lead: leadNome || leadId, etapa_hq: etapaHq })
+    // 8. Espelhar etiqueta no WhatsApp via Wascript (remove anterior + aplica nova)
+    if (telefone && etapaAnterior !== etapaHQ) {
+      Promise.resolve().then(async () => {
+        try {
+          await avancarEtapa(telefone, etapaAnterior, etapaHQ!)
+        } catch (e) {
+          console.error('[waseller→wascript avancar]', e)
+        }
+      })
+    }
+
+    // 9. Mensagem automática por etapa
+    const msgMap: Record<string, keyof typeof MSGS> = {
+      agendamento: 'confirmacao',
+      comparecimento: 'pos_reuniao',
+      perdido: 'follow_up',
+    }
+    const msgKey = msgMap[etapaHQ]
+    if (msgKey && telefone) {
+      Promise.resolve().then(async () => {
+        try {
+          await enviarTexto(telefone, MSGS[msgKey])
+        } catch (e) {
+          console.error('[waseller→wascript enviar]', e)
+        }
+      })
+    }
+
+    // 10. Marcar log como processado
+    if (logInserido) {
+      await sb
+        .from('waseller_webhooks_log')
+        .update({ processado: true, etapa_nova: etapaHQ })
+        .eq('id', logInserido.id)
+    }
+
+    return NextResponse.json({
+      ok: true,
+      evento,
+      etapa_hq: etapaHQ,
+      etapa_anterior: etapaAnterior,
+      lead: nome,
+      telefone,
+      whatsapp_disparado: !!telefone && etapaAnterior !== etapaHQ,
+    })
   } catch (e) {
-    const erro = e instanceof Error ? e.message : 'erro desconhecido'
-    // Ainda retorna 200 — NUNCA pausar a fila do CRM
-    return NextResponse.json({ ok: true, warning: erro })
+    const msg = e instanceof Error ? e.message : 'erro desconhecido'
+    if (logInserido) {
+      await sb.from('waseller_webhooks_log').update({ erro: msg }).eq('id', logInserido.id)
+    }
+    // SEMPRE retornar 200 — nunca travar a fila do Waseller
+    return NextResponse.json({ ok: true, warning: msg })
   }
 }

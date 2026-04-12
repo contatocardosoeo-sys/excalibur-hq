@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { enviarTexto, modificarEtiquetas, criarNota } from '@/app/lib/wascript'
+import { enviarTexto, modificarEtiqueta, criarNota } from '@/app/lib/wascript'
 
 const sb = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 )
 
-// POST — executa ação na conta WhatsApp do Trindade via Wascript
-// Body: { tipo: 'enviar_texto' | 'criar_nota' | 'modificar_etiqueta', phone, ...payload }
+// Legacy endpoint — mantém compat. Nova interface é /api/wascript
+// Body: { tipo: 'enviar_texto' | 'criar_nota' | 'modificar_etiqueta', phone, message?, content?, actions? }
 export async function POST(req: NextRequest) {
   const body = await req.json()
   const { tipo, phone, message, content, actions } = body
@@ -22,13 +22,15 @@ export async function POST(req: NextRequest) {
   try {
     if (tipo === 'enviar_texto') {
       if (!message) return NextResponse.json({ error: 'message obrigatório' }, { status: 400 })
-      resp = await enviarTexto({ phone, message })
+      resp = await enviarTexto(phone, message)
     } else if (tipo === 'criar_nota') {
       if (!content) return NextResponse.json({ error: 'content obrigatório' }, { status: 400 })
-      resp = await criarNota({ phone, content })
+      resp = await criarNota(phone, content)
     } else if (tipo === 'modificar_etiqueta') {
-      if (!actions) return NextResponse.json({ error: 'actions obrigatório' }, { status: 400 })
-      resp = await modificarEtiquetas({ phone, actions })
+      if (!actions || !actions.labelId || !actions.type) {
+        return NextResponse.json({ error: 'actions.labelId e actions.type obrigatórios' }, { status: 400 })
+      }
+      resp = await modificarEtiqueta(phone, actions.labelId, actions.type)
     } else {
       return NextResponse.json({ error: 'tipo inválido' }, { status: 400 })
     }

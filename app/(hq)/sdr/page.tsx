@@ -8,6 +8,7 @@ import CrmAoVivo from '../../components/CrmAoVivo'
 import ComissoesPanel from '../../components/ComissoesPanel'
 import ComissoesHero from '../../components/ComissoesHero'
 import WascriptLive from '../../components/WascriptLive'
+import WascriptEnvioRapido from '../../components/WascriptEnvioRapido'
 import { useToast } from '../../components/Toast'
 import { supabase } from '../../lib/supabase'
 import { useDispararEvento } from '../../hooks/useDispararEvento'
@@ -231,6 +232,9 @@ export default function SDRPage() {
 
         {/* 📲 WhatsApp etiquetas ao vivo (Wascript API) */}
         <WascriptLive />
+
+        {/* 📱 Envio rápido WhatsApp (mensagens padrão + custom) */}
+        <WascriptEnvioRapido />
 
         {/* Card de acao do dia (imperativo) */}
         <AcaoHoje role="sdr" />
