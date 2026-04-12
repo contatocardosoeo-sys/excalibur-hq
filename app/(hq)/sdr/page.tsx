@@ -7,6 +7,7 @@ import AcaoHoje from '../../components/AcaoHoje'
 import CrmAoVivo from '../../components/CrmAoVivo'
 import ComissoesPanel from '../../components/ComissoesPanel'
 import ComissoesHero from '../../components/ComissoesHero'
+import WascriptLive from '../../components/WascriptLive'
 import { useToast } from '../../components/Toast'
 import { supabase } from '../../lib/supabase'
 import { useDispararEvento } from '../../hooks/useDispararEvento'
@@ -227,6 +228,9 @@ export default function SDRPage() {
 
         {/* ⚔️ COMISSÃO GIGANTE — pedido do Trindade, no topo da tela */}
         <ComissoesHero role="sdr" nome="Trindade" email="trindade.excalibur@gmail.com" />
+
+        {/* 📲 WhatsApp etiquetas ao vivo (Wascript API) */}
+        <WascriptLive />
 
         {/* Card de acao do dia (imperativo) */}
         <AcaoHoje role="sdr" />
