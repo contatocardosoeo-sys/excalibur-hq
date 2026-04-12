@@ -1,6 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { FUNIL_METAS, metaPorPeriodo, type Periodo } from '../../../lib/metas-funil'
+import {
+  SDR_METAS_DIARIAS,
+  SDR_METAS_MENSAIS,
+  SDR_METAS_SEMANAIS,
+  SDR_MINIMO_DIARIO,
+  calcularMetaAjustada,
+  metaPorPeriodo,
+  diasUteisPassados,
+  diasUteisDoMesAtual,
+  TAXAS_REAIS,
+  type Periodo,
+} from '../../../lib/config'
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
@@ -51,17 +62,14 @@ export async function GET(req: NextRequest) {
 
   const metricas = metricasRes.data || []
   const metricasMes = mesRes.data || []
-  // ═══ FONTE ÚNICA DE VERDADE: lib/metas-funil.ts (nível ALVO = R$90k) ═══
-  // Valores calculados a partir da meta de receita, não mais hardcoded:
-  // leads=879, qualificados=615, agendamentos=215, comparec=150, vendas=45
-  const FUNIL = FUNIL_METAS.alvo
-  const metaLeadsM = FUNIL.mensal.leads
-  const metaContatosM = FUNIL.mensal.leads  // contatos = leads (100%)
-  const metaAgendM = FUNIL.mensal.agendamentos
-  const metaCompM = FUNIL.mensal.comparecimentos
-  const metaVendasM = FUNIL.mensal.vendas
-  // _meta (da tabela banco) mantido apenas como referência para futuras overrides
-  void metaRes // ignorar linting
+  // ═══ FONTE ÚNICA DE VERDADE: lib/config.ts ═══
+  // Meta principal: 15 agendamentos/dia → funil calculado: 1302/903/315/210/63 → R$126k
+  const metaLeadsM = SDR_METAS_MENSAIS.leads
+  const metaQualificadosM = SDR_METAS_MENSAIS.qualificados
+  const metaAgendM = SDR_METAS_MENSAIS.agendamentos
+  const metaCompM = SDR_METAS_MENSAIS.reunioes_esperadas
+  const metaVendasM = SDR_METAS_MENSAIS.vendas_esperadas
+  void metaRes // banco mantido apenas como log
 
   const diasRangeMs = new Date(dataFim + 'T12:00:00').getTime() - new Date(dataInicio + 'T12:00:00').getTime()
   const diasRange = Math.max(1, Math.round(diasRangeMs / 86400000) + 1)
@@ -105,47 +113,57 @@ export async function GET(req: NextRequest) {
       comparecimento: taxaComparecimento,
       conversao: taxaConversao,
     },
-    // Metas dinâmicas por período (vêm de FUNIL_METAS.alvo)
+    // Metas dinâmicas por período (meta principal: 15 agend/dia)
     metas: {
       leads: metaPorFiltro(metaLeadsM),
-      contatos: metaPorFiltro(metaContatosM),
-      qualificados: metaPorFiltro(FUNIL.mensal.qualificados),
+      contatos: metaPorFiltro(metaLeadsM),
+      qualificados: metaPorFiltro(metaQualificadosM),
       agendamentos: metaPorFiltro(metaAgendM),
       comparecimentos: metaPorFiltro(metaCompM),
+      reunioes: metaPorFiltro(metaCompM),
       vendas: metaPorFiltro(metaVendasM),
     },
-    // Metas mensais (referência total)
     metas_mensais: {
       leads: metaLeadsM,
-      contatos: metaContatosM,
-      qualificados: FUNIL.mensal.qualificados,
+      contatos: metaLeadsM,
+      qualificados: metaQualificadosM,
       agendamentos: metaAgendM,
       comparecimentos: metaCompM,
+      reunioes_esperadas: metaCompM,
       vendas: metaVendasM,
+      vendas_esperadas: metaVendasM,
+      receita_esperada: SDR_METAS_MENSAIS.receita_esperada,
     },
-    // Metas diárias (direto do FUNIL — pra botão "Hoje / meta X")
     metas_diarias: {
-      leads: FUNIL.diario.leads,
-      contatos: FUNIL.diario.leads,
-      agendamentos: FUNIL.diario.agendamentos,
-      comparecimentos: FUNIL.diario.comparecimentos,
-      vendas: FUNIL.diario.vendas,
+      leads: SDR_METAS_DIARIAS.leads,
+      contatos: SDR_METAS_DIARIAS.leads,
+      qualificados: SDR_METAS_DIARIAS.qualificados,
+      agendamentos: SDR_METAS_DIARIAS.agendamentos,
+      comparecimentos: SDR_METAS_DIARIAS.reunioes_esperadas,
+      reunioes_esperadas: SDR_METAS_DIARIAS.reunioes_esperadas,
+      noshow_esperado: SDR_METAS_DIARIAS.noshow_esperado,
+      vendas: SDR_METAS_DIARIAS.vendas_esperadas,
     },
-    // Metas semanais (direto do FUNIL)
-    metas_semanais: {
-      leads: FUNIL.semanal.leads,
-      contatos: FUNIL.semanal.leads,
-      agendamentos: FUNIL.semanal.agendamentos,
-      comparecimentos: FUNIL.semanal.comparecimentos,
-      vendas: FUNIL.semanal.vendas,
-    },
-    // Contexto do funil (receita/cac/invest) pra card visual
+    metas_semanais: SDR_METAS_SEMANAIS,
+    minimo_diario: SDR_MINIMO_DIARIO,
+    // Meta ajustada do dia (compensação de déficit acumulado)
+    meta_ajustada: (() => {
+      const agora = new Date()
+      const diaUtil = diasUteisPassados(agora.getFullYear(), agora.getMonth() + 1, agora)
+      const totalMes = metricasMes.reduce((s, m) => s + (m.agendamentos || 0), 0)
+      return calcularMetaAjustada(
+        SDR_METAS_DIARIAS.agendamentos,
+        totalMes,
+        Math.max(1, diaUtil),
+        diasUteisDoMesAtual(),
+      )
+    })(),
+    taxas_reais: TAXAS_REAIS,
     funil_contexto: {
-      receita_meta: FUNIL.receita,
+      receita_meta: SDR_METAS_MENSAIS.receita_esperada,
       ticket_medio: 2000,
-      investimento_mensal: FUNIL.custos.investimento_mensal,
-      cac: FUNIL.custos.cac,
-      custo_reuniao: FUNIL.custos.custo_reuniao,
+      investimento_mensal: Math.round(SDR_METAS_MENSAIS.leads * 10.70),
+      dias_uteis_mes: diasUteisDoMesAtual(),
     },
     // Acumulado TOTAL do mês (pra mostrar nas referências mesmo filtrando "hoje")
     acumulado_mes: {

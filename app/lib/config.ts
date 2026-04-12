@@ -300,33 +300,141 @@ export const DESIGN_SLA_UTEIS = {
   baixa: 8,    // 8 dias úteis (~2 semanas)
 }
 
-// ─── METAS POR SETOR (vêm do FUNIL_ATIVO, nunca hardcoded) ──────────
+// ══════════════════════════════════════════════════════════════
+// SDR — META PRINCIPAL: 15 agendamentos/dia
+// ══════════════════════════════════════════════════════════════
+// Matemática: 15 agend × 69.6% comp = 10 reuniões/dia
+//             10 reuniões × 30% fech = 3 vendas/dia
+//             3 vendas × 21 dias úteis = 63 fechamentos/mês
+//             63 × R$2.000 = R$126.000/mês (SUPERMETA viável)
+// Mínimo viável (R$90k): 8 agend/dia (entrega 5 reuniões/dia)
+
+export const SDR_METAS_DIARIAS = {
+  agendamentos:       15, // ⚡ META PRINCIPAL — foco 80/20 do Trindade
+  leads:              62, // 15 ÷ (0.70 qualif × 0.35 agend) = 62
+  qualificados:       43, // 15 ÷ 0.35 agend
+  reunioes_esperadas: 10, // 15 × 0.696 compar
+  noshow_esperado:    5,  // 15 × 0.304 (faz parte do processo)
+  vendas_esperadas:   3,  // 10 × 0.30 fech
+}
+
+export const SDR_METAS_MENSAIS = {
+  agendamentos:       315,  // 15 × 21 dias úteis (abril 2026)
+  leads:             1302,  // 62 × 21
+  qualificados:       903,  // 43 × 21
+  reunioes_esperadas: 210,  // 10 × 21
+  vendas_esperadas:   63,   // 3 × 21
+  receita_esperada:   126000, // 63 × R$2.000 = SUPERMETA
+}
+
+export const SDR_METAS_SEMANAIS = {
+  agendamentos:       75,   // ceil(315 / 4.2)
+  leads:             310,   // ceil(1302 / 4.2)
+  qualificados:      215,
+  reunioes_esperadas: 50,
+  vendas_esperadas:   15,
+}
+
+export const SDR_MINIMO_DIARIO = {
+  agendamentos: 8, // mínimo viável pra bater R$90k alvo
+}
+
+// COMPATIBILIDADE — antigos imports de SDR_METAS
 export const SDR_METAS = {
-  mensal:  FUNIL_ATIVO.mensal,
-  diario:  FUNIL_ATIVO.diario,
-  semanal: FUNIL_ATIVO.semanal,
+  mensal:  SDR_METAS_MENSAIS,
+  diario:  SDR_METAS_DIARIAS,
+  semanal: SDR_METAS_SEMANAIS,
 }
 
+// ══════════════════════════════════════════════════════════════
+// COMERCIAL — recebe o fluxo do SDR
+// ══════════════════════════════════════════════════════════════
+// SDR agenda 15/dia → 10 reuniões chegam ao closer → 3 fechamentos/dia
 export const COMERCIAL_METAS = {
-  reunioes_mes:    FUNIL_ATIVO.mensal.comparecimentos, // 150
-  fechamentos_mes: FUNIL_ATIVO.mensal.vendas,           // 45
-  mrr_meta:        RECEITA_METAS[META_ATIVA],           // 90000
-  comissao_pct:    0.10,
-  reunioes_dia:    FUNIL_ATIVO.diario.comparecimentos,
-  fechamentos_dia: FUNIL_ATIVO.diario.vendas,
-  reunioes_semana: FUNIL_ATIVO.semanal.comparecimentos,
-  fechamentos_semana: FUNIL_ATIVO.semanal.vendas,
+  reunioes_mes:       SDR_METAS_MENSAIS.reunioes_esperadas,  // 210 (era 150)
+  fechamentos_mes:    SDR_METAS_MENSAIS.vendas_esperadas,    // 63  (era 45)
+  mrr_meta:           SDR_METAS_MENSAIS.receita_esperada,    // 126000 (era 90000)
+  comissao_pct:       0.10,
+  reunioes_dia:       SDR_METAS_DIARIAS.reunioes_esperadas,  // 10
+  fechamentos_dia:    SDR_METAS_DIARIAS.vendas_esperadas,    // 3
+  reunioes_semana:    SDR_METAS_SEMANAIS.reunioes_esperadas, // 50
+  fechamentos_semana: SDR_METAS_SEMANAIS.vendas_esperadas,   // 15
 }
 
+// ══════════════════════════════════════════════════════════════
+// TRÁFEGO (Marketing) — precisa entregar 62 leads/dia pro SDR
+// ══════════════════════════════════════════════════════════════
 export const TRAFEGO_METAS = {
-  leads_mes:           FUNIL_ATIVO.mensal.leads,        // 879
-  leads_dia:           FUNIL_ATIVO.diario.leads,
-  leads_semana:        FUNIL_ATIVO.semanal.leads,
-  investimento_mensal: FUNIL_ATIVO.custos.investimento_mensal,
-  investimento_dia:    FUNIL_ATIVO.custos.investimento_diario,
+  leads_mes:           SDR_METAS_MENSAIS.leads,           // 1302
+  leads_dia:           SDR_METAS_DIARIAS.leads,           // 62
+  leads_semana:        SDR_METAS_SEMANAIS.leads,          // 310
+  // Investimento = leads × CPL
+  investimento_mensal: Math.round(SDR_METAS_MENSAIS.leads * CPL_MEDIO), // ~R$13.931
+  investimento_dia:    Math.round(SDR_METAS_DIARIAS.leads * CPL_MEDIO),  // ~R$663
   cpl_alvo:            CPL_MEDIO,
   cpl_max:             CPL_MAX,
   cac_max:             LIMITES.cac_max,
+}
+
+// ══════════════════════════════════════════════════════════════
+// COMPENSAÇÃO INTELIGENTE DE DÉFICIT
+// ══════════════════════════════════════════════════════════════
+// Se SDR fez menos do que deveria até ontem, redistribui o déficit
+// nos dias úteis restantes. Meta de hoje sobe proporcionalmente.
+export type MetaAjustada = {
+  meta_hoje: number
+  meta_base: number
+  deficit_acumulado: number
+  compensacao_diaria: number
+  no_ritmo: boolean
+  projecao_fim_mes: number
+  dias_restantes: number
+  dia_util_atual: number
+  mensagem: string
+}
+
+export function calcularMetaAjustada(
+  metaDiaria: number,
+  realizadoNoMes: number,
+  diaUtilAtual: number,
+  diasUteisMes: number = 21,
+): MetaAjustada {
+  // Quanto deveria ter até ontem (dia util atual - 1)
+  const esperadoAteOntem = metaDiaria * Math.max(0, diaUtilAtual - 1)
+  const deficit = Math.max(0, esperadoAteOntem - realizadoNoMes)
+  const diasRestantes = Math.max(1, diasUteisMes - diaUtilAtual + 1)
+
+  // Compensação distribuída
+  const compensacao = Math.ceil(deficit / diasRestantes)
+  const metaHoje = metaDiaria + compensacao
+
+  // Projeção no ritmo atual
+  const diasPassados = Math.max(1, diaUtilAtual - 1)
+  const ritmoAtual = realizadoNoMes / diasPassados
+  const projecao = Math.round(ritmoAtual * diasUteisMes)
+
+  const noRitmo = realizadoNoMes >= esperadoAteOntem
+
+  let mensagem = ''
+  if (noRitmo) {
+    mensagem = `🔥 No ritmo — meta hoje: ${metaHoje} agendamentos`
+  } else if (compensacao <= 3) {
+    mensagem = `💪 Pequeno atraso (déficit ${deficit}) — meta hoje: ${metaHoje} (+${compensacao} reposição)`
+  } else {
+    mensagem = `⚠️ Reposição necessária — meta hoje: ${metaHoje}/dia (déficit de ${deficit} distribuído em ${diasRestantes} dias)`
+  }
+
+  return {
+    meta_hoje: metaHoje,
+    meta_base: metaDiaria,
+    deficit_acumulado: deficit,
+    compensacao_diaria: compensacao,
+    no_ritmo: noRitmo,
+    projecao_fim_mes: projecao,
+    dias_restantes: diasRestantes,
+    dia_util_atual: diaUtilAtual,
+    mensagem,
+  }
 }
 
 // ─── PROGRESSO & COR SEMAFÓRICA ──────────────────────────────────────

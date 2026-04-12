@@ -387,17 +387,132 @@ export default function SDRPage() {
           )
         })()}
 
-        {/* 80/20: 2 KPIs PRINCIPAIS — Agendamentos e Reuniões Realizadas */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12, marginBottom: 12 }}>
-          <KPIDestaque icon="📅" label="Agendamentos" sublabel="Foco 80/20" atual={acumulado.agendamentos} meta={metas.agendamentos} metaMensal={data.metas_mensais?.agendamentos || 30} />
-          <KPIDestaque icon="🤝" label="Reuniões realizadas" sublabel="Foco 80/20" atual={acumulado.comparecimentos} meta={metas.comparecimentos} metaMensal={data.metas_mensais?.comparecimentos || 20} />
+        {/* ⚡ KPI PRINCIPAL — AGENDAMENTOS (foco total 80/20 do Trindade) */}
+        {(() => {
+          const metaAjust = (data as unknown as { meta_ajustada?: { meta_hoje: number; meta_base: number; deficit_acumulado: number; compensacao_diaria: number; no_ritmo: boolean; projecao_fim_mes: number; dias_restantes: number; mensagem: string } }).meta_ajustada
+          const acMes = data.acumulado_mes || acumulado
+          const metaMesAgend = data.metas_mensais?.agendamentos || 315
+          const metaDiaAgend = data.metas_diarias?.agendamentos || 15
+          const pctAgend = metas.agendamentos > 0 ? Math.round((acumulado.agendamentos / metas.agendamentos) * 100) : 0
+          const pctMesAgend = metaMesAgend > 0 ? Math.round((acMes.agendamentos / metaMesAgend) * 100) : 0
+          const reunEsp = Math.floor(acumulado.agendamentos * 0.696)
+          const noshowEsp = Math.ceil(acumulado.agendamentos * 0.304)
+          const vendasEsp = Math.floor(acumulado.agendamentos * 0.696 * 0.30)
+          const corPctP = pctAgend >= 100 ? '#22c55e' : pctAgend >= 80 ? '#4ade80' : pctAgend >= 50 ? '#fbbf24' : pctAgend > 0 ? '#fb923c' : '#f87171'
+          return (
+            <div style={{ background: 'linear-gradient(135deg, #1c1205 0%, #0a0a14 100%)', border: '2px solid #f59e0b60', borderRadius: 16, padding: 20, marginBottom: 12, position: 'relative' }}>
+              <div style={{ position: 'absolute', top: 12, right: 12, background: '#f59e0b20', color: '#fbbf24', padding: '3px 10px', borderRadius: 999, fontSize: 9, fontWeight: 700, letterSpacing: 0.5 }}>
+                ⚡ META PRINCIPAL
+              </div>
+              <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                <div style={{ minWidth: 0, flex: '1 1 260px' }}>
+                  <div style={{ fontSize: 10, color: '#6b7280', textTransform: 'uppercase', fontWeight: 700, letterSpacing: 0.5 }}>📅 Agendamentos</div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 6 }}>
+                    <NumberTicker value={acumulado.agendamentos} style={{ fontSize: 54, fontWeight: 900, color: '#fff', fontFamily: 'monospace', lineHeight: 1 }} />
+                    <span style={{ fontSize: 14, color: '#6b7280' }}>/ {metas.agendamentos}</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 6 }}>
+                    meta {periodo === 'hoje' ? 'de hoje' : periodo === 'semana' ? 'da semana' : 'do mês'}:
+                    <span style={{ color: '#fbbf24', fontWeight: 800, marginLeft: 4 }}>{metaAjust?.meta_hoje ?? metas.agendamentos}</span>
+                    {metaAjust && metaAjust.compensacao_diaria > 0 && (
+                      <span style={{ color: '#fb923c', fontSize: 10, marginLeft: 6 }}>
+                        (base {metaAjust.meta_base} + {metaAjust.compensacao_diaria} reposição)
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Funil rápido */}
+                <div style={{ flex: '1 1 260px', minWidth: 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#9ca3af', padding: '4px 0', borderBottom: '1px solid #1f2937' }}>
+                    <span>→ Reuniões esperadas (×69.6%)</span>
+                    <span style={{ color: '#fff', fontFamily: 'monospace', fontWeight: 700 }}>~{reunEsp}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#9ca3af', padding: '4px 0', borderBottom: '1px solid #1f2937' }}>
+                    <span>→ No-shows esperados (×30.4%)</span>
+                    <span style={{ color: '#9ca3af', fontFamily: 'monospace' }}>~{noshowEsp}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#9ca3af', padding: '4px 0' }}>
+                    <span>→ Vendas esperadas (×30%)</span>
+                    <span style={{ color: '#4ade80', fontFamily: 'monospace', fontWeight: 700 }}>~{vendasEsp}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Barra de progresso */}
+              <div style={{ position: 'relative', height: 10, background: '#1f2937', borderRadius: 5, overflow: 'hidden', marginTop: 14 }}>
+                <div style={{ height: '100%', width: `${Math.min(pctAgend, 100)}%`, background: corPctP, transition: 'width 0.5s', borderRadius: 5 }} />
+                <div style={{ position: 'absolute', top: 0, bottom: 0, width: 2, background: 'rgba(255,255,255,0.3)', left: '80%' }} title="Meta mínima 80%" />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, fontSize: 10 }}>
+                <span style={{ color: corPctP, fontWeight: 700 }}>{pctAgend}% da meta do período</span>
+                <span style={{ color: '#4b5563' }}>mês: {acMes.agendamentos}/{metaMesAgend} ({pctMesAgend}%)</span>
+              </div>
+
+              {/* Mensagem de compensação */}
+              {metaAjust && (
+                <div style={{ marginTop: 12, padding: '8px 12px', background: metaAjust.no_ritmo ? '#14532d20' : '#ea580c20', border: `1px solid ${metaAjust.no_ritmo ? '#4ade8040' : '#ea580c40'}`, borderRadius: 8, fontSize: 11, color: metaAjust.no_ritmo ? '#86efac' : '#fed7aa' }}>
+                  {metaAjust.mensagem}
+                </div>
+              )}
+
+              {/* Pace / projeção (só se filtro = mes) */}
+              {periodo === 'mes' && metaAjust && (
+                <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: '#0a0f1a', border: '1px solid #1f2937', borderRadius: 8 }}>
+                  <span style={{ fontSize: 10, color: '#6b7280', textTransform: 'uppercase', fontWeight: 700 }}>📈 Projeção</span>
+                  <div style={{ flex: 1, height: 5, background: '#1f2937', borderRadius: 3, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${Math.min((metaAjust.projecao_fim_mes / metaMesAgend) * 100, 100)}%`, background: metaAjust.projecao_fim_mes >= metaMesAgend ? '#4ade80' : '#fbbf24', transition: 'width 0.5s' }} />
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: metaAjust.projecao_fim_mes >= metaMesAgend ? '#4ade80' : '#fbbf24', fontFamily: 'monospace' }}>{metaAjust.projecao_fim_mes}</div>
+                    <div style={{ fontSize: 9, color: '#4b5563' }}>proj. fim do mês / meta {metaMesAgend}</div>
+                  </div>
+                </div>
+              )}
+              {/* usar metaDiaAgend pra evitar unused */}
+              <div style={{ display: 'none' }}>{metaDiaAgend}</div>
+            </div>
+          )
+        })()}
+
+        {/* No-show tracker — faz parte do processo */}
+        <div style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 10, padding: '10px 14px', marginBottom: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6, flexWrap: 'wrap', gap: 6 }}>
+            <span style={{ fontSize: 10, color: '#9ca3af', fontWeight: 600 }}>
+              📊 No-show do período — <span style={{ color: '#6b7280' }}>faz parte do processo</span>
+            </span>
+            <span style={{ fontSize: 10, color: '#4b5563' }}>meta esperada: ~30.4% de no-show (comp. 69.6%)</span>
+          </div>
+          <div style={{ display: 'flex', gap: 20 }}>
+            <div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', fontFamily: 'monospace' }}>{Math.max(0, acumulado.agendamentos - acumulado.comparecimentos)}</div>
+              <div style={{ fontSize: 9, color: '#6b7280' }}>não compareceram</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: '#4ade80', fontFamily: 'monospace' }}>{acumulado.comparecimentos}</div>
+              <div style={{ fontSize: 9, color: '#6b7280' }}>compareceram ✓</div>
+            </div>
+            <div>
+              {(() => {
+                const tx = acumulado.agendamentos > 0 ? (acumulado.comparecimentos / acumulado.agendamentos) * 100 : 0
+                const cor = tx >= 69.6 ? '#4ade80' : tx >= 50 ? '#fbbf24' : '#f87171'
+                return (
+                  <>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: cor, fontFamily: 'monospace' }}>{tx.toFixed(0)}%</div>
+                    <div style={{ fontSize: 9, color: '#6b7280' }}>taxa real (meta 69.6%)</div>
+                  </>
+                )
+              })()}
+            </div>
+          </div>
         </div>
 
-        {/* KPIs secundários — Leads, Contatos, Vendas + Valor */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10, marginBottom: 20 }}>
+        {/* KPIs secundários — Leads, Qualificados, Reuniões, Vendas + Valor */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 10, marginBottom: 20 }}>
           <KPI icon="📥" label="Leads" atual={acumulado.leads} meta={metas.leads} />
-          <KPI icon="📞" label="Contatos" atual={acumulado.contatos} meta={metas.contatos} />
-          <KPI icon="🎯" label="Vendas" atual={acumulado.vendas} meta={metas.vendas} />
+          <KPI icon="✅" label="Qualificados" atual={acumulado.contatos} meta={metas.contatos} />
+          <KPI icon="🤝" label="Reuniões" atual={acumulado.comparecimentos} meta={metas.comparecimentos} />
+          <KPI icon="💰" label="Vendas" atual={acumulado.vendas} meta={metas.vendas} />
           {/* Card de valor de vendas — destaque */}
           <div style={{ background: 'linear-gradient(135deg, #14532d 0%, #166534 100%)', border: '1px solid #22c55e40', borderRadius: 12, padding: 14 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
