@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Sidebar from '../../components/Sidebar'
 import AcaoHoje from '../../components/AcaoHoje'
+import IndicacoesCS from '../../components/IndicacoesCS'
 import { useToast } from '../../components/Toast'
 import Modal, { ModalButton } from '../../components/Modal'
 import { supabase } from '../../lib/supabase'
@@ -191,6 +192,9 @@ export default function CSPainel() {
 
         {/* Card de acao do dia (imperativo) */}
         <AcaoHoje role="cs" />
+
+        {/* Indicações — sistema de referral com gatilhos de jornada */}
+        <IndicacoesCS csEmail="brunomedina.contato@gmail.com" csNome="Medina" />
 
         {/* ── Header ── */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
