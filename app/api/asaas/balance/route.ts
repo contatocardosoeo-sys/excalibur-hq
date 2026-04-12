@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { asaasGet, asaasConfigured, type AsaasBalance, type AsaasPaymentStatistics } from '../../../lib/asaas'
+import { verificarAcesso, ROLES_FINANCEIRO } from '@/app/lib/api-auth'
 
 const sb = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -8,6 +9,9 @@ const sb = createClient(
 )
 
 export async function GET() {
+  // REGRA 01: dados financeiros só pra admin/coo/financeiro
+  const auth = await verificarAcesso(ROLES_FINANCEIRO)
+  if (!auth.autorizado) return NextResponse.json({ error: auth.erro }, { status: 403 })
   if (!asaasConfigured()) {
     // Fallback: retornar saldo calculado localmente
     const { data: pagos } = await sb

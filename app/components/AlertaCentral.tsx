@@ -22,7 +22,7 @@ const PRIO_COR: Record<string, string> = {
   baixa: '#22c55e',
 }
 
-export default function AlertaCentral({ userEmail, isAdmin }: { userEmail: string; isAdmin: boolean }) {
+export default function AlertaCentral({ userEmail, isAdmin, userRole }: { userEmail: string; isAdmin: boolean; userRole?: string }) {
   const router = useRouter()
 
   const [meuStatus, setMeuStatus] = useState<{ preenchido: boolean } | null>(null)
@@ -64,9 +64,10 @@ export default function AlertaCentral({ userEmail, isAdmin }: { userEmail: strin
   const load = useCallback(async () => {
     if (!userEmail) return
     try {
+      const roleParam = userRole ? `&role=${encodeURIComponent(userRole)}` : ''
       const [pre, alrt] = await Promise.all([
         fetch(`/api/preenchimento?email=${encodeURIComponent(userEmail)}`).then(r => r.json()),
-        fetch('/api/hq/alertas?status=aberto').then(r => r.json()),
+        fetch(`/api/hq/alertas?status=aberto${roleParam}`).then(r => r.json()),
       ])
       setMeuStatus(pre.meuStatus)
       setControle(pre.controle || [])

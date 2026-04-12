@@ -248,7 +248,26 @@ export async function GET(request: NextRequest) {
 
     const todos = [...manuais, ...dinamicos, ...(alertaCaixa ? [alertaCaixa] : [])]
 
-    const filtered = todos
+    // ─── HIERARQUIA DE VISIBILIDADE POR ROLE ─────────────────────────
+    // Alertas financeiros (caixa) → só admin, coo, financeiro
+    // Alertas de clientes (health, vendas, SLA) → admin, coo, cs
+    // Alertas operacionais (aviso prévio) → admin, coo, cs
+    // SDR, closer, designer, editor_video, head_traffic → NÃO veem alertas de caixa
+    const roleFilter = searchParams.get('role')
+    const ROLES_FINANCEIRO = ['admin', 'coo', 'financeiro']
+    const ROLES_CLIENTES = ['admin', 'coo', 'cs']
+    const TIPOS_FINANCEIRO = ['caixa_critico']
+    const TIPOS_CLIENTES = ['aviso_previo', 'health_score', 'sem_vendas', 'sla']
+
+    let todosVisiveis = todos
+    if (roleFilter && !ROLES_FINANCEIRO.includes(roleFilter)) {
+      todosVisiveis = todosVisiveis.filter(a => !TIPOS_FINANCEIRO.includes(a.tipo))
+    }
+    if (roleFilter && !ROLES_CLIENTES.includes(roleFilter)) {
+      todosVisiveis = todosVisiveis.filter(a => !TIPOS_CLIENTES.includes(a.tipo))
+    }
+
+    const filtered = todosVisiveis
       .filter(a => !prioridadeFilter || a.prioridade === prioridadeFilter)
       .filter(a => !statusFilter || a.status === statusFilter)
       .filter(a => !tipoFilter || a.tipo === tipoFilter)

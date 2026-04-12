@@ -39,7 +39,7 @@ export default function HQLayout({ children }: { children: React.ReactNode }) {
   return (
     <ToastProvider>
       <TitleSync />
-      {ready && email && <AlertaCentral userEmail={email} isAdmin={isAdmin} />}
+      {ready && email && <AlertaCentral userEmail={email} isAdmin={isAdmin} userRole={primaryRole} />}
       {ready && primaryRole && <SistemaEventos userRole={primaryRole} />}
       {ready && email && primaryRole && (
         <OnboardingColaborador userEmail={email} userRole={primaryRole} userName={nome} />

@@ -30,6 +30,19 @@ git push
 git checkout main && git merge staging && git push
 ```
 
+## REGRA 01 — HIERARQUIA DE DADOS (PRIORIDADE MÁXIMA)
+**Informação financeira NUNCA aparece pra quem não precisa saber.**
+
+| Tipo de dado | Quem vê | Quem NÃO vê |
+|-------------|---------|-------------|
+| Caixa, saldo, receita, MRR, faturamento | admin, coo, financeiro | SDR, closer, CS, designer, editor, head_traffic |
+| Pipeline, comissões de outros, fechamentos | admin, coo, closer, cmo | SDR, CS, designer, editor |
+| Clientes (health, jornada, alertas) | admin, coo, cs | SDR, closer, designer, editor |
+| Alertas financeiros (caixa crítico) | admin, coo, financeiro | TODOS OS OUTROS |
+
+**Implementação**: `app/lib/api-auth.ts` → `verificarAcesso(ROLES_FINANCEIRO)`
+Usar em TODA API que retorna dados sensíveis. Verificar ANTES de qualquer query.
+
 ## Credenciais
 Vercel token: ver .env.local (VERCEL_TOKEN)
 Vercel project ID: prj_8VnzsviMnc1v3YCNCcf9gYAMTu4C
