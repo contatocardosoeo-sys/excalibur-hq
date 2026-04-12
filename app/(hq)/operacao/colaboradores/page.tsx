@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import Sidebar from '../../../components/Sidebar'
+import HealthScoreEquipe from '../../../components/HealthScoreEquipe'
 
 type Colaborador = { id: string; nome: string; cargo: string | null; tipo: string; valor_mensal: number; dia_pagamento: number; ativo: boolean; observacao: string | null }
 

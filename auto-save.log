@@ -457,3 +457,16 @@ To https://github.com/contatocardosoeo-sys/excalibur-hq.git
  ! [remote rejected] main -> main (push declined due to repository rule violations)
 error: failed to push some refs to 'https://github.com/contatocardosoeo-sys/excalibur-hq.git'
 ✅ Auto-save: 2026-04-11 21:15
+warning: in the working copy of 'app/(hq)/operacao/colaboradores/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/components/Sidebar.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/api/colaboradores/health/route.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/components/HealthScoreEquipe.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/lib/health-score.ts', LF will be replaced by CRLF the next time Git touches it
+[main 0b4091d] auto-save: 2026-04-11 22:15 — app/(hq)/operacao/colaboradores/page.tsx,app/api/colaboradores/health/route.ts,app/components/HealthScoreEquipe.tsx,app/components/Sidebar.tsx,app/lib/health-score.ts,
+ 5 files changed, 800 insertions(+), 4 deletions(-)
+ create mode 100644 app/api/colaboradores/health/route.ts
+ create mode 100644 app/components/HealthScoreEquipe.tsx
+ create mode 100644 app/lib/health-score.ts
+To https://github.com/contatocardosoeo-sys/excalibur-hq.git
+   5e6f7bc..0b4091d  main -> main
+✅ Auto-save: 2026-04-11 22:15
