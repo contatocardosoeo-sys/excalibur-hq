@@ -296,7 +296,7 @@ export default function CSPainel() {
               </div>
 
               {/* Top 5 clientes em risco */}
-              <div style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 12, overflow: 'hidden' }}>
+              <div id="lista-clientes" style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 12, overflow: 'hidden' }}>
                 <div style={{ padding: '12px 16px', borderBottom: '1px solid #1f2937' }}>
                   <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>🔴 Clientes que precisam de atencao</span>
                 </div>
@@ -449,7 +449,7 @@ export default function CSPainel() {
                 </button>
               )}
             </div>
-            <div id="lista-clientes" style={{ background: '#0d1117', border: '1px solid #1f2937', borderRadius: 12, overflow: 'hidden' }}>
+            <div style={{ background: '#0d1117', border: '1px solid #1f2937', borderRadius: 12, overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead><tr>
                   {['Cliente', 'Etapa', 'Dias', 'Score', 'Tarefas', 'Alertas', 'Faturamento', 'Acao'].map(h => (
