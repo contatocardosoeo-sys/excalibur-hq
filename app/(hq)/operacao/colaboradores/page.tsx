@@ -59,11 +59,18 @@ export default function ColaboradoresPage() {
       <div style={{ flex: 1, padding: '16px 16px', overflowY: 'auto', overflowX: 'hidden', minWidth: 0, maxWidth: '100%' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
           <div>
-            <h1 style={{ fontSize: 22, fontWeight: 700, color: '#fff', margin: 0 }}>Colaboradores</h1>
-            <p style={{ color: '#6b7280', fontSize: 13, margin: '4px 0 0' }}>Gestao de custos fixos com pessoas e servicos</p>
+            <h1 style={{ fontSize: 22, fontWeight: 700, color: '#fff', margin: 0 }}>🧑‍💼 Colaboradores</h1>
+            <p style={{ color: '#6b7280', fontSize: 13, margin: '4px 0 0' }}>Health score por papel + gestão de custos fixos</p>
           </div>
           <button onClick={() => { setEditId(null); setForm({ nome: '', cargo: '', tipo: 'colaborador', valor_mensal: '', dia_pagamento: '5', observacao: '' }); setModal(true) }}
-            style={{ background: '#f59e0b', color: '#030712', fontWeight: 700, fontSize: 12, border: 'none', borderRadius: 8, padding: '8px 18px', cursor: 'pointer' }}>+ Novo colaborador</button>
+            style={{ background: '#f59e0b', color: '#030712', fontWeight: 700, fontSize: 12, border: 'none', borderRadius: 8, padding: '8px 18px', cursor: 'pointer' }}>+ Novo custo</button>
+        </div>
+
+        {/* Health Score da equipe (topo da página — contexto da gestão) */}
+        <HealthScoreEquipe />
+
+        <div style={{ fontSize: 11, color: '#4b5563', textTransform: 'uppercase', fontWeight: 700, letterSpacing: 0.5, marginBottom: 12 }}>
+          💰 Custos fixos / Folha de pagamento
         </div>
 
         {/* KPIs */}
