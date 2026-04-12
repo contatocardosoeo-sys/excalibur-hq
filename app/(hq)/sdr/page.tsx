@@ -9,26 +9,22 @@ import { supabase } from '../../lib/supabase'
 import { useDispararEvento } from '../../hooks/useDispararEvento'
 import { NumberTicker } from '@/components/ui/number-ticker'
 
+type Acumulado = { leads: number; contatos: number; agendamentos: number; comparecimentos: number; vendas: number; valor_vendas?: number }
+type MetasSet = { leads: number; contatos: number; agendamentos: number; comparecimentos: number; vendas: number }
+
 interface Metricas {
   periodo?: string
   range?: { start: string; end: string }
   metricas_dia: { data: string; leads_recebidos: number; contatos_realizados: number; agendamentos: number; comparecimentos: number; vendas: number; valor_vendas?: number; observacao: string | null } | null
   metricas_mes: Array<{ data: string; leads_recebidos: number; contatos_realizados: number; agendamentos: number; comparecimentos: number; vendas: number; valor_vendas?: number }>
   metricas_periodo?: Array<{ data: string; leads_recebidos: number; contatos_realizados: number; agendamentos: number; comparecimentos: number; vendas: number; valor_vendas?: number }>
-  acumulado: { leads: number; contatos: number; agendamentos: number; comparecimentos: number; vendas: number; valor_vendas?: number }
+  acumulado: Acumulado
+  acumulado_mes?: Acumulado
   taxas: { contato: number; agendamento: number; comparecimento: number; conversao: number }
-  metas: {
-    leads: number
-    leads_dia?: number
-    agendamentos: number
-    agendamentos_min?: number
-    agendamentos_max?: number
-    agendamentos_dia?: number
-    agendamentos_dia_min?: number
-    agendamentos_dia_max?: number
-    comparecimentos: number
-    vendas: number
-  }
+  metas: MetasSet
+  metas_mensais?: MetasSet
+  metas_diarias?: MetasSet
+  metas_semanais?: MetasSet
 }
 
 // 10 etapas reais do CRM (ACL — Acelera CRM)
@@ -164,6 +160,39 @@ export default function SDRPage() {
 
   const { acumulado, taxas, metas, metricas_mes } = data
 
+  // KPI DESTAQUE (80/20) — cards grandes pros 2 principais (Agendamentos + Reuniões Realizadas)
+  const KPIDestaque = ({ icon, label, sublabel, atual, meta, metaMensal }: { icon: string; label: string; sublabel: string; atual: number; meta: number; metaMensal: number }) => {
+    const p = pct(atual, meta)
+    const cor = corPct(p)
+    const acMes = data.acumulado_mes
+    const realMes = label.includes('Agendamentos') ? (acMes?.agendamentos || 0) : (acMes?.comparecimentos || 0)
+    const pctMes = metaMensal > 0 ? Math.round((realMes / metaMensal) * 100) : 0
+    return (
+      <div style={{ background: 'linear-gradient(135deg, #1a1a2e 0%, #111827 100%)', border: `2px solid ${cor}40`, borderRadius: 14, padding: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 20 }}>{icon}</span>
+            <div>
+              <div style={{ fontSize: 13, color: '#fff', textTransform: 'uppercase', fontWeight: 700, letterSpacing: 0.5 }}>{label}</div>
+              <div style={{ fontSize: 9, color: '#fbbf24', fontWeight: 600, textTransform: 'uppercase' }}>⚡ {sublabel}</div>
+            </div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 8 }}>
+          <NumberTicker value={atual} style={{ fontSize: 42, fontWeight: 900, color: cor, fontFamily: 'monospace', lineHeight: 1 }} />
+          <span style={{ fontSize: 14, color: '#6b7280', fontFamily: 'monospace' }}>/ {fmt(meta)}</span>
+        </div>
+        <div style={{ height: 6, background: '#1f2937', borderRadius: 3, overflow: 'hidden', marginTop: 10 }}>
+          <div style={{ height: '100%', background: cor, width: `${Math.min(p, 100)}%`, transition: 'width 0.5s' }} />
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, fontSize: 10 }}>
+          <span style={{ color: cor, fontWeight: 700 }}>{p}% do período</span>
+          <span style={{ color: '#4b5563' }}>mês: {realMes}/{metaMensal} ({pctMes}%)</span>
+        </div>
+      </div>
+    )
+  }
+
   // KPI com cor SEMPRE dinâmica baseada em % da meta (vermelho → amarelo → verde)
   // param `cor` virou opcional e só é usado como fallback do ícone
   const KPI = ({ icon, label, atual, meta }: { icon: string; label: string; atual: number; meta: number }) => {
@@ -207,44 +236,113 @@ export default function SDRPage() {
           </div>
         </div>
 
-        {/* Filtros de periodo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, background: '#111827', border: '1px solid #1f2937', borderRadius: 10, padding: 8 }}>
-          <span style={{ fontSize: 10, color: '#6b7280', textTransform: 'uppercase', fontWeight: 600, marginLeft: 8, marginRight: 4 }}>Periodo:</span>
-          {[
-            { k: 'hoje' as const, l: 'Hoje' },
-            { k: 'semana' as const, l: 'Semana' },
-            { k: 'mes' as const, l: 'Mes' },
-            { k: 'personalizado' as const, l: 'Personalizado' },
-          ].map(p => (
-            <button key={p.k} onClick={() => setPeriodo(p.k)}
-              style={{ background: periodo === p.k ? '#f59e0b' : '#1f2937', color: periodo === p.k ? '#030712' : '#9ca3af', border: 'none', borderRadius: 6, padding: '6px 14px', fontSize: 11, cursor: 'pointer', fontWeight: periodo === p.k ? 700 : 500 }}>
-              {p.l}
-            </button>
-          ))}
-          {periodo === 'personalizado' && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 8 }}>
-              <input type="date" value={dataInicio} onChange={e => setDataInicio(e.target.value)}
-                style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 6, padding: '5px 10px', color: '#fff', fontSize: 11, outline: 'none' }} />
-              <span style={{ color: '#4b5563', fontSize: 10 }}>até</span>
-              <input type="date" value={dataFim} onChange={e => setDataFim(e.target.value)}
-                style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 6, padding: '5px 10px', color: '#fff', fontSize: 11, outline: 'none' }} />
+        {/* Contexto do período + meta visível */}
+        {(() => {
+          const hoje = new Date()
+          const ctxLabel = periodo === 'hoje'
+            ? `📅 Hoje, ${hoje.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}`
+            : periodo === 'semana'
+              ? `📅 Esta semana`
+              : periodo === 'mes'
+                ? `📅 ${hoje.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}`
+                : `📅 Período personalizado`
+          return (
+            <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <span>{ctxLabel}</span>
+              <span style={{ color: '#4b5563' }}>—</span>
+              <span style={{ color: '#6b7280' }}>meta:</span>
+              <span style={{ color: '#fbbf24', fontWeight: 700 }}>{metas.agendamentos} agendamentos</span>
+              <span style={{ color: '#4b5563' }}>·</span>
+              <span style={{ color: '#fbbf24', fontWeight: 700 }}>{metas.comparecimentos} reuniões realizadas</span>
+              <span style={{ color: '#4b5563' }}>·</span>
+              <span style={{ color: '#6b7280' }}>{metas.leads} leads · {metas.contatos} contatos · {metas.vendas} vendas</span>
             </div>
-          )}
-          {data.range && (
-            <span style={{ fontSize: 10, color: '#4b5563', marginLeft: 'auto', marginRight: 8 }}>
-              {data.range.start === data.range.end
-                ? new Date(data.range.start + 'T12:00:00').toLocaleDateString('pt-BR')
-                : `${new Date(data.range.start + 'T12:00:00').toLocaleDateString('pt-BR')} → ${new Date(data.range.end + 'T12:00:00').toLocaleDateString('pt-BR')}`}
-            </span>
-          )}
+          )
+        })()}
+
+        {/* Card fixo "Como está seu dia hoje" — sempre visível mesmo filtrando outro período */}
+        {(() => {
+          const ac = data.acumulado_mes || acumulado
+          const metaDia = data.metas_diarias || { leads: 14, contatos: 5, agendamentos: 2, comparecimentos: 1, vendas: 1 }
+          // Dados de HOJE vêm de metricas_dia quando existe (aggregated daily row)
+          const hoje = data.metricas_dia
+          const hojeLeads = hoje?.leads_recebidos || 0
+          const hojeAgend = hoje?.agendamentos || 0
+          const hojeComp = hoje?.comparecimentos || 0
+          const pctDia = metaDia.agendamentos > 0 ? Math.round((hojeAgend / metaDia.agendamentos) * 100) : 0
+          const emoji = pctDia >= 100 ? '🔥' : pctDia >= 70 ? '💪' : pctDia > 0 ? '📈' : '⚡'
+          const corPctDia = pctDia >= 100 ? '#4ade80' : pctDia >= 70 ? '#fbbf24' : pctDia > 0 ? '#fb923c' : '#f87171'
+          return (
+            <div style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 10, padding: '12px 16px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 14 }}>
+              <div style={{ fontSize: 28 }}>{emoji}</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 10, color: '#6b7280', textTransform: 'uppercase', fontWeight: 600 }}>Hoje até agora</div>
+                <div style={{ fontSize: 13, color: '#fff', fontWeight: 600, marginTop: 2 }}>
+                  {hojeAgend} agendamentos <span style={{ color: '#6b7280', fontWeight: 400 }}>/ meta {metaDia.agendamentos}</span>
+                  <span style={{ color: '#4b5563', margin: '0 8px' }}>·</span>
+                  {hojeComp} reuniões <span style={{ color: '#6b7280', fontWeight: 400 }}>/ meta {metaDia.comparecimentos}</span>
+                  <span style={{ color: '#4b5563', margin: '0 8px' }}>·</span>
+                  {hojeLeads} leads <span style={{ color: '#6b7280', fontWeight: 400 }}>/ meta {metaDia.leads}</span>
+                </div>
+              </div>
+              <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                <div style={{ fontSize: 20, fontWeight: 800, color: corPctDia, fontFamily: 'monospace', lineHeight: 1 }}>{pctDia}%</div>
+                <div style={{ fontSize: 9, color: '#4b5563', marginTop: 2 }}>da meta diária</div>
+              </div>
+            </div>
+          )
+        })()}
+
+        {/* Filtros de periodo — com meta no label */}
+        {(() => {
+          const md = data.metas_diarias
+          const ms = data.metas_semanais
+          const mm = data.metas_mensais
+          return (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, background: '#111827', border: '1px solid #1f2937', borderRadius: 10, padding: 8, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 10, color: '#6b7280', textTransform: 'uppercase', fontWeight: 600, marginLeft: 8, marginRight: 4 }}>Periodo:</span>
+              {[
+                { k: 'hoje' as const, l: 'Hoje', sub: md ? `meta: ${md.agendamentos} agend.` : '' },
+                { k: 'semana' as const, l: 'Semana', sub: ms ? `meta: ${ms.agendamentos} agend.` : '' },
+                { k: 'mes' as const, l: 'Mês', sub: mm ? `meta: ${mm.agendamentos} agend.` : '' },
+                { k: 'personalizado' as const, l: 'Personalizado', sub: '' },
+              ].map(p => (
+                <button key={p.k} onClick={() => setPeriodo(p.k)}
+                  style={{ background: periodo === p.k ? '#f59e0b' : '#1f2937', color: periodo === p.k ? '#030712' : '#9ca3af', border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer', fontWeight: periodo === p.k ? 700 : 500, minHeight: 44, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                  <span style={{ fontSize: 11 }}>{p.l}</span>
+                  {p.sub && <span style={{ fontSize: 9, opacity: 0.75 }}>{p.sub}</span>}
+                </button>
+              ))}
+              {periodo === 'personalizado' && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 8 }}>
+                  <input type="date" value={dataInicio} onChange={e => setDataInicio(e.target.value)}
+                    style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 6, padding: '5px 10px', color: '#fff', fontSize: 11, outline: 'none' }} />
+                  <span style={{ color: '#4b5563', fontSize: 10 }}>até</span>
+                  <input type="date" value={dataFim} onChange={e => setDataFim(e.target.value)}
+                    style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 6, padding: '5px 10px', color: '#fff', fontSize: 11, outline: 'none' }} />
+                </div>
+              )}
+              {data.range && (
+                <span style={{ fontSize: 10, color: '#4b5563', marginLeft: 'auto', marginRight: 8 }}>
+                  {data.range.start === data.range.end
+                    ? new Date(data.range.start + 'T12:00:00').toLocaleDateString('pt-BR')
+                    : `${new Date(data.range.start + 'T12:00:00').toLocaleDateString('pt-BR')} → ${new Date(data.range.end + 'T12:00:00').toLocaleDateString('pt-BR')}`}
+                </span>
+              )}
+            </div>
+          )
+        })()}
+
+        {/* 80/20: 2 KPIs PRINCIPAIS — Agendamentos e Reuniões Realizadas */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12, marginBottom: 12 }}>
+          <KPIDestaque icon="📅" label="Agendamentos" sublabel="Foco 80/20" atual={acumulado.agendamentos} meta={metas.agendamentos} metaMensal={data.metas_mensais?.agendamentos || 30} />
+          <KPIDestaque icon="🤝" label="Reuniões realizadas" sublabel="Foco 80/20" atual={acumulado.comparecimentos} meta={metas.comparecimentos} metaMensal={data.metas_mensais?.comparecimentos || 20} />
         </div>
 
-        {/* KPIs com metas — 6 cards (5 numericos + 1 valor) */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: 10, marginBottom: 20 }}>
+        {/* KPIs secundários — Leads, Contatos, Vendas + Valor */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10, marginBottom: 20 }}>
           <KPI icon="📥" label="Leads" atual={acumulado.leads} meta={metas.leads} />
-          <KPI icon="📞" label="Contatos" atual={acumulado.contatos} meta={metas.leads} />
-          <KPI icon="📅" label="Agendamentos" atual={acumulado.agendamentos} meta={metas.agendamentos} />
-          <KPI icon="✅" label="Comparecimentos" atual={acumulado.comparecimentos} meta={metas.comparecimentos} />
+          <KPI icon="📞" label="Contatos" atual={acumulado.contatos} meta={metas.contatos} />
           <KPI icon="🎯" label="Vendas" atual={acumulado.vendas} meta={metas.vendas} />
           {/* Card de valor de vendas — destaque */}
           <div style={{ background: 'linear-gradient(135deg, #14532d 0%, #166534 100%)', border: '1px solid #22c55e40', borderRadius: 12, padding: 14 }}>
@@ -454,12 +552,14 @@ export default function SDRPage() {
                 <tbody>
                   {[...metricas_mes].reverse().map(m => {
                     // Cores dinâmicas por dia: compara valor diário vs meta diária
-                    const metaLeadsDia = metas.leads_dia || 50
-                    const metaAgendDia = metas.agendamentos_dia || 15
-                    const metaCompDia = Math.round(metas.comparecimentos / 22) || 8
-                    const metaVendasDia = Math.round(metas.vendas / 22) || 1
+                    const md = data.metas_diarias
+                    const metaLeadsDia = md?.leads || 14
+                    const metaContatosDia = md?.contatos || 5
+                    const metaAgendDia = md?.agendamentos || 2
+                    const metaCompDia = md?.comparecimentos || 1
+                    const metaVendasDia = md?.vendas || 1
                     const corLead = corPct(pct(m.leads_recebidos, metaLeadsDia))
-                    const corCont = corPct(pct(m.contatos_realizados, metaLeadsDia))
+                    const corCont = corPct(pct(m.contatos_realizados, metaContatosDia))
                     const corAg = corPct(pct(m.agendamentos, metaAgendDia))
                     const corComp = corPct(pct(m.comparecimentos, metaCompDia))
                     const corVendas = corPct(pct(m.vendas, metaVendasDia))

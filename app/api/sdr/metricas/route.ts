@@ -50,7 +50,28 @@ export async function GET(req: NextRequest) {
 
   const metricas = metricasRes.data || []
   const metricasMes = mesRes.data || []
-  const meta = metaRes.data || { meta_leads: 1100, meta_leads_dia: 50, meta_agendamentos: 330, meta_agendamentos_min: 220, meta_agendamentos_max: 440, meta_agendamentos_dia: 15, meta_agendamentos_dia_min: 10, meta_agendamentos_dia_max: 20, meta_comparecimentos: 176, meta_vendas: 22 }
+  const meta = metaRes.data || { meta_leads: 300, meta_leads_dia: 14, meta_contatos: 90, meta_contatos_dia: 5, meta_agendamentos: 30, meta_agendamentos_dia: 2, meta_comparecimentos: 20, meta_vendas: 3 }
+
+  // Helper: calcular meta por período a partir da meta mensal.
+  // Empresa opera seg-sex (22 dias úteis/mês aprox), semana ~= 4.33.
+  // Dias selecionados no range (pra personalizado)
+  const diasRangeMs = new Date(dataFim + 'T12:00:00').getTime() - new Date(dataInicio + 'T12:00:00').getTime()
+  const diasRange = Math.max(1, Math.round(diasRangeMs / 86400000) + 1)
+
+  function metaPorPeriodo(metaMensal: number): number {
+    const mm = Number(metaMensal || 0)
+    if (periodo === 'hoje') return Math.ceil(mm / 22)
+    if (periodo === 'semana') return Math.ceil(mm / 4.33)
+    if (periodo === 'mes') return mm
+    if (periodo === 'personalizado') return Math.ceil((mm / 22) * diasRange)
+    return mm
+  }
+
+  const metaLeadsM = Number(meta.meta_leads || 300)
+  const metaContatosM = Number(meta.meta_contatos || 90)
+  const metaAgendM = Number(meta.meta_agendamentos || 30)
+  const metaCompM = Number(meta.meta_comparecimentos || 20)
+  const metaVendasM = Number(meta.meta_vendas || 3)
 
   // Acumulados do periodo selecionado
   const totalLeads = metricas.reduce((s, m) => s + (m.leads_recebidos || 0), 0)
@@ -87,17 +108,45 @@ export async function GET(req: NextRequest) {
       comparecimento: taxaComparecimento,
       conversao: taxaConversao,
     },
+    // Metas dinâmicas por período (exatamente o que o SDR precisa bater pro filtro selecionado)
     metas: {
-      leads: meta.meta_leads || 1100,
-      leads_dia: meta.meta_leads_dia || 50,
-      agendamentos: meta.meta_agendamentos || 330,
-      agendamentos_min: meta.meta_agendamentos_min || 220,
-      agendamentos_max: meta.meta_agendamentos_max || 440,
-      agendamentos_dia: meta.meta_agendamentos_dia || 15,
-      agendamentos_dia_min: meta.meta_agendamentos_dia_min || 10,
-      agendamentos_dia_max: meta.meta_agendamentos_dia_max || 20,
-      comparecimentos: meta.meta_comparecimentos || 176,
-      vendas: meta.meta_vendas || 22,
+      leads: metaPorPeriodo(metaLeadsM),
+      contatos: metaPorPeriodo(metaContatosM),
+      agendamentos: metaPorPeriodo(metaAgendM),
+      comparecimentos: metaPorPeriodo(metaCompM),
+      vendas: metaPorPeriodo(metaVendasM),
+    },
+    // Metas mensais totais (sempre pra referência, independente do filtro)
+    metas_mensais: {
+      leads: metaLeadsM,
+      contatos: metaContatosM,
+      agendamentos: metaAgendM,
+      comparecimentos: metaCompM,
+      vendas: metaVendasM,
+    },
+    // Metas diárias (pra mostrar nos botões "Hoje — 14 leads")
+    metas_diarias: {
+      leads: Math.ceil(metaLeadsM / 22),
+      contatos: Math.ceil(metaContatosM / 22),
+      agendamentos: Math.ceil(metaAgendM / 22),
+      comparecimentos: Math.ceil(metaCompM / 22),
+      vendas: Math.ceil(metaVendasM / 22),
+    },
+    // Metas semanais
+    metas_semanais: {
+      leads: Math.ceil(metaLeadsM / 4.33),
+      contatos: Math.ceil(metaContatosM / 4.33),
+      agendamentos: Math.ceil(metaAgendM / 4.33),
+      comparecimentos: Math.ceil(metaCompM / 4.33),
+      vendas: Math.ceil(metaVendasM / 4.33),
+    },
+    // Acumulado TOTAL do mês (pra mostrar nas referências mesmo filtrando "hoje")
+    acumulado_mes: {
+      leads: metricasMes.reduce((s, m) => s + (m.leads_recebidos || 0), 0),
+      contatos: metricasMes.reduce((s, m) => s + (m.contatos_realizados || 0), 0),
+      agendamentos: metricasMes.reduce((s, m) => s + (m.agendamentos || 0), 0),
+      comparecimentos: metricasMes.reduce((s, m) => s + (m.comparecimentos || 0), 0),
+      vendas: metricasMes.reduce((s, m) => s + (m.vendas || 0), 0),
     },
   })
 }
