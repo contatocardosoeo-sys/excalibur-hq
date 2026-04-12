@@ -13,6 +13,7 @@ import AdocaoEquipe from '../../components/AdocaoEquipe'
 import ResumoDia from '../../components/ResumoDia'
 import FunilUnificado from '../../components/FunilUnificado'
 import ComissoesPanel from '../../components/ComissoesPanel'
+import HealthScoreEquipeV2 from '../../components/HealthScoreEquipeV2'
 import PropostasPendentes from '../../components/PropostasPendentes'
 
 interface Receita {
@@ -178,6 +179,9 @@ export default function CEODashboard() {
         <div className="mb-6">
           <ComissoesPanel compacto />
         </div>
+
+        {/* ━━━ HEALTH SCORE MULTIDIMENSIONAL ━━━ */}
+        <HealthScoreEquipeV2 />
 
         {/* ━━━ ADOÇÃO DA EQUIPE (primeiro elemento — monitoramento de execução) ━━━ */}
         <AdocaoEquipe />

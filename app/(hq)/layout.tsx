@@ -8,6 +8,7 @@ import SistemaEventos from '../components/SistemaEventos'
 import TitleSync from '../components/TitleSync'
 import OnboardingColaborador from '../components/OnboardingColaborador'
 import MissoesDiarias from '../components/MissoesDiarias'
+import PerguntaContextual from '../components/PerguntaContextual'
 import { ToastProvider } from '../components/Toast'
 
 export default function HQLayout({ children }: { children: React.ReactNode }) {
@@ -46,9 +47,12 @@ export default function HQLayout({ children }: { children: React.ReactNode }) {
       )}
       <div key={pathname} className="page-transition pt-14 md:pt-0 min-h-screen overflow-x-hidden min-w-0 max-w-full">
         {ready && email && pathname !== '/onboarding-wizard' && (
-          <div className="hidden md:block fixed bottom-4 right-4 z-30 w-80">
-            <MissoesDiarias />
-          </div>
+          <>
+            <div className="hidden md:block fixed bottom-4 right-4 z-30 w-80">
+              <MissoesDiarias />
+            </div>
+            <PerguntaContextual userEmail={email} pagina={pathname} />
+          </>
         )}
         {children}
       </div>

@@ -51,6 +51,7 @@ const allSections: MenuSection[] = [
     items: [
       { href: '/admin/metas', icon: '🎯', label: 'Metas & Funil', roles: ['admin', 'coo'] },
       { href: '/admin/comissoes', icon: '💰', label: 'Comissões', roles: ['admin', 'coo'] },
+      { href: '/admin/inteligencia', icon: '🧠', label: 'Inteligência', roles: ['admin', 'coo'] },
       { href: '/eventos', icon: '⚡', label: 'Eventos', roles: ['admin', 'coo'] },
       { href: '/operacao/colaboradores', icon: '🧑‍💼', label: 'Colaboradores', roles: ['admin', 'coo'] },
       { href: '/sistema/apis', icon: '🔌', label: 'APIs', roles: ['admin'] },
