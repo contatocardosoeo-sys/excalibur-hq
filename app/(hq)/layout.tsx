@@ -17,6 +17,7 @@ export default function HQLayout({ children }: { children: React.ReactNode }) {
   const [nome, setNome] = useState('')
   const [isAdmin, setIsAdmin] = useState(false)
   const [primaryRole, setPrimaryRole] = useState<string>('')
+  const [onboarded, setOnboarded] = useState(false)
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
@@ -26,11 +27,12 @@ export default function HQLayout({ children }: { children: React.ReactNode }) {
         const e = session?.user?.email
         if (e) {
           setEmail(e)
-          const { data: u } = await supabase.from('usuarios_internos').select('nome, roles, role').eq('email', e).single()
+          const { data: u } = await supabase.from('usuarios_internos').select('nome, roles, role, onboarding_completo').eq('email', e).single()
           const roles: string[] = (u?.roles && Array.isArray(u.roles) && u.roles.length > 0) ? u.roles : [u?.role || '']
           setIsAdmin(roles.includes('admin'))
           setPrimaryRole(roles[0] || '')
           setNome(u?.nome || '')
+          setOnboarded(!!u?.onboarding_completo)
         }
       } catch { /* */ }
       setReady(true)
@@ -40,9 +42,9 @@ export default function HQLayout({ children }: { children: React.ReactNode }) {
   return (
     <ToastProvider>
       <TitleSync />
-      {ready && email && <AlertaCentral userEmail={email} isAdmin={isAdmin} userRole={primaryRole} />}
-      {ready && primaryRole && <SistemaEventos userRole={primaryRole} />}
-      {ready && email && primaryRole && (
+      {ready && email && onboarded && <AlertaCentral userEmail={email} isAdmin={isAdmin} userRole={primaryRole} />}
+      {ready && primaryRole && onboarded && <SistemaEventos userRole={primaryRole} />}
+      {ready && email && primaryRole && onboarded && (
         <OnboardingColaborador userEmail={email} userRole={primaryRole} userName={nome} />
       )}
       <div key={pathname} className="page-transition pt-14 md:pt-0 min-h-screen overflow-x-hidden min-w-0 max-w-full">
