@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { addDiasUteis } from '../../../lib/dias-uteis'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -63,8 +64,8 @@ export async function POST(req: NextRequest) {
 
   const base = new Date(baseDate + 'T12:00:00')
   const novas = template.map(t => {
-    const prazo = new Date(base)
-    prazo.setDate(prazo.getDate() + t.prazo_dia)
+    // Prazo em DIAS ÚTEIS (antes era corrido)
+    const prazo = t.prazo_dia > 0 ? addDiasUteis(base, t.prazo_dia) : new Date(base)
     return {
       clinica_id,
       fase: t.fase,

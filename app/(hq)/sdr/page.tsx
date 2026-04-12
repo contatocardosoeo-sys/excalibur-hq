@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import Sidebar from '../../components/Sidebar'
 import AcaoHoje from '../../components/AcaoHoje'
+import CrmAoVivo from '../../components/CrmAoVivo'
 import { useToast } from '../../components/Toast'
 import { supabase } from '../../lib/supabase'
 import { useDispararEvento } from '../../hooks/useDispararEvento'
@@ -346,6 +347,11 @@ export default function SDRPage() {
             </div>
           )
         })()}
+
+        {/* CRM ao vivo (Waseller) */}
+        <div style={{ marginBottom: 14 }}>
+          <CrmAoVivo />
+        </div>
 
         {/* Filtros de periodo — com meta no label */}
         {(() => {

@@ -49,6 +49,7 @@ const allSections: MenuSection[] = [
   {
     label: 'Sistema',
     items: [
+      { href: '/admin/metas', icon: '🎯', label: 'Metas & Funil', roles: ['admin', 'coo'] },
       { href: '/eventos', icon: '⚡', label: 'Eventos', roles: ['admin', 'coo'] },
       { href: '/operacao/colaboradores', icon: '🧑‍💼', label: 'Colaboradores', roles: ['admin', 'coo'] },
       { href: '/sistema/apis', icon: '🔌', label: 'APIs', roles: ['admin'] },

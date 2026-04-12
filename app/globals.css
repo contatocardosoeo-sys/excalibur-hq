@@ -114,16 +114,16 @@
   html {
     @apply font-sans bg-background text-foreground;
     font-family: var(--font-geist-sans), 'Inter', system-ui, -apple-system, sans-serif;
-    /* overflow clip previne overflow horizontal sem criar scrollbar extra
-       (100vw inclui scrollbar width, por isso dava 5px de vazamento) */
-    overflow-x: clip;
-    max-width: 100%;
-    scrollbar-gutter: stable;
+    /* overflow-x hidden mata o vazamento residual de 5px */
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
   }
   body {
     @apply bg-background text-foreground;
-    overflow-x: clip;
-    max-width: 100%;
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
   }
 }
 
@@ -136,15 +136,13 @@ main, .min-h-screen {
   max-width: 100%;
 }
 
-/* Touch targets: todos os botões tem no mínimo 44x44 no mobile.
-   Exceções: botões dentro de <table> (células), inline em parágrafos, e com data-touch-exempt. */
-@media (max-width: 768px) {
-  button:not([data-touch-exempt]):not(table button):not(.no-touch-min) {
-    min-height: 44px;
-  }
-  a[role="button"]:not([data-touch-exempt]) {
-    min-height: 44px;
-  }
+/* Touch targets universais: todos os botões ≥ 44x44 (mobile E desktop).
+   Exceções: data-touch-exempt, botões dentro de <table>, ícones inline. */
+button:not([data-touch-exempt]):not(table button):not(.no-touch-min) {
+  min-height: 44px;
+}
+a[role="button"]:not([data-touch-exempt]) {
+  min-height: 44px;
 }
 
 /* Scrollbar global personalizada — dark e discreta */

@@ -4,99 +4,35 @@
 // Para mudar qualquer parâmetro global: altere SÓ este arquivo.
 // ═══════════════════════════════════════════════════════════════
 
-// ─── FERIADOS BR 2026 (feriados nacionais + Carnaval/Sexta-Santa) ─────
-// Sexta-Santa 2026 = 03/04 · Tiradentes = 21/04 · etc.
-const FERIADOS_2026 = [
-  '2026-01-01', // Ano Novo
-  '2026-02-16', // Carnaval (segunda)
-  '2026-02-17', // Carnaval (terça)
-  '2026-04-03', // Sexta-feira Santa
-  '2026-04-21', // Tiradentes
-  '2026-05-01', // Dia do Trabalho
-  '2026-06-04', // Corpus Christi
-  '2026-09-07', // Independência
-  '2026-10-12', // Nossa Senhora Aparecida
-  '2026-11-02', // Finados
-  '2026-11-15', // Proclamação da República
-  '2026-11-20', // Consciência Negra (dia nacional)
-  '2026-12-25', // Natal
-]
+// ─── MOTOR DE DATAS ───────────────────────────────────────────────────
+// Tudo que envolve dias úteis/feriados vem de ./dias-uteis.ts
+import {
+  isDiaUtil,
+  isHojeDiaUtil,
+  diasUteisNoMes,
+  diasUteisPassados,
+  diasUteisFaltando,
+  diasUteisDoMesAtual,
+  semanasUteisDoMes,
+  addDiasUteis,
+  proximoDiaUtil,
+  diasUteisEntre,
+  calendarioMesAtual,
+} from './dias-uteis'
 
-const FERIADOS: string[] = [...FERIADOS_2026]
-
-// ─── FUNÇÕES DE DIAS ÚTEIS ────────────────────────────────────────────
-export function isDiaUtil(data: Date): boolean {
-  const dow = data.getDay() // 0=dom, 6=sab
-  if (dow === 0 || dow === 6) return false
-  // formato YYYY-MM-DD local-safe
-  const y = data.getFullYear()
-  const m = String(data.getMonth() + 1).padStart(2, '0')
-  const d = String(data.getDate()).padStart(2, '0')
-  const iso = `${y}-${m}-${d}`
-  return !FERIADOS.includes(iso)
-}
-
-export function diasUteisNoMes(ano: number, mes: number): number {
-  const diasNoMes = new Date(ano, mes, 0).getDate()
-  let count = 0
-  for (let d = 1; d <= diasNoMes; d++) {
-    if (isDiaUtil(new Date(ano, mes - 1, d))) count++
-  }
-  return count
-}
-
-export function diasUteisPassados(ano: number, mes: number, hoje: Date = new Date()): number {
-  const diaHoje = (hoje.getFullYear() === ano && hoje.getMonth() + 1 === mes) ? hoje.getDate() : new Date(ano, mes, 0).getDate()
-  let count = 0
-  for (let d = 1; d <= diaHoje; d++) {
-    if (isDiaUtil(new Date(ano, mes - 1, d))) count++
-  }
-  return count
-}
-
-export function diasUteisFaltando(ano: number, mes: number, hoje: Date = new Date()): number {
-  return diasUteisNoMes(ano, mes) - diasUteisPassados(ano, mes, hoje)
-}
-
-export function isHojeDiaUtil(): boolean {
-  return isDiaUtil(new Date())
-}
-
-export function diasUteisDoMesAtual(): number {
-  const agora = new Date()
-  return diasUteisNoMes(agora.getFullYear(), agora.getMonth() + 1)
-}
-
-export function semanasUteisDoMes(): number {
-  return diasUteisDoMesAtual() / 5
-}
-
-// Adiciona N dias úteis a partir de uma data (pula sáb/dom/feriados)
-export function addDiasUteis(data: Date, dias: number): Date {
-  const result = new Date(data)
-  let adicionados = 0
-  while (adicionados < dias) {
-    result.setDate(result.getDate() + 1)
-    if (isDiaUtil(result)) adicionados++
-  }
-  return result
-}
-
-export function diasUteisEntre(inicio: Date, fim: Date): number {
-  let count = 0
-  const current = new Date(inicio)
-  while (current <= fim) {
-    if (isDiaUtil(current)) count++
-    current.setDate(current.getDate() + 1)
-  }
-  return count
-}
-
-export function proximoDiaUtil(data: Date = new Date()): Date {
-  const next = new Date(data)
-  next.setDate(next.getDate() + 1)
-  while (!isDiaUtil(next)) next.setDate(next.getDate() + 1)
-  return next
+// Re-exporta tudo pra manter compat com imports antigos (`from '@/lib/config'`)
+export {
+  isDiaUtil,
+  isHojeDiaUtil,
+  diasUteisNoMes,
+  diasUteisPassados,
+  diasUteisFaltando,
+  diasUteisDoMesAtual,
+  semanasUteisDoMes,
+  addDiasUteis,
+  proximoDiaUtil,
+  diasUteisEntre,
+  calendarioMesAtual,
 }
 
 // ─── CONSTANTES DINÂMICAS ─────────────────────────────────────────────
@@ -125,7 +61,7 @@ export const TAXAS_META = {
   qualificacao: 0.70,
   agendamento: 0.35,
   comparecimento: 0.70,
-  fechamento: 0.30,
+  fechamento: 0.25,
 }
 
 // Taxas reais (Fev/Mar 2026) — comparativo + gargalo
@@ -338,6 +274,304 @@ export const SDR_METAS_SEMANAIS = {
 export const SDR_MINIMO_DIARIO = {
   agendamentos: 8, // mínimo viável pra bater R$90k alvo
 }
+
+// Função dinâmica: recalcula metas SDR para qualquer meta diária de agendamentos
+// usando dias úteis reais do mês atual + taxas vigentes.
+export function calcularMetasSDR(agendDia: number = 15) {
+  const du = DIAS_UTEIS_MES || 21
+  const su = SEMANAS_MES || 4.2
+  const txComp = TAXAS_REAIS.comparecimento   // 0.696
+  const txFech = TAXAS_META.fechamento        // 0.30
+  const txAgend = TAXAS_META.agendamento      // 0.35
+  const txQualif = TAXAS_META.qualificacao    // 0.70
+
+  const reunioes_dia = Math.floor(agendDia * txComp)
+  const noshow_dia   = Math.max(0, agendDia - reunioes_dia)
+  const vendas_dia   = Math.ceil(reunioes_dia * txFech)
+  const qualif_dia   = Math.ceil(agendDia / txAgend)
+  const leads_dia    = Math.ceil(qualif_dia / txQualif)
+
+  return {
+    diario: {
+      agendamentos: agendDia,
+      reunioes:     reunioes_dia,
+      noshow:       noshow_dia,
+      vendas:       vendas_dia,
+      qualificados: qualif_dia,
+      leads:        leads_dia,
+    },
+    mensal: {
+      agendamentos: agendDia * du,
+      reunioes:     reunioes_dia * du,
+      vendas:       vendas_dia * du,
+      qualificados: qualif_dia * du,
+      leads:        leads_dia * du,
+      receita:      vendas_dia * du * TICKET_MEDIO,
+    },
+    semanal: {
+      agendamentos: Math.ceil((agendDia * du) / su),
+      reunioes:     Math.ceil((reunioes_dia * du) / su),
+      vendas:       Math.ceil((vendas_dia * du) / su),
+      leads:        Math.ceil((leads_dia * du) / su),
+    },
+    dias_uteis: du,
+  }
+}
+
+export const SDR_AGEND_DIA = 15
+
+// Jornada CS — prazos agora em DIAS ÚTEIS (antes era corridos)
+export const JORNADA_DIAS_UTEIS = {
+  D0: 0,
+  D7: 7,
+  D15: 15,
+  D30: 30,
+  D60: 60,
+  D90: 90,
+} as const
+
+// Alias para código antigo que importava DESIGN_SLA_UTEIS
+export const DESIGN_SLA = {
+  urgente: 1,
+  alta: 2,
+  media: 4,
+  baixa: 8,
+}
+
+// ══════════════════════════════════════════════════════════════
+// BI — ZONAS DE CAC, ALERTAS, SENSIBILIDADE, DIAGNÓSTICO
+// ══════════════════════════════════════════════════════════════
+
+export const CAC_ZONAS = {
+  saudavel_max: 250,  // pode escalar
+  atencao_max:  300,  // monitorar
+  // > 300 = crítico
+} as const
+
+export type ZonaCAC = 'saudavel' | 'atencao' | 'critico'
+
+export function zonaCAC(cac: number): ZonaCAC {
+  if (cac < CAC_ZONAS.saudavel_max) return 'saudavel'
+  if (cac <= CAC_ZONAS.atencao_max) return 'atencao'
+  return 'critico'
+}
+
+export function corCAC(cac: number): string {
+  const z = zonaCAC(cac)
+  if (z === 'saudavel') return '#22c55e'
+  if (z === 'atencao') return '#fbbf24'
+  return '#ef4444'
+}
+
+export type AlertaFunil = {
+  etapa: 'qualificacao' | 'agendamento' | 'comparecimento' | 'fechamento' | 'cac' | 'custo_reuniao'
+  nivel: 'critico' | 'atencao'
+  valor_real: number
+  limite: number
+  mensagem: string
+  acao: string
+}
+
+// Gera alertas a partir das taxas reais + custos
+export function gerarAlertas(opts: {
+  taxa_qualif?: number
+  taxa_agend?: number
+  taxa_comp?: number
+  taxa_fech?: number
+  cac?: number
+  custo_reuniao?: number
+}): AlertaFunil[] {
+  const alertas: AlertaFunil[] = []
+
+  if (opts.taxa_qualif !== undefined) {
+    if (opts.taxa_qualif < 0.60) {
+      alertas.push({ etapa: 'qualificacao', nivel: 'critico', valor_real: opts.taxa_qualif, limite: 0.60,
+        mensagem: `Qualificação ${(opts.taxa_qualif * 100).toFixed(0)}% — abaixo do mínimo 60%`,
+        acao: 'Corrigir público-alvo (ICP errado)' })
+    } else if (opts.taxa_qualif < 0.70) {
+      alertas.push({ etapa: 'qualificacao', nivel: 'atencao', valor_real: opts.taxa_qualif, limite: 0.70,
+        mensagem: `Qualificação ${(opts.taxa_qualif * 100).toFixed(0)}% — abaixo da meta 70%`,
+        acao: 'Revisar ICP e segmentação de campanhas' })
+    }
+  }
+
+  if (opts.taxa_agend !== undefined) {
+    if (opts.taxa_agend < 0.30) {
+      alertas.push({ etapa: 'agendamento', nivel: 'critico', valor_real: opts.taxa_agend, limite: 0.30,
+        mensagem: `Agendamento ${(opts.taxa_agend * 100).toFixed(0)}% — GARGALO CRÍTICO`,
+        acao: 'Parar escala e corrigir script SDR' })
+    } else if (opts.taxa_agend < 0.35) {
+      alertas.push({ etapa: 'agendamento', nivel: 'atencao', valor_real: opts.taxa_agend, limite: 0.35,
+        mensagem: `Agendamento ${(opts.taxa_agend * 100).toFixed(0)}% — abaixo da meta 35%`,
+        acao: 'Otimizar script do SDR e objeções iniciais' })
+    }
+  }
+
+  if (opts.taxa_comp !== undefined) {
+    if (opts.taxa_comp < 0.65) {
+      alertas.push({ etapa: 'comparecimento', nivel: 'critico', valor_real: opts.taxa_comp, limite: 0.65,
+        mensagem: `Comparecimento ${(opts.taxa_comp * 100).toFixed(0)}% — falha operacional`,
+        acao: 'Rever cadência de lembretes (D-1, H-3, H-1)' })
+    } else if (opts.taxa_comp < 0.70) {
+      alertas.push({ etapa: 'comparecimento', nivel: 'atencao', valor_real: opts.taxa_comp, limite: 0.70,
+        mensagem: `Comparecimento ${(opts.taxa_comp * 100).toFixed(0)}% — abaixo da meta 70%`,
+        acao: 'Reforçar confirmação no WhatsApp + ligar no dia' })
+    }
+  }
+
+  if (opts.taxa_fech !== undefined) {
+    if (opts.taxa_fech < 0.20) {
+      alertas.push({ etapa: 'fechamento', nivel: 'critico', valor_real: opts.taxa_fech, limite: 0.20,
+        mensagem: `Fechamento ${(opts.taxa_fech * 100).toFixed(0)}% — problema estrutural`,
+        acao: 'Rever oferta/produto — possível problema de produto/mercado' })
+    } else if (opts.taxa_fech < 0.25) {
+      alertas.push({ etapa: 'fechamento', nivel: 'atencao', valor_real: opts.taxa_fech, limite: 0.25,
+        mensagem: `Fechamento ${(opts.taxa_fech * 100).toFixed(0)}% — abaixo da meta 25%`,
+        acao: 'Revisar pitch de vendas e tratamento de objeções' })
+    }
+  }
+
+  if (opts.cac !== undefined && opts.cac > CAC_ZONAS.atencao_max) {
+    alertas.push({ etapa: 'cac', nivel: 'critico', valor_real: opts.cac, limite: CAC_ZONAS.atencao_max,
+      mensagem: `CAC R$${Math.round(opts.cac)} — acima do teto R$${CAC_ZONAS.atencao_max}`,
+      acao: 'PARAR escala imediatamente e corrigir funil antes de investir mais' })
+  }
+
+  if (opts.custo_reuniao !== undefined) {
+    if (opts.custo_reuniao > 65) {
+      alertas.push({ etapa: 'custo_reuniao', nivel: 'critico', valor_real: opts.custo_reuniao, limite: 65,
+        mensagem: `Custo/reunião R$${Math.round(opts.custo_reuniao)} — gargalo no meio do funil`,
+        acao: 'Auditar qualificação + agendamento (leads chegando ruim ou SDR agendando errado)' })
+    } else if (opts.custo_reuniao > 55) {
+      alertas.push({ etapa: 'custo_reuniao', nivel: 'atencao', valor_real: opts.custo_reuniao, limite: 55,
+        mensagem: `Custo/reunião R$${Math.round(opts.custo_reuniao)} — acima do ideal R$55`,
+        acao: 'Ajustar taxa de agendamento' })
+    }
+  }
+
+  return alertas
+}
+
+// ─── ANÁLISE DE SENSIBILIDADE ────────────────────────────────────────
+// Mostra quanto ganha de receita se cada taxa subir 5 pontos percentuais
+export type Sensibilidade = {
+  base: Funil
+  agendamento_plus_5: Funil
+  comparecimento_plus_5: Funil
+  fechamento_plus_5: Funil
+  ganhos: {
+    agendamento: { reuniao_extra: number; vendas_extra: number; receita_extra: number }
+    comparecimento: { reuniao_extra: number; vendas_extra: number; receita_extra: number }
+    fechamento: { vendas_extra: number; receita_extra: number }
+  }
+}
+
+function recalcFunilComTaxas(receita: number, taxas: typeof TAXAS_META): Funil {
+  const vendas = Math.ceil(receita / TICKET_MEDIO)
+  const comparec = Math.ceil(vendas / taxas.fechamento)
+  const agend = Math.ceil(comparec / taxas.comparecimento)
+  const qualif = Math.ceil(agend / taxas.agendamento)
+  const leads = Math.ceil(qualif / taxas.qualificacao)
+  const invest = Math.round(leads * CPL_MEDIO)
+  const cac = Math.round(invest / vendas)
+  const custo_reuniao = Math.round(invest / comparec)
+  const du = DIAS_UTEIS_MES || 22
+  const su = SEMANAS_MES || 4.33
+  return {
+    receita,
+    mensal: { vendas, comparecimentos: comparec, agendamentos: agend, qualificados: qualif, leads },
+    diario: {
+      vendas: Math.ceil(vendas / du),
+      comparecimentos: Math.ceil(comparec / du),
+      agendamentos: Math.ceil(agend / du),
+      qualificados: Math.ceil(qualif / du),
+      leads: Math.ceil(leads / du),
+    },
+    semanal: {
+      vendas: Math.ceil(vendas / su),
+      comparecimentos: Math.ceil(comparec / su),
+      agendamentos: Math.ceil(agend / su),
+      qualificados: Math.ceil(qualif / su),
+      leads: Math.ceil(leads / su),
+    },
+    custos: {
+      investimento_mensal: invest,
+      investimento_diario: Math.round(invest / du),
+      cac,
+      custo_reuniao,
+    },
+  }
+}
+
+// Mostra impacto de otimizar cada taxa do funil mantendo o MESMO investimento/leads
+export function analisarSensibilidade(
+  leads: number,
+  taxaBase: typeof TAXAS_META = TAXAS_META,
+): Sensibilidade {
+  // Base: quanto entrega com as taxas atuais a partir desses leads
+  function rodar(t: typeof TAXAS_META) {
+    const qualif = Math.floor(leads * t.qualificacao)
+    const agend = Math.floor(qualif * t.agendamento)
+    const comp = Math.floor(agend * t.comparecimento)
+    const vendas = Math.floor(comp * t.fechamento)
+    const receita = vendas * TICKET_MEDIO
+    const invest = Math.round(leads * CPL_MEDIO)
+    const cac = vendas > 0 ? Math.round(invest / vendas) : 0
+    const custo_reuniao = comp > 0 ? Math.round(invest / comp) : 0
+    const du = DIAS_UTEIS_MES || 22
+    const su = SEMANAS_MES || 4.33
+    return {
+      receita,
+      mensal: { vendas, comparecimentos: comp, agendamentos: agend, qualificados: qualif, leads },
+      diario: {
+        vendas: Math.ceil(vendas / du),
+        comparecimentos: Math.ceil(comp / du),
+        agendamentos: Math.ceil(agend / du),
+        qualificados: Math.ceil(qualif / du),
+        leads: Math.ceil(leads / du),
+      },
+      semanal: {
+        vendas: Math.ceil(vendas / su),
+        comparecimentos: Math.ceil(comp / su),
+        agendamentos: Math.ceil(agend / su),
+        qualificados: Math.ceil(qualif / su),
+        leads: Math.ceil(leads / su),
+      },
+      custos: { investimento_mensal: invest, investimento_diario: Math.round(invest / du), cac, custo_reuniao },
+    } as Funil
+  }
+
+  const base = rodar(taxaBase)
+  const plusAgend = rodar({ ...taxaBase, agendamento: Math.min(1, taxaBase.agendamento + 0.05) })
+  const plusComp  = rodar({ ...taxaBase, comparecimento: Math.min(1, taxaBase.comparecimento + 0.05) })
+  const plusFech  = rodar({ ...taxaBase, fechamento: Math.min(1, taxaBase.fechamento + 0.05) })
+
+  return {
+    base,
+    agendamento_plus_5: plusAgend,
+    comparecimento_plus_5: plusComp,
+    fechamento_plus_5: plusFech,
+    ganhos: {
+      agendamento: {
+        reuniao_extra: plusAgend.mensal.comparecimentos - base.mensal.comparecimentos,
+        vendas_extra: plusAgend.mensal.vendas - base.mensal.vendas,
+        receita_extra: plusAgend.receita - base.receita,
+      },
+      comparecimento: {
+        reuniao_extra: plusComp.mensal.comparecimentos - base.mensal.comparecimentos,
+        vendas_extra: plusComp.mensal.vendas - base.mensal.vendas,
+        receita_extra: plusComp.receita - base.receita,
+      },
+      fechamento: {
+        vendas_extra: plusFech.mensal.vendas - base.mensal.vendas,
+        receita_extra: plusFech.receita - base.receita,
+      },
+    },
+  }
+}
+
+// Apenas re-exporta recalcFunilComTaxas pra quem precisar
+export { recalcFunilComTaxas }
 
 // COMPATIBILIDADE — antigos imports de SDR_METAS
 export const SDR_METAS = {

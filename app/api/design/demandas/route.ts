@@ -1,7 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { DESIGN_SLA } from '../../../lib/config'
+import { addDiasUteis } from '../../../lib/dias-uteis'
 
 const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+type Prioridade = keyof typeof DESIGN_SLA
+
+function prazoPorPrioridade(prioridade: string): string {
+  const p = (prioridade || 'media') as Prioridade
+  const dias = DESIGN_SLA[p] ?? DESIGN_SLA.media
+  const d = addDiasUteis(new Date(), dias)
+  return d.toISOString().split('T')[0]
+}
 
 // Lista de demandas com filtros + agregações
 export async function GET(req: NextRequest) {
@@ -63,7 +74,8 @@ export async function POST(req: NextRequest) {
     responsavel_nome: body.responsavel_nome || null,
     prioridade: body.prioridade || 'media',
     status: 'recebida',
-    prazo_desejado: body.prazo_desejado || null,
+    // Se não veio prazo, calcula automaticamente por SLA em dias úteis
+    prazo_desejado: body.prazo_desejado || prazoPorPrioridade(body.prioridade || 'media'),
     referencias: body.referencias || null,
     briefing: body.briefing || null,
     tempo_estimado_horas: body.tempo_estimado_horas || null,

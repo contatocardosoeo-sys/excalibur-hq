@@ -470,3 +470,15 @@ warning: in the working copy of 'app/lib/health-score.ts', LF will be replaced b
 To https://github.com/contatocardosoeo-sys/excalibur-hq.git
    5e6f7bc..0b4091d  main -> main
 ✅ Auto-save: 2026-04-11 22:15
+warning: in the working copy of 'app/(hq)/sdr/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/api/sdr/metricas/route.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/lib/config.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'scripts/sdr-metas-15.mjs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'scripts/wa-audit.mjs', LF will be replaced by CRLF the next time Git touches it
+[main 7a20b66] auto-save: 2026-04-11 22:45 — app/(hq)/sdr/page.tsx,app/api/sdr/metricas/route.ts,app/lib/config.ts,scripts/sdr-metas-15.mjs,scripts/wa-audit.mjs,
+ 5 files changed, 394 insertions(+), 62 deletions(-)
+ create mode 100644 scripts/sdr-metas-15.mjs
+ create mode 100644 scripts/wa-audit.mjs
+To https://github.com/contatocardosoeo-sys/excalibur-hq.git
+   c151c6e..7a20b66  main -> main
+✅ Auto-save: 2026-04-11 22:45
