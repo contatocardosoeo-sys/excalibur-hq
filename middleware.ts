@@ -100,7 +100,7 @@ export async function middleware(request: NextRequest) {
 
   const { data: interno } = await supabase
     .from('usuarios_internos')
-    .select('role, roles, ativo')
+    .select('role, roles, ativo, onboarding_completo')
     .eq('email', user.email)
     .single()
 
@@ -111,6 +111,13 @@ export async function middleware(request: NextRequest) {
   }
 
   const userRoles = getUserRoles(interno)
+
+  // Onboarding wizard — redirecionar se não completou (exceto a própria página do wizard)
+  if (!interno.onboarding_completo && pathname !== '/onboarding-wizard') {
+    const url = request.nextUrl.clone()
+    url.pathname = '/onboarding-wizard'
+    return NextResponse.redirect(url)
+  }
 
   // Pagina /dashboard foi removida — redirecionar para rota padrao do role
   if (pathname === '/dashboard' || pathname === '/dashboard/') {

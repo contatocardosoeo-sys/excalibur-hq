@@ -21,7 +21,26 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ semana, colaboradores: lista.sort((a, b) => b.score - a.score) })
   }
 
-  if (!email) return NextResponse.json({ error: 'email obrigatório ou todos=1' }, { status: 400 })
+  if (!email) {
+    // Default: retornar score consolidado da empresa (média de todos)
+    const { data: users } = await migSb
+      .from('usuarios_internos')
+      .select('email, nome, role')
+      .eq('ativo', true)
+    const lista = await Promise.all((users || []).map(async u => {
+      const s = await calcularScoreAdocao(u.email)
+      return { ...u, ...s }
+    }))
+    const media = lista.length > 0 ? Math.round(lista.reduce((s, l) => s + l.score, 0) / lista.length) : 0
+    return NextResponse.json({
+      semana: getSemanaIso(),
+      score_empresa: media,
+      total_colaboradores: lista.length,
+      acima_80: lista.filter(l => l.score >= 80).length,
+      abaixo_40: lista.filter(l => l.score < 40).length,
+      colaboradores: lista.sort((a, b) => b.score - a.score),
+    })
+  }
 
   const score = await calcularScoreAdocao(email)
 

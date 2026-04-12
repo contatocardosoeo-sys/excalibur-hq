@@ -5,14 +5,11 @@ const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPAB
 
 export async function GET(req: NextRequest) {
   const email = req.nextUrl.searchParams.get('email')
-  if (!email) return NextResponse.json({ error: 'email obrigatório' }, { status: 400 })
 
-  const { data, error } = await sb
-    .from('design_rotina')
-    .select('*')
-    .eq('user_email', email)
-    .order('ordem')
+  let q = sb.from('design_rotina').select('*').order('ordem')
+  if (email) q = q.eq('user_email', email)
 
+  const { data, error } = await q
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ rotina: data || [] })
 }
