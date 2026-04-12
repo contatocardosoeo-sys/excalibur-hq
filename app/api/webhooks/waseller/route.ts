@@ -1,58 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { avancarEtapa, enviarTexto, MSGS } from '@/app/lib/wascript'
+import { avancarEtapa } from '@/app/lib/wascript'
+import {
+  WASELLER_EVENTO_ETAPA,
+  WASELLER_ETIQUETA_ETAPA,
+  ETAPA_METRICA,
+  SDR_ETAPAS,
+} from '@/app/lib/config'
 
 const sb = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 )
 
-// ═══════════════════════════════════════════════════════════
-// MAPEAMENTO EVENTO WASELLER → ETAPA HQ
-// ═══════════════════════════════════════════════════════════
-const EVENTO_MAP: Record<string, string> = {
-  // Evento CRM (novo lead entrando)
-  'crm': 'lead',
-  'novo_lead': 'lead',
-  'lead': 'lead',
-  'novo': 'lead',
-  'recebido': 'lead',
-  // Agendamento
-  'agendamento': 'agendamento',
-  'agendado': 'agendamento',
-  'reuniao_marcada': 'agendamento',
-  // Encerrar atendimento = compareceu (reunião realizada)
-  'encerrar_atendimento': 'comparecimento',
-  'atendimento_encerrado': 'comparecimento',
-  'compareceu': 'comparecimento',
-  'reuniao_realizada': 'comparecimento',
-  // Follow Up = qualificado
-  'follow_up': 'qualificado',
-  'followup': 'qualificado',
-  // Fechamento
-  'venda': 'venda',
-  'fechado': 'venda',
-  'ganho': 'venda',
-  'deal_won': 'venda',
-  // Perdido
-  'perdido': 'perdido',
-  'sem_interesse': 'perdido',
-  'nao_qualificado': 'perdido',
-}
-
-// ═══════════════════════════════════════════════════════════
-// MAPEAMENTO ETIQUETA → ETAPA HQ (quando event=etiqueta)
-// ═══════════════════════════════════════════════════════════
-const ETIQUETA_MAP: Record<string, string> = {
-  'lead': 'lead',
-  'acompanhar': 'agendamento',
-  'novo cliente': 'comparecimento',
-  'novo pedido': 'agendamento',
-  'pago': 'venda',
-  'pedido finalizado': 'venda',
-  'pagamento pendente': 'agendamento',
-  'importante': 'qualificado',
-}
+// Aliases pra manter a cara do código antigo
+const EVENTO_MAP = WASELLER_EVENTO_ETAPA
+const ETIQUETA_MAP = WASELLER_ETIQUETA_ETAPA
 
 type WasellerPayload = {
   event?: string
@@ -91,14 +54,12 @@ export async function GET() {
     auth: 'opcional — header x-waseller-token OU ?token=',
     eventos_suportados: Object.keys(EVENTO_MAP),
     etiquetas_suportadas: Object.keys(ETIQUETA_MAP),
-    mapping_etapas_hq: {
-      lead: 'Lead (novo)',
-      qualificado: 'Follow Up / Acompanhar',
-      agendamento: 'Reunião marcada',
-      comparecimento: 'Reunião realizada',
-      venda: 'Fechado / Pago',
-      perdido: 'Sem interesse',
-    },
+    etapas_sdr: SDR_ETAPAS.map(e => ({
+      id: e.id,
+      label: e.label,
+      emoji: e.emoji,
+      ordem: e.ordem,
+    })),
   })
 }
 
@@ -173,15 +134,8 @@ export async function POST(req: NextRequest) {
 
     // 4. Upsert lead CRM espelhado
     const agora = new Date().toISOString()
-    const tsMap: Record<string, string> = {
-      lead: 'ts_lead_criado',
-      qualificado: 'ts_qualificado',
-      agendamento: 'ts_agendado',
-      comparecimento: 'ts_compareceu',
-      venda: 'ts_fechado',
-      perdido: 'ts_perdido',
-    }
-    const tsField = tsMap[etapaHQ]
+    // Cada etapa tem sua própria coluna ts_<etapa> em sdr_leads_crm
+    const tsField = `ts_${etapaHQ}`
 
     const upsertPayload: Record<string, unknown> = {
       telefone,
@@ -206,14 +160,8 @@ export async function POST(req: NextRequest) {
 
     // 5. Incrementar métrica do dia (fonte=waseller, evita double-count com manual)
     const hoje = agora.slice(0, 10)
-    const campoPorEtapa: Record<string, string> = {
-      lead: 'leads_recebidos',
-      qualificado: 'contatos_realizados',
-      agendamento: 'agendamentos',
-      comparecimento: 'comparecimentos',
-      venda: 'vendas',
-    }
-    const campo = campoPorEtapa[etapaHQ]
+    // Campo da métrica vem do config (ETAPA_METRICA tem as 10 etapas reais)
+    const campo = ETAPA_METRICA[etapaHQ] || null
 
     if (campo) {
       const { data: mHoje } = await sb
@@ -240,17 +188,19 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 6. Criar evento HQ nos marcos importantes
-    if (etapaHQ === 'agendamento' || etapaHQ === 'comparecimento' || etapaHQ === 'venda') {
-      const titulos: Record<string, string> = {
-        agendamento: `📅 Novo agendamento (Waseller): ${nome}`,
-        comparecimento: `🤝 Reunião realizada (Waseller): ${nome}`,
-        venda: `💰 Venda fechada (Waseller): ${nome}`,
-      }
+    // 6. Criar evento HQ nos marcos importantes (tabela real: eventos_hq)
+    const marcosRelevantes: Record<string, string> = {
+      recepcao: `📥 Novo lead (Waseller): ${nome}`,
+      qualificacao: `✅ Lead qualificado (Waseller): ${nome}`,
+      agendamento: `📅 Novo agendamento (Waseller): ${nome}`,
+      confirmacao: `🔔 Reunião confirmada (Waseller): ${nome}`,
+      reagendar: `🔄 No-show — reagendando (Waseller): ${nome}`,
+    }
+    if (marcosRelevantes[etapaHQ]) {
       try {
-        await sb.from('eventos').insert({
+        await sb.from('eventos_hq').insert({
           tipo: etapaHQ,
-          titulo: titulos[etapaHQ],
+          titulo: marcosRelevantes[etapaHQ],
           descricao: `${clinica || ''} ${cidade ? `· ${cidade}` : ''}`.trim(),
           criado_por: 'waseller-webhook',
         })
@@ -259,7 +209,12 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 7. Disparar comissões no fluxo correto (fire-and-forget)
+    // 7. Disparar comissões SDR (fire-and-forget)
+    // - agendamento → SDR R$8 (reunião marcada)
+    // - confirmacao → SDR R$12 (reunião confirmada/realizada)
+    const mesEvt = new Date(agora).getMonth() + 1
+    const anoEvt = new Date(agora).getFullYear()
+
     if (etapaHQ === 'agendamento') {
       Promise.resolve().then(async () => {
         try {
@@ -269,73 +224,18 @@ export async function POST(req: NextRequest) {
             role: 'sdr',
             tipo: 'agendamento',
             valor: 8,
-            mes: new Date(agora).getMonth() + 1,
-            ano: new Date(agora).getFullYear(),
+            mes: mesEvt,
+            ano: anoEvt,
             data_evento: hoje,
             lead_nome: nome,
-            observacao: 'gerado via webhook Waseller',
+            observacao: 'webhook Waseller',
           })
         } catch {
           /* */
         }
       })
     }
-    if (etapaHQ === 'comparecimento') {
-      Promise.resolve().then(async () => {
-        try {
-          await sb.from('comissoes').insert({
-            colaborador_email: 'trindade.excalibur@gmail.com',
-            colaborador_nome: 'Trindade',
-            role: 'sdr',
-            tipo: 'comparecimento',
-            valor: 12,
-            mes: new Date(agora).getMonth() + 1,
-            ano: new Date(agora).getFullYear(),
-            data_evento: hoje,
-            lead_nome: nome,
-            observacao: 'gerado via webhook Waseller',
-          })
-        } catch {
-          /* */
-        }
-      })
-    }
-    if (etapaHQ === 'venda') {
-      Promise.resolve().then(async () => {
-        try {
-          await sb.from('comissoes').insert([
-            {
-              colaborador_email: 'guilherme.excalibur@gmail.com',
-              colaborador_nome: 'Guilherme',
-              role: 'closer',
-              tipo: 'venda',
-              valor: Math.round(Number(valor || 2400) * 0.05),
-              mes: new Date(agora).getMonth() + 1,
-              ano: new Date(agora).getFullYear(),
-              data_evento: hoje,
-              lead_nome: nome,
-              ticket_venda: valor || 2400,
-              observacao: 'webhook Waseller',
-            },
-            {
-              colaborador_email: 'trindade.excalibur@gmail.com',
-              colaborador_nome: 'Trindade',
-              role: 'sdr',
-              tipo: 'venda',
-              valor: 40,
-              mes: new Date(agora).getMonth() + 1,
-              ano: new Date(agora).getFullYear(),
-              data_evento: hoje,
-              lead_nome: nome,
-              ticket_venda: valor || 2400,
-              observacao: 'webhook Waseller',
-            },
-          ])
-        } catch {
-          /* */
-        }
-      })
-    }
+    // (comissão "comparecimento" R$12 só é gerada quando o closer marca no pipeline)
 
     // 8. Espelhar etiqueta no WhatsApp via Wascript (remove anterior + aplica nova)
     if (telefone && etapaAnterior !== etapaHQ) {
@@ -348,22 +248,9 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // 9. Mensagem automática por etapa
-    const msgMap: Record<string, keyof typeof MSGS> = {
-      agendamento: 'confirmacao',
-      comparecimento: 'pos_reuniao',
-      perdido: 'follow_up',
-    }
-    const msgKey = msgMap[etapaHQ]
-    if (msgKey && telefone) {
-      Promise.resolve().then(async () => {
-        try {
-          await enviarTexto(telefone, MSGS[msgKey])
-        } catch (e) {
-          console.error('[waseller→wascript enviar]', e)
-        }
-      })
-    }
+    // 9. ⚠️ HQ é PASSIVO — NÃO envia mensagem automática.
+    // O Waseller já tem 58 fluxos configurados com áudios humanizados e cadências.
+    // Envio manual só via UI do /sdr quando Trindade decidir clicar em um botão.
 
     // 10. Marcar log como processado
     if (logInserido) {

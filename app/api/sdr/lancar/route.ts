@@ -139,7 +139,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // 3. Criar evento HQ pros marcos
+  // 3. Criar evento HQ pros marcos (tabela real: eventos_hq)
   if (etapaNova === 'agendamento' || etapaNova === 'comparecimento' || etapaNova === 'venda') {
     const titulos: Record<string, string> = {
       agendamento: `📅 Novo agendamento: ${lead_nome || clinica || telefone || 'sem nome'}`,
@@ -147,7 +147,7 @@ export async function POST(req: NextRequest) {
       venda: `💰 Venda fechada: ${lead_nome || clinica || telefone || 'sem nome'}`,
     }
     try {
-      await sb.from('eventos').insert({
+      await sb.from('eventos_hq').insert({
         tipo: etapaNova,
         titulo: titulos[etapaNova],
         descricao: `${clinica || ''} ${cidade ? `· ${cidade}` : ''} ${observacao || ''}`.trim(),

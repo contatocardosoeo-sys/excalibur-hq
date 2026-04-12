@@ -7,8 +7,8 @@ import {
   listarEtiquetas,
   criarNota,
   MSGS,
-  ETIQUETAS_FUNIL,
 } from '@/app/lib/wascript'
+import { SDR_ETAPAS, ETAPA_ETIQUETA, MSGS_ETAPAS } from '@/app/lib/config'
 
 const sb = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -25,7 +25,7 @@ type CorpoPost = {
     | 'criar_nota'
   telefone?: string
   mensagem?: string
-  tipo?: 'confirmacao' | 'lembrete' | 'pos_reuniao' | 'no_show' | 'follow_up'
+  tipo?: string // etapa (recepcao/explicacao/...) ou legado (confirmacao/lembrete/pos_reuniao/no_show/follow_up)
   labelId?: string
   type?: 'add' | 'remove'
   etapa_anterior?: string | null
@@ -73,18 +73,30 @@ export async function GET() {
       response: { total: etiquetas.length },
       sucesso: true,
     })
+    // Mapeia cada etapa para o nome real da etiqueta no WhatsApp
+    const nomeEtiqPorId: Record<string, string> = {}
+    for (const e of etiquetas) {
+      nomeEtiqPorId[e.id] = (e.name || '').replace(/[\u200E\u200F]/g, '').trim()
+    }
+
     return NextResponse.json({
       ok: true,
       token_ativo: true,
       total_etiquetas: etiquetas.length,
       etiquetas_raw: etiquetas,
-      etiquetas_funil: {
-        lead: { id: ETIQUETAS_FUNIL.lead, nome: 'Lead' },
-        agendamento: { id: ETIQUETAS_FUNIL.agendamento, nome: 'Acompanhar' },
-        comparecimento: { id: ETIQUETAS_FUNIL.comparecimento, nome: 'Novo cliente' },
-        venda: { id: ETIQUETAS_FUNIL.venda, nome: 'Pago' },
-        perdido: { id: ETIQUETAS_FUNIL.perdido, nome: '(remove todas)' },
-      },
+      etapas_funil: SDR_ETAPAS.map(e => {
+        const labelId = ETAPA_ETIQUETA[e.id] ?? null
+        return {
+          id: e.id,
+          label: e.label,
+          emoji: e.emoji,
+          ordem: e.ordem,
+          metrica: e.metrica,
+          etiqueta_id: labelId,
+          etiqueta_nome: labelId ? nomeEtiqPorId[labelId] || null : null,
+          mensagem_auto: MSGS_ETAPAS[e.id] || null,
+        }
+      }),
       duracao_ms: duracao,
     })
   } catch (e) {
@@ -124,7 +136,12 @@ export async function POST(req: NextRequest) {
         if (!telefone) {
           return NextResponse.json({ error: 'telefone obrigatório' }, { status: 400 })
         }
-        const msg = (tipo && MSGS[tipo]) || mensagem || MSGS.follow_up
+        // tipo pode ser nome de etapa (recepcao/explicacao/...) OU nome legado (confirmacao/lembrete/etc)
+        const msg =
+          (tipo && MSGS_ETAPAS[tipo]) ||
+          (tipo && MSGS[tipo]) ||
+          mensagem ||
+          MSGS.follow_up
         const d = await enviarTexto(telefone, msg)
         resposta = d
         sucesso = !!d.success

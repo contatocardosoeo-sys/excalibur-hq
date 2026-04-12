@@ -9,6 +9,7 @@ import ComissoesPanel from '../../components/ComissoesPanel'
 import ComissoesHero from '../../components/ComissoesHero'
 import WascriptLive from '../../components/WascriptLive'
 import WascriptEnvioRapido from '../../components/WascriptEnvioRapido'
+import EtapasDistribuicao from '../../components/EtapasDistribuicao'
 import { useToast } from '../../components/Toast'
 import { supabase } from '../../lib/supabase'
 import { useDispararEvento } from '../../hooks/useDispararEvento'
@@ -230,10 +231,13 @@ export default function SDRPage() {
         {/* ⚔️ COMISSÃO GIGANTE — pedido do Trindade, no topo da tela */}
         <ComissoesHero role="sdr" nome="Trindade" email="trindade.excalibur@gmail.com" />
 
-        {/* 📲 WhatsApp etiquetas ao vivo (Wascript API) */}
+        {/* 🎯 Distribuição de leads pelas 10 etapas reais (CRM Waseller espelhado) */}
+        <EtapasDistribuicao />
+
+        {/* 📲 WhatsApp etiquetas ao vivo (contador Wascript) */}
         <WascriptLive />
 
-        {/* 📱 Envio rápido WhatsApp (mensagens padrão + custom) */}
+        {/* 📱 Envio manual WhatsApp — só quando o Trindade clicar */}
         <WascriptEnvioRapido />
 
         {/* Card de acao do dia (imperativo) */}

@@ -63,14 +63,19 @@ export type EtapaHQ = 'lead' | 'contato' | 'qualificado' | 'agendamento' | 'comp
 //   1 Novo cliente  · 2 Novo pedido · 3 Pagamento pendente
 //   4 Pago          · 5 Pedido finalizado · 6 Importante
 //   7 Acompanhar    · 8 Lead
+// DEPRECATED — mantido pra back-compat. Use ETAPA_ETIQUETA do config.ts
 export const ETIQUETAS_FUNIL: Record<string, string | null> = {
-  lead:           '8',   // "Lead"
-  qualificado:    '7',   // "Acompanhar" — lead qualificado (mesmo label que agendamento)
-  agendamento:    '7',   // "Acompanhar" — aguardando reunião
-  comparecimento: '1',   // "Novo cliente" — reunião realizada
-  venda:          '4',   // "Pago" — fechou
-  perdido:        null,  // remove todas
+  lead:           '8',
+  qualificado:    '7',
+  agendamento:    '7',
+  comparecimento: '1',
+  venda:          '4',
+  perdido:        null,
 }
+
+// Mapeamento canônico das 10 etapas SDR → labelId WhatsApp (IMPORT do config)
+import { ETAPA_ETIQUETA as ETAPA_ETIQUETA_CFG } from './config'
+export const ETAPA_ETIQUETA = ETAPA_ETIQUETA_CFG
 
 // ═══════════════════════════════════════════════════════════
 // MENSAGENS PADRÃO POR EVENTO (customizáveis futuramente via empresa_config)
@@ -177,13 +182,17 @@ export async function avancarEtapa(
 ): Promise<Array<{ success: boolean; message?: string }>> {
   const promessas: Promise<{ success: boolean; message?: string }>[] = []
 
-  if (etapaAnterior && ETIQUETAS_FUNIL[etapaAnterior]) {
-    promessas.push(modificarEtiqueta(telefone, ETIQUETAS_FUNIL[etapaAnterior]!, 'remove'))
-  }
+  // Usa ETAPA_ETIQUETA do config (10 etapas reais), com fallback pro legacy ETIQUETAS_FUNIL
+  const labelAnt = etapaAnterior
+    ? (ETAPA_ETIQUETA_CFG[etapaAnterior] ?? ETIQUETAS_FUNIL[etapaAnterior])
+    : null
+  const labelNova = ETAPA_ETIQUETA_CFG[etapaNova] ?? ETIQUETAS_FUNIL[etapaNova] ?? null
 
-  const novaLabel = ETIQUETAS_FUNIL[etapaNova]
-  if (novaLabel) {
-    promessas.push(modificarEtiqueta(telefone, novaLabel, 'add'))
+  if (labelAnt) {
+    promessas.push(modificarEtiqueta(telefone, labelAnt, 'remove'))
+  }
+  if (labelNova) {
+    promessas.push(modificarEtiqueta(telefone, labelNova, 'add'))
   }
 
   return Promise.all(promessas)

@@ -339,6 +339,150 @@ export const DESIGN_SLA = {
 }
 
 // ══════════════════════════════════════════════════════════════
+// SDR_ETAPAS — FUNIL REAL DO TRINDADE (10 etapas universais)
+// Usadas em: Waseller · Wascript · /sdr · webhooks · métricas · comissões
+// ══════════════════════════════════════════════════════════════
+
+export const SDR_ETAPAS = [
+  { id: 'recepcao',    label: 'Recepção',     emoji: '📥', ordem: 1,
+    metrica: 'leads',        cor: '#6B7280', descricao: 'Lead chegou, primeiro contato' },
+  { id: 'explicacao',  label: 'Explicação',   emoji: '💬', ordem: 2,
+    metrica: 'contatos',     cor: '#3B82F6', descricao: 'Explicando produto/solução' },
+  { id: 'qualificacao', label: 'Qualificação', emoji: '✅', ordem: 3,
+    metrica: 'qualificados', cor: '#8B5CF6', descricao: 'Investigando dor e perfil' },
+  { id: 'agendamento', label: 'Agendamento',  emoji: '📅', ordem: 4,
+    metrica: 'agendamentos', cor: '#F59E0B', descricao: 'Reunião marcada com o closer',
+    meta_principal: true },
+  { id: 'confirmacao', label: 'Confirmação',  emoji: '🔔', ordem: 5,
+    metrica: 'agendamentos', cor: '#10B981', descricao: 'Confirmando presença na reunião' },
+  { id: 'reagendar',   label: 'Reagendar',    emoji: '🔄', ordem: 6,
+    metrica: 'no_show',      cor: '#EF4444', descricao: 'No-show, tentando remarcar' },
+  { id: 'sem_cnpj',    label: 'Sem CNPJ',     emoji: '📋', ordem: 7,
+    metrica: 'qualificados', cor: '#F97316', descricao: 'Interesse mas sem CNPJ' },
+  { id: 'futuro',      label: 'Futuro',       emoji: '🕐', ordem: 8,
+    metrica: 'qualificados', cor: '#6366F1', descricao: 'Momento errado, recontato futuro' },
+  { id: 'lista_fria',  label: 'Lista Fria',   emoji: '❄️', ordem: 9,
+    metrica: 'leads',        cor: '#94A3B8', descricao: 'Sem resposta, tentando reativar' },
+  { id: 'fora_do_icp', label: 'Fora do ICP',  emoji: '🚫', ordem: 10,
+    metrica: 'perdido',      cor: '#374151', descricao: 'Fora do perfil de cliente ideal' },
+] as const
+
+export type EtapaSDR =
+  | 'recepcao' | 'explicacao' | 'qualificacao' | 'agendamento' | 'confirmacao'
+  | 'reagendar' | 'sem_cnpj' | 'futuro' | 'lista_fria' | 'fora_do_icp'
+
+export const ETAPAS_IDS: EtapaSDR[] = SDR_ETAPAS.map(e => e.id) as EtapaSDR[]
+
+export function getEtapa(id: string) {
+  return SDR_ETAPAS.find(e => e.id === id)
+}
+
+// Grupos lógicos
+export const ETAPAS_ATIVAS: EtapaSDR[] = ['recepcao', 'explicacao', 'qualificacao', 'agendamento', 'confirmacao']
+export const ETAPAS_NURTURE: EtapaSDR[] = ['sem_cnpj', 'futuro', 'lista_fria']
+export const ETAPAS_FINAIS: EtapaSDR[] = ['fora_do_icp']
+
+// Etapa → campo métrica (pra incrementar sdr_metricas_diarias)
+export const ETAPA_METRICA: Record<string, string> = {
+  recepcao:    'leads_recebidos',
+  explicacao:  'contatos_realizados',
+  qualificacao:'qualificados',
+  agendamento: 'agendamentos',
+  confirmacao: 'agendamentos',
+  reagendar:   'no_show',
+  sem_cnpj:    'qualificados',
+  futuro:      'qualificados',
+  lista_fria:  'leads_recebidos',
+  fora_do_icp: 'perdidos',
+}
+
+// Etapa → labelId real do WhatsApp Business do Trindade
+// IDs validados ao vivo via Wascript:
+//   1 Novo cliente · 2 Novo pedido · 3 Pagamento pendente
+//   4 Pago · 5 Pedido finalizado · 6 Importante
+//   7 Acompanhar · 8 Lead
+export const ETAPA_ETIQUETA: Record<string, string | null> = {
+  recepcao:    '8',  // Lead
+  explicacao:  '8',  // Lead (mantém — ainda é lead)
+  qualificacao: '7', // Acompanhar
+  agendamento: '7',  // Acompanhar (mantém — aguardando reunião)
+  confirmacao: '3',  // Pagamento pendente (reaproveitada como "Confirmado")
+  reagendar:   '6',  // Importante
+  sem_cnpj:    '5',  // Pedido finalizado (reaproveitada como "Nurture CNPJ")
+  futuro:      '2',  // Novo pedido (reaproveitada como "Futuro")
+  lista_fria:  '6',  // Importante
+  fora_do_icp: null, // Sem etiqueta (remover todas)
+}
+
+// Mapeamento eventos Waseller → etapa HQ
+export const WASELLER_EVENTO_ETAPA: Record<string, string> = {
+  // Nomes nativos das 10 etapas
+  'recepcao': 'recepcao',
+  'recepção': 'recepcao',
+  'explicacao': 'explicacao',
+  'explicação': 'explicacao',
+  'qualificacao': 'qualificacao',
+  'qualificação': 'qualificacao',
+  'agendamento': 'agendamento',
+  'agendado': 'agendamento',
+  'confirmacao': 'confirmacao',
+  'confirmação': 'confirmacao',
+  'confirmar': 'confirmacao',
+  'reagendar': 'reagendar',
+  'no_show': 'reagendar',
+  'sem_cnpj': 'sem_cnpj',
+  'sem cnpj': 'sem_cnpj',
+  'futuro': 'futuro',
+  'lista_fria': 'lista_fria',
+  'lista fria': 'lista_fria',
+  'fora_do_icp': 'fora_do_icp',
+  'fora do icp': 'fora_do_icp',
+  // Aliases genéricos que o Waseller pode mandar
+  'crm': 'recepcao',
+  'novo_lead': 'recepcao',
+  'lead': 'recepcao',
+  'novo': 'recepcao',
+  'recebido': 'recepcao',
+  'follow_up': 'qualificacao',
+  'followup': 'qualificacao',
+  'encerrar_atendimento': 'confirmacao',
+  'atendimento_encerrado': 'confirmacao',
+  'compareceu': 'confirmacao',
+  'perdido': 'fora_do_icp',
+  'sem_interesse': 'fora_do_icp',
+  'nao_qualificado': 'fora_do_icp',
+}
+
+// Alias conforme spec nova — aponta pro mesmo objeto do mapeamento de eventos
+export const WASELLER_PARA_ETAPA = WASELLER_EVENTO_ETAPA
+
+// Mapeamento etiquetas Waseller (por nome) → etapa HQ
+export const WASELLER_ETIQUETA_ETAPA: Record<string, string> = {
+  'lead': 'recepcao',
+  'acompanhar': 'qualificacao',
+  'novo cliente': 'confirmacao',
+  'pagamento pendente': 'confirmacao',
+  'importante': 'reagendar',
+  'pedido finalizado': 'sem_cnpj',
+  'novo pedido': 'futuro',
+  'pago': 'fora_do_icp',
+}
+
+// Mensagens automáticas por etapa (envio via Wascript)
+export const MSGS_ETAPAS: Record<string, string> = {
+  recepcao:    `Olá! 😊 Vi que você tem interesse em crescer sua clínica. Posso te contar como ajudamos outras clínicas odonto a faturar mais?`,
+  explicacao:  `Oi! Queria te explicar melhor como funciona a Excalibur. Temos ajudado clínicas a aumentar o faturamento significativamente. Tem 5 minutinhos agora?`,
+  qualificacao:`Obrigado pelas informações! Vou analisar o perfil da sua clínica e já te retorno com a melhor solução. 💪`,
+  agendamento: `Ótimo! 🎉 Sua reunião foi agendada! Em breve você vai receber a confirmação com todos os detalhes.`,
+  confirmacao: `Oi! ✅ Passando para confirmar nossa conversa de hoje. Você confirma presença? 🗓️`,
+  reagendar:   `Oi, tudo bem? Não conseguimos nos falar hoje. Podemos reagendar para outro horário esta semana? 📅`,
+  sem_cnpj:    `Entendido! Quando você tiver o CNPJ, pode me chamar que retomamos de onde paramos. 😊`,
+  futuro:      `Sem problema! Vou anotar aqui para te contatar no momento certo. Até lá! 👋`,
+  lista_fria:  `Oi! 😊 Passando para ver se ainda tem interesse em crescer sua clínica. Temos novidades incríveis!`,
+  fora_do_icp: `Obrigado pelo seu tempo! Infelizmente nossa solução não se encaixa no seu perfil atual. Sucesso! 🤝`,
+}
+
+// ══════════════════════════════════════════════════════════════
 // BI — ZONAS DE CAC, ALERTAS, SENSIBILIDADE, DIAGNÓSTICO
 // ══════════════════════════════════════════════════════════════
 

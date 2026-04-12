@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { SDR_ETAPAS } from '../lib/config'
 
 type Health = {
   ok: boolean
@@ -11,17 +12,13 @@ type Health = {
 
 type Toast = { id: number; texto: string; ok: boolean }
 
-const MSG_TIPOS: Array<{
-  tipo: 'confirmacao' | 'lembrete' | 'pos_reuniao' | 'no_show'
-  label: string
-  emoji: string
-  cor: string
-}> = [
-  { tipo: 'confirmacao', label: 'Confirmar reunião', emoji: '📅', cor: '#60a5fa' },
-  { tipo: 'lembrete', label: 'Lembrete', emoji: '🔔', cor: '#fbbf24' },
-  { tipo: 'pos_reuniao', label: 'Pós-reunião', emoji: '✅', cor: '#22c55e' },
-  { tipo: 'no_show', label: 'No-show', emoji: '😔', cor: '#ef4444' },
-]
+// Usa direto as 10 etapas reais do funil SDR
+const MSG_TIPOS = SDR_ETAPAS.map(e => ({
+  tipo: e.id,
+  label: e.label,
+  emoji: e.emoji,
+  cor: e.cor,
+}))
 
 export default function WascriptEnvioRapido() {
   const [health, setHealth] = useState<Health | null>(null)
