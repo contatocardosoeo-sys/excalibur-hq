@@ -260,7 +260,7 @@ export default function Sidebar() {
         </div>
       </div>
 
-      <nav id="sidebar-nav" className="p-3 flex flex-col gap-0.5 flex-1 overflow-auto">
+      <nav className="p-3 flex flex-col gap-0.5 flex-1 overflow-auto">
         {filteredSections.map((section, sectionIdx) => (
           <div key={section.label} className="mb-3">
             {sectionIdx > 0 && <div className="border-t border-gray-800/60 mb-3 -mx-1" />}
@@ -388,7 +388,7 @@ export default function Sidebar() {
           <CollapsedSidebar />
         </div>
       ) : (
-        <div className="hidden md:flex bg-gray-900 border-r border-gray-800 flex-col shrink-0 md:static z-auto w-56 relative" style={{ minHeight: '100vh' }}>
+        <div id="sidebar-nav" className="hidden md:flex bg-gray-900 border-r border-gray-800 flex-col shrink-0 md:static z-auto w-56 relative" style={{ minHeight: '100vh' }}>
           <button onClick={toggleCollapsed} className="absolute -right-3 top-6 z-10 bg-gray-800 border border-gray-700 rounded-full w-6 h-6 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700 transition" title="Recolher sidebar">
             ←
           </button>
